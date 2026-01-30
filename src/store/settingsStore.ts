@@ -14,10 +14,11 @@ export const useSettingsStore = create<SettingsState>()(
       groqApiKey: "",
       enableAiExplanations: false,
       setGroqApiKey: (key) => set({ groqApiKey: key }),
-      setEnableAiExplanations: (enabled) => set({ enableAiExplanations: enabled }),
+      setEnableAiExplanations: (enabled) =>
+        set({ enableAiExplanations: enabled }),
     }),
     {
       name: "settings-storage",
-    }
-  )
+    },
+  ),
 );

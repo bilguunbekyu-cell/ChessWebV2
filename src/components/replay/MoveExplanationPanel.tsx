@@ -1,5 +1,13 @@
 import { useMemo, useState, useEffect } from "react";
-import { Lightbulb, TrendingUp, TrendingDown, Minus, Target, Sparkles, Loader2 } from "lucide-react";
+import {
+  Lightbulb,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Target,
+  Sparkles,
+  Loader2,
+} from "lucide-react";
 import { Chess } from "chess.js";
 import { MoveQualityInfo } from "../../utils/moveQuality";
 import {
@@ -43,7 +51,7 @@ export function MoveExplanationPanel({
   // Get best move for current position (before the move was made)
   const bestMoveInfo = useMemo(() => {
     if (currentPly === 0) return null;
-    
+
     // Best move is what engine recommended BEFORE this move
     const beforeAnalysis = analysisByPly.get(currentPly - 1);
     if (!beforeAnalysis?.bestMove) return null;
@@ -72,7 +80,7 @@ export function MoveExplanationPanel({
 
     const qualityInfo = moveQualities.find((q) => q.ply === currentPly);
     const fenBefore = positions[currentPly - 1];
-    
+
     if (!fenBefore) return;
 
     // Get best move SAN
@@ -93,7 +101,7 @@ export function MoveExplanationPanel({
       currentMoveSan,
       bestMoveSan,
       qualityInfo,
-      moveNumber
+      moveNumber,
     )
       .then((explanation) => {
         setAiExplanation(explanation);
@@ -105,7 +113,15 @@ export function MoveExplanationPanel({
       .finally(() => {
         setAiLoading(false);
       });
-  }, [currentPly, enableAiExplanations, groqApiKey, positions, currentMoveSan, moveQualities, analysisByPly]);
+  }, [
+    currentPly,
+    enableAiExplanations,
+    groqApiKey,
+    positions,
+    currentMoveSan,
+    moveQualities,
+    analysisByPly,
+  ]);
 
   const explanation = useMemo(() => {
     if (currentPly === 0) {
@@ -228,9 +244,7 @@ export function MoveExplanationPanel({
 
       {/* AI Error */}
       {aiError && (
-        <p className="text-xs text-red-500 dark:text-red-400 mb-2">
-          {aiError}
-        </p>
+        <p className="text-xs text-red-500 dark:text-red-400 mb-2">{aiError}</p>
       )}
 
       {/* Best Move */}

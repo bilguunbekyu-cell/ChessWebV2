@@ -33,12 +33,15 @@ function colorName(mover: "w" | "b"): string {
 /**
  * Generate explanations based on move quality
  */
-const qualityExplanations: Record<MoveQuality, {
-  title: string;
-  getDescription: (info: MoveQualityInfo, san: string) => string;
-  getDetails: (info: MoveQualityInfo, san: string) => string;
-  getSuggestion?: (info: MoveQualityInfo) => string;
-}> = {
+const qualityExplanations: Record<
+  MoveQuality,
+  {
+    title: string;
+    getDescription: (info: MoveQualityInfo, san: string) => string;
+    getDetails: (info: MoveQualityInfo, san: string) => string;
+    getSuggestion?: (info: MoveQualityInfo) => string;
+  }
+> = {
   Brilliant: {
     title: "Brilliant Move! ✨",
     getDescription: (info, san) =>
@@ -55,8 +58,7 @@ const qualityExplanations: Record<MoveQuality, {
       `${san} is a great move that significantly improved ${colorName(info.mover)}'s position.`,
     getDetails: (info) =>
       `Win probability shifted from ${epToPercent(info.epBefore)}% to ${epToPercent(info.epAfter)}% — a ${epToPercent(info.epGain)}% improvement.`,
-    getSuggestion: () =>
-      "This move found a critical resource in the position.",
+    getSuggestion: () => "This move found a critical resource in the position.",
   },
 
   Best: {

@@ -1,12 +1,29 @@
 import { useState } from "react";
-import { User, Mail, Bell, Shield, Moon, Globe, Save, Sparkles, Eye, EyeOff, ExternalLink } from "lucide-react";
+import {
+  User,
+  Mail,
+  Bell,
+  Shield,
+  Moon,
+  Globe,
+  Save,
+  Sparkles,
+  Eye,
+  EyeOff,
+  ExternalLink,
+} from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import { useThemeStore } from "../store/themeStore";
 import { useSettingsStore } from "../store/settingsStore";
 
 export default function Settings() {
   const { isDarkMode, toggleTheme } = useThemeStore();
-  const { groqApiKey, setGroqApiKey, enableAiExplanations, setEnableAiExplanations } = useSettingsStore();
+  const {
+    groqApiKey,
+    setGroqApiKey,
+    enableAiExplanations,
+    setEnableAiExplanations,
+  } = useSettingsStore();
   const [notifications, setNotifications] = useState(true);
   const [showApiKey, setShowApiKey] = useState(false);
   const [tempApiKey, setTempApiKey] = useState(groqApiKey);
@@ -174,11 +191,16 @@ export default function Settings() {
                     onClick={() => setShowApiKey(!showApiKey)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                   >
-                    {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showApiKey ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
                 <p className="mt-2 text-xs text-gray-500">
-                  Free tier includes ~14,400 requests/day. Your key is stored locally.
+                  Free tier includes ~14,400 requests/day. Your key is stored
+                  locally.
                 </p>
               </div>
             </div>

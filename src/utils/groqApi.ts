@@ -31,26 +31,21 @@ export async function getAiMoveExplanation(
   }
 
   const quality = qualityInfo?.label || "Unknown";
-  const epLoss = qualityInfo?.epLoss ? (qualityInfo.epLoss * 100).toFixed(1) : "0";
-  const epBefore = qualityInfo?.epBefore ? (qualityInfo.epBefore * 100).toFixed(0) : "50";
-  const epAfter = qualityInfo?.epAfter ? (qualityInfo.epAfter * 100).toFixed(0) : "50";
+  const epLoss = qualityInfo?.epLoss
+    ? (qualityInfo.epLoss * 100).toFixed(1)
+    : "0";
+  const epBefore = qualityInfo?.epBefore
+    ? (qualityInfo.epBefore * 100).toFixed(0)
+    : "50";
+  const epAfter = qualityInfo?.epAfter
+    ? (qualityInfo.epAfter * 100).toFixed(0)
+    : "50";
 
-  const systemPrompt = `You are a helpful chess coach explaining moves to improving players (800-1500 ELO).
-Keep explanations concise (2-4 sentences max). Focus on:
-- WHY the move is good/bad tactically or positionally
-- What threat or idea was missed if it's a mistake
-- What the better move accomplishes
+  const systemPrompt = `You are a chess coach. Give 1-2 sentence explanations only. Be direct and specific about the tactical/positional reason. No fluff.`;
 
-Be encouraging but honest. Use simple language, avoid jargon unless necessary.
-Don't just describe what the move does - explain the consequences.`;
-
-  const userPrompt = `Position (FEN): ${fen}
-Move ${moveNumber}: ${movePlayed}
-Quality: ${quality}
-Win probability: ${epBefore}% → ${epAfter}% (${qualityInfo?.epLoss ? `-${epLoss}%` : "no change"})
-${bestMove ? `Best move was: ${bestMove}` : ""}
-
-Explain why this move is ${quality.toLowerCase()}${bestMove && bestMove !== movePlayed ? ` and why ${bestMove} was better` : ""}.`;
+  const userPrompt = `Move ${moveNumber}: ${movePlayed} (${quality})
+${bestMove && bestMove !== movePlayed ? `Best was: ${bestMove}` : ""}
+Why is this ${quality.toLowerCase()}?`;
 
   const messages: GroqMessage[] = [
     { role: "system", content: systemPrompt },
@@ -67,8 +62,8 @@ Explain why this move is ${quality.toLowerCase()}${bestMove && bestMove !== move
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
         messages,
-        max_tokens: 200,
-        temperature: 0.7,
+        max_tokens: 80,
+        temperature: 0.5,
       }),
     });
 
