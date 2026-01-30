@@ -59,6 +59,7 @@ export function useGameReplay(game: GameHistory) {
   // Analysis and move quality
   const {
     analysis,
+    analysisByPly,
     analysisSeries,
     moveQualities,
     moveRowsWithQuality,
@@ -131,6 +132,7 @@ export function useGameReplay(game: GameHistory) {
     qualityCounts,
     accuracy,
     analysisSeries,
+    analysisByPly,
     opening: openingResolved,
 
     // Evaluation

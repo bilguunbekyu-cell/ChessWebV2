@@ -9,6 +9,7 @@ import {
   ReplayEvalBar,
   CapturedPieces,
   GameSummary,
+  MoveExplanationPanel,
 } from "../components/replay";
 import { useGameReplay } from "../hooks/useGameReplay";
 
@@ -157,11 +158,21 @@ function ReplayContent({ game }: { game: GameHistory }) {
             </div>
           </div>
 
-          {/* Right - Eval + Move List */}
+          {/* Right - Move Explanation + Move List */}
           <div
             className="flex-shrink-0 flex flex-col gap-2 h-full min-h-0"
             style={{ flexBasis: "30%", maxWidth: "30%" }}
           >
+            {/* Move Explanation */}
+            <div className="flex-shrink-0">
+              <MoveExplanationPanel
+                currentPly={replay.ply}
+                currentMoveSan={replay.currentMoveSan}
+                moveQualities={replay.moveQualities}
+                analysisByPly={replay.analysisByPly}
+              />
+            </div>
+
             {/* Move list */}
             <div className="flex-1 min-h-0 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden">
               <div className="flex-1 overflow-hidden">

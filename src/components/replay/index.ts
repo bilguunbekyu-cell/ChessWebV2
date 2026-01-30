@@ -9,3 +9,4 @@ export { AccuracyBadge } from "./AccuracyBadge";
 export { QualityBreakdown } from "./QualityBreakdown";
 export { AdvantageGraph } from "./AdvantageGraph";
 export { GameSummary } from "./GameSummary";
+export { MoveExplanationPanel } from "./MoveExplanationPanel";
