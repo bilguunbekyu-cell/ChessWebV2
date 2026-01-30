@@ -170,6 +170,7 @@ function ReplayContent({ game }: { game: GameHistory }) {
                 currentMoveSan={replay.currentMoveSan}
                 moveQualities={replay.moveQualities}
                 analysisByPly={replay.analysisByPly}
+                positions={replay.positions}
               />
             </div>
 

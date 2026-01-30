@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { Lightbulb, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Lightbulb, TrendingUp, TrendingDown, Minus, Target } from "lucide-react";
+import { Chess } from "chess.js";
 import { MoveQualityInfo } from "../../utils/moveQuality";
 import {
   generateMoveExplanation,
@@ -13,6 +14,7 @@ interface MoveExplanationPanelProps {
   currentMoveSan: string;
   moveQualities: MoveQualityInfo[];
   analysisByPly: Map<number, AnalysisEntry>;
+  positions: string[]; // FEN positions to convert UCI to SAN
 }
 
 export function MoveExplanationPanel({
@@ -20,7 +22,39 @@ export function MoveExplanationPanel({
   currentMoveSan,
   moveQualities,
   analysisByPly,
+  positions,
 }: MoveExplanationPanelProps) {
+  // Convert UCI move to SAN using chess.js
+  const uciToSan = (fen: string, uci: string): string => {
+    try {
+      const chess = new Chess(fen);
+      const from = uci.slice(0, 2);
+      const to = uci.slice(2, 4);
+      const promotion = uci.length > 4 ? uci[4] : undefined;
+      const move = chess.move({ from, to, promotion });
+      return move?.san || uci;
+    } catch {
+      return uci;
+    }
+  };
+
+  // Get best move for current position (before the move was made)
+  const bestMoveInfo = useMemo(() => {
+    if (currentPly === 0) return null;
+    
+    // Best move is what engine recommended BEFORE this move
+    const beforeAnalysis = analysisByPly.get(currentPly - 1);
+    if (!beforeAnalysis?.bestMove) return null;
+
+    const fenBefore = positions[currentPly - 1];
+    if (!fenBefore) return null;
+
+    const bestMoveSan = uciToSan(fenBefore, beforeAnalysis.bestMove);
+    const wasPlayed = bestMoveSan === currentMoveSan;
+
+    return { san: bestMoveSan, wasPlayed };
+  }, [currentPly, analysisByPly, positions, currentMoveSan]);
+
   const explanation = useMemo(() => {
     if (currentPly === 0) {
       return {
@@ -119,6 +153,34 @@ export function MoveExplanationPanel({
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
         {explanation.details}
       </p>
+
+      {/* Best Move */}
+      {bestMoveInfo && (
+        <div className="mb-3 p-2.5 rounded-md bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-2">
+            <Target className="w-4 h-4 text-green-500 flex-shrink-0" />
+            <div className="flex-1">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Best move:{" "}
+              </span>
+              <span
+                className={`font-mono font-semibold ${
+                  bestMoveInfo.wasPlayed
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-gray-900 dark:text-white"
+                }`}
+              >
+                {bestMoveInfo.san}
+              </span>
+              {bestMoveInfo.wasPlayed && (
+                <span className="ml-2 text-xs text-green-600 dark:text-green-400">
+                  ✓ You played this!
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Suggestion (for mistakes/blunders) */}
       {explanation.suggestion && (

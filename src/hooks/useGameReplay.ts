@@ -115,6 +115,7 @@ export function useGameReplay(game: GameHistory) {
 
     // Position data
     currentFen,
+    positions, // All FEN positions for UCI to SAN conversion
     lastMove,
     currentMoveSan,
     isCheck,

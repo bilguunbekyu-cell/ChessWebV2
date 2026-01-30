@@ -74,8 +74,12 @@ export function useMoveAnalysis(
           }
         }
 
-        if (line.startsWith("bestmove")) {
+        // Capture best move from "bestmove e2e4" line
+        const bestMoveMatch = line.match(/^bestmove\s+(\S+)/);
+        if (bestMoveMatch) {
+          const bestMoveUci = bestMoveMatch[1];
           if (best) {
+            best.bestMove = bestMoveUci;
             setAnalysis((prev) => {
               if (prev.some((a) => a.ply === best!.ply)) return prev;
               return [...prev, best!].sort((a, b) => a.ply - b.ply);
