@@ -76,7 +76,12 @@ export class StockfishEngine {
     }
   }
 
-  evaluatePosition(fen: string, depth: number, moveNumber: number = 10) {
+  evaluatePosition(
+    fen: string,
+    depth: number,
+    moveNumber: number = 10,
+    minTimeMs: number = 3000,
+  ) {
     if (this.stockfish) {
       this.multiPvMoves = [];
 
@@ -89,7 +94,10 @@ export class StockfishEngine {
       }
 
       this.stockfish.postMessage(`position fen ${fen}`);
-      this.stockfish.postMessage(`go depth ${depth}`);
+      // ensure engine thinks at least minTimeMs
+      this.stockfish.postMessage(
+        `go movetime ${Math.max(minTimeMs, 3000)} depth ${depth}`,
+      );
     }
   }
 

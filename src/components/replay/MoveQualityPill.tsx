@@ -1,0 +1,49 @@
+import { MoveQuality } from "../../hooks/useGameReplay";
+
+const colorMap: Record<MoveQuality, string> = {
+  Best: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200",
+  Excellent:
+    "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200",
+  Good:
+    "bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-200",
+  Book:
+    "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200",
+  Inaccuracy:
+    "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200",
+  Mistake:
+    "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-200",
+  Blunder:
+    "bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-200",
+  Great: "bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200",
+  Brilliant:
+    "bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200",
+  Miss:
+    "bg-slate-100 text-slate-700 dark:bg-slate-900/40 dark:text-slate-200",
+  Unknown:
+    "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-200",
+};
+
+const labelMap: Partial<Record<MoveQuality, string>> = {
+  Best: "Best",
+  Excellent: "Excellent",
+  Good: "Good",
+  Book: "Book",
+  Inaccuracy: "Inaccuracy",
+  Mistake: "Mistake",
+  Blunder: "Blunder",
+  Great: "Great",
+  Brilliant: "Brilliant",
+  Miss: "Miss",
+  Unknown: "—",
+};
+
+export function MoveQualityPill({ quality }: { quality: MoveQuality }) {
+  const label = labelMap[quality] || "—";
+  const styles = colorMap[quality] || colorMap.Unknown;
+
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${styles}`}>
+      {label}
+    </span>
+  );
+}

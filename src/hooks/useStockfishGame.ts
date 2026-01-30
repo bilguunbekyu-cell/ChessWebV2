@@ -1,0 +1,205 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Chess, Square } from "chess.js";
+import { usePreMove } from "../chess/usePreMove";
+import { GameSettings } from "../components/game";
+import {
+  OptionSquares,
+  defaultGameSettings,
+  GameHistoryPayload,
+} from "./useStockfishGameTypes";
+import { useStockfishEngine } from "./useStockfishEngine";
+import { useMoveOptions } from "./useMoveOptions";
+import { useSaveGameHistory } from "./useSaveGameHistory";
+import { useEngineMoves } from "./useEngineMoves";
+import { useGameStateChecker } from "./useGameStateChecker";
+import { useGameHistorySaver } from "./useGameHistorySaver";
+import { useSquareClickHandler } from "./useSquareClickHandler";
+import { useGameActions } from "./useGameActions";
+
+export type { GameHistoryPayload };
+
+export function useStockfishGame() {
+  const [game, setGame] = useState(() => new Chess());
+  const gameRef = useRef<Chess>(game);
+  const [moveFrom, setMoveFrom] = useState<Square | null>(null);
+  const [optionSquares, setOptionSquares] = useState<OptionSquares>({});
+  const [moves, setMoves] = useState<string[]>([]);
+
+  const [gameSettings, setGameSettings] =
+    useState<GameSettings>(defaultGameSettings);
+
+  const { preMoveSquares, setPreMove, clearPreMove, getPreMove } = usePreMove();
+
+  const [gameStarted, setGameStarted] = useState(false);
+  const [showSetupModal, setShowSetupModal] = useState(true);
+  const [showGameOverModal, setShowGameOverModal] = useState(false);
+  const [gameResult, setGameResult] = useState<string | null>(null);
+  const [gameOver, setGameOver] = useState(false);
+  const [playerTime, setPlayerTime] = useState(300);
+  const [opponentTime, setOpponentTime] = useState(300);
+  const [savedGameId, setSavedGameId] = useState<string | null>(null);
+
+  const historySavedRef = useRef(false);
+  const startTimeRef = useRef<number | null>(null);
+
+  const playerColor = gameSettings.playAs === "white" ? "w" : "b";
+  const isPlayerTurn = game.turn() === playerColor;
+
+  // Initialize Stockfish engine
+  const engineRef = useStockfishEngine(gameSettings.difficulty);
+
+  // Get move options for a square
+  const getMoveOptions = useMoveOptions(gameRef, setOptionSquares);
+
+  // Save game history to backend
+  const saveGameHistory = useSaveGameHistory();
+
+  // Try to apply premove
+  const tryApplyPreMove = useCallback(() => {
+    const queued = getPreMove();
+    if (!queued) return;
+
+    const currentGame = gameRef.current;
+    if (currentGame.turn() !== playerColor) return;
+
+    try {
+      const move = currentGame.move({
+        from: queued.from as Square,
+        to: queued.to as Square,
+        promotion: (queued.promotion as any) || "q",
+      });
+      if (move) {
+        gameRef.current = currentGame;
+        setGame(new Chess(currentGame.fen()));
+        setMoves(currentGame.history());
+      }
+    } catch {
+      // invalid premove in new position; just drop it
+    }
+    clearPreMove();
+  }, [clearPreMove, getPreMove, playerColor]);
+
+  // Engine moves
+  const { isEngineThinking, makeEngineMove, handleEngineMessage } =
+    useEngineMoves(
+      engineRef,
+      gameRef,
+      playerColor,
+      gameSettings.difficulty,
+      gameOver,
+      setGame,
+      setMoves,
+      tryApplyPreMove,
+    );
+
+  // Single Stockfish listener
+  useEffect(() => {
+    if (!engineRef.current) return;
+    engineRef.current.onMessage(handleEngineMessage);
+  }, [engineRef, handleEngineMessage]);
+
+  // Check game state and trigger engine
+  useGameStateChecker(
+    game,
+    gameRef,
+    gameStarted,
+    playerColor,
+    isEngineThinking,
+    makeEngineMove,
+    setGameResult,
+    setGameOver,
+    setShowGameOverModal,
+  );
+
+  // If playing as black, engine moves first
+  useEffect(() => {
+    if (
+      gameStarted &&
+      gameSettings.playAs === "black" &&
+      game.history().length === 0
+    ) {
+      const timer = setTimeout(() => makeEngineMove(), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [gameStarted, gameSettings.playAs, game, makeEngineMove]);
+
+  // Save history once when game ends
+  useGameHistorySaver(
+    gameOver,
+    gameResult,
+    gameSettings,
+    gameRef,
+    game,
+    startTimeRef,
+    historySavedRef,
+    saveGameHistory,
+    setSavedGameId,
+  );
+
+  // Square click handler
+  const onSquareClick = useSquareClickHandler(
+    gameRef,
+    gameStarted,
+    gameOver,
+    playerColor,
+    moveFrom,
+    setMoveFrom,
+    setOptionSquares,
+    setGame,
+    setMoves,
+    getMoveOptions,
+    setPreMove,
+    clearPreMove,
+  );
+
+  // Game actions
+  const { handleStartGame, handleNewGame, handleResign, handleTimeOut } =
+    useGameActions(
+      gameRef,
+      setGame,
+      setMoves,
+      setMoveFrom,
+      setOptionSquares,
+      setGameSettings,
+      setShowSetupModal,
+      setShowGameOverModal,
+      setGameStarted,
+      setGameOver,
+      setGameResult,
+      setPlayerTime,
+      setOpponentTime,
+      isEngineThinking,
+      historySavedRef,
+      startTimeRef,
+    );
+
+  return {
+    // Game state
+    game,
+    moves,
+    gameSettings,
+    gameStarted,
+    gameOver,
+    gameResult,
+    isPlayerTurn,
+    playerColor,
+    savedGameId,
+
+    // UI state
+    showSetupModal,
+    showGameOverModal,
+    optionSquares,
+    preMoveSquares,
+    playerTime,
+    opponentTime,
+    setPlayerTime,
+    setOpponentTime,
+
+    // Handlers
+    onSquareClick,
+    handleStartGame,
+    handleNewGame,
+    handleResign,
+    handleTimeOut,
+  };
+}

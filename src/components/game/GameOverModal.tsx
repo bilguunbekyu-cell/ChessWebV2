@@ -1,0 +1,58 @@
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { BarChart2 } from "lucide-react";
+
+interface GameOverModalProps {
+  isOpen: boolean;
+  result: string | null;
+  onNewGame: () => void;
+  savedGameId: string | null;
+}
+
+export function GameOverModal({
+  isOpen,
+  result,
+  onNewGame,
+  savedGameId,
+}: GameOverModalProps) {
+  const navigate = useNavigate();
+
+  if (!isOpen) return null;
+
+  const handleAnalyze = () => {
+    if (savedGameId) {
+      navigate(`/analyze/${savedGameId}`);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-sm shadow-2xl border border-gray-200 dark:border-gray-800 text-center"
+      >
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          {result}
+        </h2>
+        <div className="space-y-3">
+          {savedGameId && (
+            <button
+              onClick={handleAnalyze}
+              className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium flex items-center justify-center gap-2"
+            >
+              <BarChart2 size={18} />
+              Analyze Game
+            </button>
+          )}
+          <button
+            onClick={onNewGame}
+            className="w-full py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-lg font-medium"
+          >
+            New Game
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}

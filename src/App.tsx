@@ -19,6 +19,7 @@ import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
+import Analyze from "./pages/Analyze";
 import { useThemeStore } from "./store/themeStore";
 import { useAuthStore, authApi } from "./store/authStore";
 import { timeFormats, TimeFormat } from "./data/mockData";
@@ -110,13 +111,10 @@ function Layout({
   const isGamePage = location.pathname === "/play";
 
   // Pages that have their own sidebar or are auth pages
-  const hasOwnLayout = [
-    "/watch",
-    "/community",
-    "/settings",
-    "/login",
-    "/register",
-  ].includes(location.pathname);
+  const hasOwnLayout =
+    ["/watch", "/community", "/settings", "/login", "/register"].includes(
+      location.pathname,
+    ) || location.pathname.startsWith("/analyze");
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -354,6 +352,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analyze/:gameId"
+            element={
+              <ProtectedRoute>
+                <Analyze />
               </ProtectedRoute>
             }
           />

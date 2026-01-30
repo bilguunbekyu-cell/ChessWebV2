@@ -108,6 +108,14 @@ const HistorySchema = new mongoose.Schema(
     moves: { type: [String], default: [] },
     moveText: { type: String, default: "" }, // raw PGN movetext (all moves)
     pgn: { type: String }, // Full PGN with headers
+    analysis: [
+      {
+        ply: { type: Number, required: true },
+        cp: { type: Number },
+        mate: { type: Number },
+      },
+    ],
+    moveTimes: { type: [Number], default: [] }, // ms per move (ply)
 
     // Additional metadata
     playAs: { type: String, enum: ["white", "black"], required: true },
@@ -272,6 +280,8 @@ app.post("/api/history", authMiddleware, async (req, res) => {
       opponent = "Stockfish",
       opponentLevel,
       durationMs,
+      analysis = [],
+      moveTimes = [],
     } = req.body;
 
     if (!result || !playAs || !white || !black) {
@@ -316,6 +326,8 @@ app.post("/api/history", authMiddleware, async (req, res) => {
       opponent,
       opponentLevel,
       durationMs,
+      analysis,
+      moveTimes,
     });
 
     res.json({ success: true, historyId: history._id });
