@@ -1,50 +1,59 @@
-import { useState } from 'react';
-import { MessageSquare, Heart, Share2, MoreHorizontal, Image as ImageIcon, Send } from 'lucide-react';
-import Sidebar from '../components/Sidebar';
+import { useState } from "react";
+import {
+  MessageSquare,
+  Heart,
+  Share2,
+  MoreHorizontal,
+  Image as ImageIcon,
+  Send,
+} from "lucide-react";
+import Sidebar from "../components/Sidebar";
 
 const POSTS = [
   {
     id: 1,
-    user: 'Magnus Carlsen',
-    handle: '@magnuscarlsen',
-    avatar: 'M',
-    content: 'Just had an intense game against Hikaru! The endgame was tricky but managed to find the winning line. ♟️',
-    likes: '12.5k',
-    comments: '842',
-    time: '2h ago',
-    image: null
+    user: "Magnus Carlsen",
+    handle: "@magnuscarlsen",
+    avatar: "M",
+    content:
+      "Just had an intense game against Hikaru! The endgame was tricky but managed to find the winning line. ♟️",
+    likes: "12.5k",
+    comments: "842",
+    time: "2h ago",
+    image: null,
   },
   {
     id: 2,
-    user: 'Chess.com',
-    handle: '@chesscom',
-    avatar: 'C',
-    content: '🏆 Tournament Update: The Candidates 2024 is heating up! Who is your pick to challenge the World Champion?',
-    likes: '8.2k',
-    comments: '1.2k',
-    time: '4h ago',
-    image: true
+    user: "Chess.com",
+    handle: "@chesscom",
+    avatar: "C",
+    content:
+      "🏆 Tournament Update: The Candidates 2024 is heating up! Who is your pick to challenge the World Champion?",
+    likes: "8.2k",
+    comments: "1.2k",
+    time: "4h ago",
+    image: true,
   },
   {
     id: 3,
-    user: 'Hikaru Nakamura',
-    handle: '@gmhikaru',
-    avatar: 'H',
-    content: 'Streaming Titled Tuesday in 30 minutes! Come hang out.',
-    likes: '5.1k',
-    comments: '320',
-    time: '5h ago',
-    image: null
-  }
+    user: "Hikaru Nakamura",
+    handle: "@gmhikaru",
+    avatar: "H",
+    content: "Streaming Titled Tuesday in 30 minutes! Come hang out.",
+    likes: "5.1k",
+    comments: "320",
+    time: "5h ago",
+    image: null,
+  },
 ];
 
 export default function Community() {
-  const [newPost, setNewPost] = useState('');
+  const [newPost, setNewPost] = useState("");
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex transition-colors duration-300">
       <Sidebar />
-      
+
       <main className="flex-1 ml-64 flex">
         {/* Main Feed */}
         <div className="flex-1 max-w-2xl border-r border-gray-200 dark:border-gray-800 min-h-screen">
@@ -81,7 +90,10 @@ export default function Community() {
           {/* Posts Feed */}
           <div>
             {POSTS.map((post) => (
-              <div key={post.id} className="p-4 border-b border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors cursor-pointer">
+              <div
+                key={post.id}
+                className="p-4 border-b border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors cursor-pointer"
+              >
                 <div className="flex space-x-4">
                   <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center font-bold shrink-0">
                     {post.avatar}
@@ -89,15 +101,21 @@ export default function Community() {
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
                       <div className="flex items-center space-x-2">
-                        <span className="font-bold hover:underline">{post.user}</span>
-                        <span className="text-gray-500 dark:text-gray-400 text-sm">{post.handle}</span>
-                        <span className="text-gray-500 dark:text-gray-400 text-sm">· {post.time}</span>
+                        <span className="font-bold hover:underline">
+                          {post.user}
+                        </span>
+                        <span className="text-gray-500 dark:text-gray-400 text-sm">
+                          {post.handle}
+                        </span>
+                        <span className="text-gray-500 dark:text-gray-400 text-sm">
+                          · {post.time}
+                        </span>
                       </div>
                       <button className="text-gray-400 hover:text-teal-500 transition-colors">
                         <MoreHorizontal className="w-5 h-5" />
                       </button>
                     </div>
-                    
+
                     <p className="mt-2 text-gray-800 dark:text-gray-200 leading-relaxed">
                       {post.content}
                     </p>
@@ -133,8 +151,16 @@ export default function Community() {
           <div className="bg-gray-100 dark:bg-gray-900 rounded-xl p-4">
             <h2 className="font-bold text-xl mb-4">Trending</h2>
             <div className="space-y-4">
-              {['#ChessOlympiad', 'Magnus vs Hikaru', 'Queen\'s Gambit', 'Titled Tuesday'].map((topic) => (
-                <div key={topic} className="flex justify-between items-center cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-800 p-2 rounded-lg transition-colors">
+              {[
+                "#ChessOlympiad",
+                "Magnus vs Hikaru",
+                "Queen's Gambit",
+                "Titled Tuesday",
+              ].map((topic) => (
+                <div
+                  key={topic}
+                  className="flex justify-between items-center cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-800 p-2 rounded-lg transition-colors"
+                >
                   <div>
                     <div className="font-bold text-sm">{topic}</div>
                     <div className="text-xs text-gray-500">12.5k posts</div>
@@ -143,7 +169,9 @@ export default function Community() {
                 </div>
               ))}
             </div>
-            <button className="w-full mt-4 text-teal-500 text-sm font-medium hover:underline">Show more</button>
+            <button className="w-full mt-4 text-teal-500 text-sm font-medium hover:underline">
+              Show more
+            </button>
           </div>
         </div>
       </main>

@@ -7,7 +7,6 @@ import {
   ReplayControls,
   ReplayMoveList,
   ReplayEvalBar,
-  ReplayHeader,
   CapturedPieces,
   GameSummary,
 } from "../components/replay";
@@ -78,27 +77,20 @@ function ReplayContent({ game }: { game: GameHistory }) {
   const replay = useGameReplay(game);
 
   return (
-    <div className="h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex flex-col overflow-hidden">
-      {/* Compact Header */}
-      <div className="flex-shrink-0 bg-[#ebebed] dark:bg-gray-900 border-b border-gray-200/60 dark:border-gray-800">
-        <div className="w-full px-4 py-2 flex items-center justify-between">
-          <button
-            onClick={() => navigate("/profile")}
-            className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            <ArrowLeft size={16} />
-            <span className="hidden sm:inline">Back</span>
-          </button>
-          <ReplayHeader
-            game={game}
-            opening={replay.opening}
-            onDownloadPgn={replay.downloadPgn}
-          />
-        </div>
+    <div className="h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex flex-col overflow-hidden pt-4">
+      {/* Back Button */}
+      <div className="flex-shrink-0 px-4 sm:px-6 mb-2">
+        <button
+          onClick={() => navigate("/profile")}
+          className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+        >
+          <ArrowLeft size={16} />
+          <span>Back</span>
+        </button>
       </div>
 
       {/* Main Content - 3 columns in one row */}
-      <div className="flex-1 min-h-0 w-full px-2 sm:px-3 py-2">
+      <div className="flex-1 min-h-0 w-full px-4 sm:px-6 py-2">
         <div className="flex gap-3 w-full h-full min-h-0">
           {/* Left - Game Summary */}
           <div

@@ -94,9 +94,9 @@ export default function Sidebar() {
           <Link
             to="/profile"
             className={`flex-1 flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors cursor-pointer group ${
-              isActive('/profile')
-                ? 'bg-teal-500/10'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+              isActive("/profile")
+                ? "bg-teal-500/10"
+                : "hover:bg-gray-100 dark:hover:bg-gray-800"
             }`}
           >
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg">
@@ -111,14 +111,14 @@ export default function Sidebar() {
               <div className="text-xs text-gray-500 truncate">View Profile</div>
             </div>
           </Link>
-          
+
           {/* Settings Icon Button */}
           <Link
             to="/settings"
             className={`p-3 rounded-lg transition-colors ${
-              isActive('/settings')
-                ? 'bg-teal-500/10 text-teal-600 dark:text-teal-400'
-                : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300'
+              isActive("/settings")
+                ? "bg-teal-500/10 text-teal-600 dark:text-teal-400"
+                : "text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300"
             }`}
             title="Settings"
           >

@@ -19,8 +19,7 @@ export function ReplayMoveList({
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const setRowRef =
-    (whitePly: number, blackPly?: number) =>
-    (el: HTMLDivElement | null) => {
+    (whitePly: number, blackPly?: number) => (el: HTMLDivElement | null) => {
       if (!el) {
         rowRefs.current.delete(whitePly);
         if (blackPly) rowRefs.current.delete(blackPly);
@@ -52,7 +51,9 @@ export function ReplayMoveList({
     <div className="h-full flex flex-col bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Moves</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+          Moves
+        </h3>
       </div>
 
       {/* Column Headers */}
@@ -65,12 +66,17 @@ export function ReplayMoveList({
       {/* Opening Name */}
       {opening && (
         <div className="flex-shrink-0 px-4 py-2 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20">
-          <span className="text-xs text-gray-600 dark:text-gray-400">{opening}</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">
+            {opening}
+          </span>
         </div>
       )}
 
       {/* Moves List */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto no-scrollbar">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto no-scrollbar"
+      >
         {moveRows.length === 0 ? (
           <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
             No moves recorded
@@ -98,11 +104,13 @@ export function ReplayMoveList({
                   onClick={() => onJumpTo(row.plyWhite)}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`font-mono text-sm ${
-                      currentPly === row.plyWhite
-                        ? "text-teal-700 dark:text-teal-300 font-semibold"
-                        : "text-gray-800 dark:text-gray-200"
-                    }`}>
+                    <span
+                      className={`font-mono text-sm ${
+                        currentPly === row.plyWhite
+                          ? "text-teal-700 dark:text-teal-300 font-semibold"
+                          : "text-gray-800 dark:text-gray-200"
+                      }`}
+                    >
                       {row.white || "—"}
                     </span>
                     {row.whiteQuality && (
@@ -123,11 +131,13 @@ export function ReplayMoveList({
                   onClick={() => row.plyBlack && onJumpTo(row.plyBlack)}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`font-mono text-sm ${
-                      row.plyBlack && currentPly === row.plyBlack
-                        ? "text-teal-700 dark:text-teal-300 font-semibold"
-                        : "text-gray-800 dark:text-gray-200"
-                    }`}>
+                    <span
+                      className={`font-mono text-sm ${
+                        row.plyBlack && currentPly === row.plyBlack
+                          ? "text-teal-700 dark:text-teal-300 font-semibold"
+                          : "text-gray-800 dark:text-gray-200"
+                      }`}
+                    >
                       {row.black || "—"}
                     </span>
                     {row.blackQuality && (

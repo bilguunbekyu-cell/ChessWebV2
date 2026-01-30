@@ -221,7 +221,8 @@ export function useMoveAnalysis(
 
   const accuracy = useMemo(() => {
     const calc = (mover: "w" | "b") => {
-      const subset = moveQualities.filter((q) => q.mover === mover);
+      // Exclude Book moves from accuracy calculation - they are standard theory
+      const subset = moveQualities.filter((q) => q.mover === mover && q.label !== "Book");
       if (subset.length === 0) return null;
 
       // Use a weighted accuracy formula that penalizes bad moves more heavily
