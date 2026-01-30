@@ -47,22 +47,30 @@ export function evalToExpectedPoints(
 }
 
 export function classifyByExpectedPointsLoss(epLoss: number): MoveQuality {
-  if (epLoss <= 0.0) return "Best";
-  if (epLoss < 0.02) return "Excellent";
-  if (epLoss < 0.05) return "Good";
-  if (epLoss < 0.1) return "Inaccuracy";
-  if (epLoss < 0.2) return "Mistake";
+  const loss = Math.max(0, epLoss);
+
+  // Chess.com Expected Points cutoffs (inclusive upper bounds)
+  if (loss <= 0.0) return "Best";
+  if (loss <= 0.02) return "Excellent";
+  if (loss <= 0.05) return "Good";
+  if (loss <= 0.1) return "Inaccuracy";
+  if (loss <= 0.2) return "Mistake";
   return "Blunder";
 }
 
 export function maybeMarkGreatMove(
   label: MoveQuality,
   epGain: number,
-  ): MoveQuality {
-  // Heuristic: big swing in your favor while playing one of the top choices.
-  if (epGain >= 0.2 && (label === "Best" || label === "Excellent")) {
-    return "Great";
-  }
+  epBefore: number,
+  epAfter: number,
+): MoveQuality {
+  if (label !== "Best" && label !== "Excellent") return label;
+
+  // Chess.com-style: Great = a rare, critical swing from roughly equal/worse to clearly winning.
+  const swungTheGame =
+    epBefore <= 0.55 && epAfter >= 0.75 && epGain >= 0.25;
+
+  if (swungTheGame) return "Great";
   return label;
 }
 
@@ -80,16 +88,39 @@ export function maybeMarkBook(
 export function maybeMarkMiss(
   current: MoveQuality,
   opponentPrev: MoveQuality | undefined,
-  epLoss: number,
+  epGain: number,
 ): MoveQuality {
-  // If opponent just blundered/mistaked but we didn't capitalize (we also lose EP)
+  // If opponent just blundered/mistaked but we failed to increase EP meaningfully.
   if (
     (opponentPrev === "Mistake" || opponentPrev === "Blunder") &&
-    epLoss >= 0.05 &&
-    epLoss < 0.2 &&
+    epGain < 0.1 &&
     current !== "Blunder"
   ) {
     return "Miss";
   }
   return current;
+}
+
+export function maybeMarkBrilliant(
+  label: MoveQuality,
+  epGain: number,
+  epAfter: number,
+  san?: string,
+): MoveQuality {
+  // Simple proxy for a "good sacrifice": strong result plus a forcing/capture move.
+  const isCaptureOrSac =
+    san?.includes("x") ||
+    san?.includes("!!") ||
+    san?.toLowerCase()?.includes("ep");
+
+  if (
+    (label === "Best" || label === "Excellent" || label === "Great") &&
+    epGain >= 0.25 &&
+    epAfter >= 0.55 &&
+    isCaptureOrSac
+  ) {
+    return "Brilliant";
+  }
+
+  return label;
 }

@@ -48,7 +48,7 @@ export default function Analyze() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
+      <div className="flex items-center justify-center min-h-screen bg-[#f5f5f7] dark:bg-gray-950">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
       </div>
     );
@@ -56,7 +56,7 @@ export default function Analyze() {
 
   if (error || !game) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-white">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white">
         <h2 className="text-2xl font-bold mb-4">Game Not Found</h2>
         <p className="text-gray-500 mb-6">{error || "Unable to load game"}</p>
         <button
@@ -78,9 +78,9 @@ function ReplayContent({ game }: { game: GameHistory }) {
   const replay = useGameReplay(game);
 
   return (
-    <div className="h-screen bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-white flex flex-col overflow-hidden">
+    <div className="h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex flex-col overflow-hidden">
       {/* Compact Header */}
-      <div className="flex-shrink-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+      <div className="flex-shrink-0 bg-[#ebebed] dark:bg-gray-900 border-b border-gray-200/60 dark:border-gray-800">
         <div className="w-full px-4 py-2 flex items-center justify-between">
           <button
             onClick={() => navigate("/profile")}
@@ -172,23 +172,14 @@ function ReplayContent({ game }: { game: GameHistory }) {
           >
             {/* Move list */}
             <div className="flex-1 min-h-0 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden">
-              <div className="flex-shrink-0 px-3 py-1.5 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-                <span className="font-semibold text-xs text-gray-900 dark:text-white">
-                  Moves
-                </span>
-              </div>
-              <div className="flex-1 overflow-auto">
+              <div className="flex-1 overflow-hidden">
                 <ReplayMoveList
                   moveRows={replay.moveRows}
                   currentPly={replay.ply}
                   onJumpTo={replay.jumpTo}
+                  opening={replay.opening?.name}
                 />
               </div>
-            </div>
-
-            {/* Keyboard hints */}
-            <div className="flex-shrink-0 text-[10px] text-gray-400 text-center">
-              ← → Navigate • Space Play • F Flip
             </div>
           </div>
         </div>

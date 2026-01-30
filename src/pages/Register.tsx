@@ -35,7 +35,7 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-950 flex items-center justify-center p-4 transition-colors duration-300">
+    <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 flex items-center justify-center p-4 transition-colors duration-300">
       {/* Theme Toggle - Top Right */}
       <button
         onClick={toggleTheme}

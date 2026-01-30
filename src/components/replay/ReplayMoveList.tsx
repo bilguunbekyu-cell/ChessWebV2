@@ -6,27 +6,21 @@ interface ReplayMoveListProps {
   moveRows: MoveRow[];
   currentPly: number;
   onJumpTo: (ply: number) => void;
+  opening?: string;
 }
-
-const formatMs = (ms?: number) => {
-  if (ms === undefined) return null;
-  const totalSeconds = Math.round(ms / 1000);
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-};
 
 export function ReplayMoveList({
   moveRows,
   currentPly,
   onJumpTo,
+  opening,
 }: ReplayMoveListProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const rowRefs = useRef<Map<number, HTMLTableRowElement>>(new Map());
+  const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const setRowRef =
     (whitePly: number, blackPly?: number) =>
-    (el: HTMLTableRowElement | null) => {
+    (el: HTMLDivElement | null) => {
       if (!el) {
         rowRefs.current.delete(whitePly);
         if (blackPly) rowRefs.current.delete(blackPly);
@@ -55,83 +49,104 @@ export function ReplayMoveList({
   }, [currentPly, moveRows]);
 
   return (
-    <div ref={scrollContainerRef} className="h-full overflow-y-auto no-scrollbar">
-      <table className="w-full text-sm">
-        <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800 text-gray-500 uppercase text-xs">
-          <tr>
-            <th className="px-3 py-2 w-12 text-left">#</th>
-            <th className="px-3 py-2 text-left">White</th>
-            <th className="px-3 py-2 text-left">Black</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-          {moveRows.length === 0 ? (
-            <tr>
-              <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
-                No moves recorded
-              </td>
-            </tr>
-          ) : (
-            moveRows.map((row) => (
-              <tr
+    <div className="h-full flex flex-col bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+      {/* Header */}
+      <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Moves</h3>
+      </div>
+
+      {/* Column Headers */}
+      <div className="flex-shrink-0 grid grid-cols-[40px_1fr_1fr] text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30">
+        <div className="px-3 py-2">#</div>
+        <div className="px-3 py-2">White</div>
+        <div className="px-3 py-2">Black</div>
+      </div>
+
+      {/* Opening Name */}
+      {opening && (
+        <div className="flex-shrink-0 px-4 py-2 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20">
+          <span className="text-xs text-gray-600 dark:text-gray-400">{opening}</span>
+        </div>
+      )}
+
+      {/* Moves List */}
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto no-scrollbar">
+        {moveRows.length === 0 ? (
+          <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+            No moves recorded
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
+            {moveRows.map((row) => (
+              <div
                 key={row.moveNumber}
                 ref={setRowRef(row.plyWhite, row.plyBlack)}
-                className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                className="grid grid-cols-[40px_1fr_1fr] hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
               >
-                <td className="px-3 py-2 font-mono text-gray-400">
+                {/* Move Number */}
+                <div className="px-3 py-2.5 text-sm font-mono text-gray-400 dark:text-gray-500">
                   {row.moveNumber}.
-                </td>
-                <td
-                  className={`px-3 py-2 cursor-pointer transition-all font-mono ${
+                </div>
+
+                {/* White Move */}
+                <div
+                  className={`px-3 py-2.5 cursor-pointer transition-all ${
                     currentPly === row.plyWhite
-                      ? "bg-teal-500/20 text-teal-700 dark:text-teal-300 font-bold"
-                      : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                      ? "bg-teal-500/20 dark:bg-teal-500/20"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-700/50"
                   }`}
                   onClick={() => onJumpTo(row.plyWhite)}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span>{row.white || "—"}</span>
-                    <div className="flex items-center gap-2">
-                      {row.whiteQuality && (
-                        <MoveQualityPill quality={row.whiteQuality} />
-                      )}
-                      {row.timeWhite !== undefined && (
-                        <span className="text-xs text-gray-400">
-                          {formatMs(row.timeWhite)}
-                        </span>
-                      )}
-                    </div>
+                    <span className={`font-mono text-sm ${
+                      currentPly === row.plyWhite
+                        ? "text-teal-700 dark:text-teal-300 font-semibold"
+                        : "text-gray-800 dark:text-gray-200"
+                    }`}>
+                      {row.white || "—"}
+                    </span>
+                    {row.whiteQuality && (
+                      <MoveQualityPill quality={row.whiteQuality} />
+                    )}
                   </div>
-                </td>
-                <td
-                  className={`px-3 py-2 cursor-pointer transition-all font-mono ${
+                </div>
+
+                {/* Black Move */}
+                <div
+                  className={`px-3 py-2.5 cursor-pointer transition-all ${
                     row.plyBlack && currentPly === row.plyBlack
-                      ? "bg-teal-500/20 text-teal-700 dark:text-teal-300 font-bold"
+                      ? "bg-teal-500/20 dark:bg-teal-500/20"
                       : row.black
-                        ? "hover:bg-gray-100 dark:hover:bg-gray-700"
+                        ? "hover:bg-gray-100 dark:hover:bg-gray-700/50"
                         : ""
                   }`}
                   onClick={() => row.plyBlack && onJumpTo(row.plyBlack)}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span>{row.black || "—"}</span>
-                    <div className="flex items-center gap-2">
-                      {row.blackQuality && (
-                        <MoveQualityPill quality={row.blackQuality} />
-                      )}
-                      {row.timeBlack !== undefined && (
-                        <span className="text-xs text-gray-400">
-                          {formatMs(row.timeBlack)}
-                        </span>
-                      )}
-                    </div>
+                    <span className={`font-mono text-sm ${
+                      row.plyBlack && currentPly === row.plyBlack
+                        ? "text-teal-700 dark:text-teal-300 font-semibold"
+                        : "text-gray-800 dark:text-gray-200"
+                    }`}>
+                      {row.black || "—"}
+                    </span>
+                    {row.blackQuality && (
+                      <MoveQualityPill quality={row.blackQuality} />
+                    )}
                   </div>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Footer with navigation hints */}
+      <div className="flex-shrink-0 px-4 py-2 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30">
+        <span className="text-[11px] text-gray-400 dark:text-gray-500">
+          ← → Navigate • Space Play • F Flip
+        </span>
+      </div>
     </div>
   );
 }

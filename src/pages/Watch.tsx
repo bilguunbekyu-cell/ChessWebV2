@@ -24,7 +24,7 @@ export default function Watch() {
   const [activeTab, setActiveTab] = useState('Top Rated');
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-white flex transition-colors duration-300">
+    <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex transition-colors duration-300">
       <Sidebar />
       
       <main className="flex-1 ml-64 p-8">

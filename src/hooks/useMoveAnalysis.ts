@@ -7,6 +7,7 @@ import {
   maybeMarkGreatMove,
   maybeMarkBook,
   maybeMarkMiss,
+  maybeMarkBrilliant,
 } from "../utils/moveQuality";
 import {
   AnalysisEntry,
@@ -118,11 +119,17 @@ export function useMoveAnalysis(
 
     const list: MoveQualityInfo[] = [];
     const prevLabels = new Map<number, MoveQuality>();
+    const sanByPly = new Map<number, string>();
+    moveRows.forEach((row) => {
+      if (row.white) sanByPly.set(row.plyWhite, row.white);
+      if (row.black && row.plyBlack) sanByPly.set(row.plyBlack, row.black);
+    });
 
     for (let i = 1; i <= totalPlies; i++) {
       const mover: "w" | "b" = i % 2 === 1 ? "w" : "b";
       const before = analysisByPly.get(i - 1);
       const after = analysisByPly.get(i);
+      const san = sanByPly.get(i);
 
       // Special case: last move ends the game (mate/stalemate) — always "Best"
       const isLastMove = i === totalPlies;
@@ -151,9 +158,10 @@ export function useMoveAnalysis(
       const epGain = Math.max(0, epAfter - epBefore);
 
       let label = classifyByExpectedPointsLoss(epLoss);
-      label = maybeMarkGreatMove(label, epGain);
+      label = maybeMarkGreatMove(label, epGain, epBefore, epAfter);
       label = maybeMarkBook(label, i, after.cp);
-      label = maybeMarkMiss(label, prevLabels.get(i - 1), epLoss);
+      label = maybeMarkMiss(label, prevLabels.get(i - 1), epGain);
+      label = maybeMarkBrilliant(label, epGain, epAfter, san);
 
       prevLabels.set(i, label);
 
