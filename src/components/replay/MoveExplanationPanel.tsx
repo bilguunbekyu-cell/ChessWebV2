@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { Lightbulb, TrendingUp, TrendingDown, Minus, Target } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { Lightbulb, TrendingUp, TrendingDown, Minus, Target, Sparkles, Loader2 } from "lucide-react";
 import { Chess } from "chess.js";
 import { MoveQualityInfo } from "../../utils/moveQuality";
 import {
@@ -8,6 +8,8 @@ import {
   getQualityBgColor,
 } from "../../utils/moveExplanations";
 import { AnalysisEntry } from "../../hooks/useGameReplayTypes";
+import { useSettingsStore } from "../../store/settingsStore";
+import { getAiMoveExplanation } from "../../utils/groqApi";
 
 interface MoveExplanationPanelProps {
   currentPly: number;
@@ -54,6 +56,56 @@ export function MoveExplanationPanel({
 
     return { san: bestMoveSan, wasPlayed };
   }, [currentPly, analysisByPly, positions, currentMoveSan]);
+
+  // AI explanation state
+  const { groqApiKey, enableAiExplanations } = useSettingsStore();
+  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  // Fetch AI explanation when ply changes
+  useEffect(() => {
+    if (!enableAiExplanations || !groqApiKey || currentPly === 0) {
+      setAiExplanation(null);
+      return;
+    }
+
+    const qualityInfo = moveQualities.find((q) => q.ply === currentPly);
+    const fenBefore = positions[currentPly - 1];
+    
+    if (!fenBefore) return;
+
+    // Get best move SAN
+    const beforeAnalysis = analysisByPly.get(currentPly - 1);
+    let bestMoveSan: string | undefined;
+    if (beforeAnalysis?.bestMove) {
+      bestMoveSan = uciToSan(fenBefore, beforeAnalysis.bestMove);
+    }
+
+    const moveNumber = Math.ceil(currentPly / 2);
+
+    setAiLoading(true);
+    setAiError(null);
+
+    getAiMoveExplanation(
+      groqApiKey,
+      fenBefore,
+      currentMoveSan,
+      bestMoveSan,
+      qualityInfo,
+      moveNumber
+    )
+      .then((explanation) => {
+        setAiExplanation(explanation);
+      })
+      .catch((err) => {
+        setAiError(err.message || "Failed to get AI explanation");
+        setAiExplanation(null);
+      })
+      .finally(() => {
+        setAiLoading(false);
+      });
+  }, [currentPly, enableAiExplanations, groqApiKey, positions, currentMoveSan, moveQualities, analysisByPly]);
 
   const explanation = useMemo(() => {
     if (currentPly === 0) {
@@ -140,19 +192,46 @@ export function MoveExplanationPanel({
       </div>
 
       {/* Title */}
-      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+      <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
         {explanation.title}
+        {enableAiExplanations && groqApiKey && (
+          <span className="inline-flex items-center gap-1 text-xs font-normal text-purple-500">
+            <Sparkles className="w-3 h-3" />
+            AI
+          </span>
+        )}
       </h4>
 
-      {/* Description */}
-      <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
-        {explanation.description}
-      </p>
+      {/* AI Explanation or Template Description */}
+      {aiLoading ? (
+        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>Getting AI explanation...</span>
+        </div>
+      ) : aiExplanation ? (
+        <p className="text-sm text-gray-700 dark:text-gray-300 mb-2 leading-relaxed">
+          {aiExplanation}
+        </p>
+      ) : (
+        <>
+          {/* Description */}
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+            {explanation.description}
+          </p>
 
-      {/* Details */}
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-        {explanation.details}
-      </p>
+          {/* Details */}
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+            {explanation.details}
+          </p>
+        </>
+      )}
+
+      {/* AI Error */}
+      {aiError && (
+        <p className="text-xs text-red-500 dark:text-red-400 mb-2">
+          {aiError}
+        </p>
+      )}
 
       {/* Best Move */}
       {bestMoveInfo && (

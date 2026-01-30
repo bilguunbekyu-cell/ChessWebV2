@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { User, Mail, Bell, Shield, Moon, Globe, Save } from "lucide-react";
+import { User, Mail, Bell, Shield, Moon, Globe, Save, Sparkles, Eye, EyeOff, ExternalLink } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import { useThemeStore } from "../store/themeStore";
+import { useSettingsStore } from "../store/settingsStore";
 
 export default function Settings() {
   const { isDarkMode, toggleTheme } = useThemeStore();
+  const { groqApiKey, setGroqApiKey, enableAiExplanations, setEnableAiExplanations } = useSettingsStore();
   const [notifications, setNotifications] = useState(true);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [tempApiKey, setTempApiKey] = useState(groqApiKey);
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex transition-colors duration-300">
@@ -108,6 +112,74 @@ export default function Settings() {
                     className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${notifications ? "translate-x-6" : "translate-x-0"}`}
                   />
                 </button>
+              </div>
+            </div>
+          </section>
+
+          {/* AI Analysis Section */}
+          <section className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+            <h2 className="text-xl font-bold mb-6 flex items-center">
+              <Sparkles className="w-5 h-5 mr-2 text-purple-500" />
+              AI Move Explanations
+            </h2>
+
+            <div className="space-y-4">
+              {/* Enable AI Toggle */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <Sparkles className="w-5 h-5 text-purple-500" />
+                  <div>
+                    <div className="font-medium">Enable AI Explanations</div>
+                    <div className="text-sm text-gray-500">
+                      Get detailed move explanations powered by Llama 3
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setEnableAiExplanations(!enableAiExplanations)}
+                  className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 ease-in-out ${enableAiExplanations ? "bg-purple-500" : "bg-gray-300"}`}
+                >
+                  <div
+                    className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${enableAiExplanations ? "translate-x-6" : "translate-x-0"}`}
+                  />
+                </button>
+              </div>
+
+              {/* API Key Input */}
+              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Groq API Key
+                  </label>
+                  <a
+                    href="https://console.groq.com/keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-purple-500 hover:text-purple-400 flex items-center gap-1"
+                  >
+                    Get free API key <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showApiKey ? "text" : "password"}
+                    value={tempApiKey}
+                    onChange={(e) => setTempApiKey(e.target.value)}
+                    onBlur={() => setGroqApiKey(tempApiKey)}
+                    placeholder="gsk_..."
+                    className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 pr-10 focus:outline-none focus:border-purple-500 transition-colors font-mono text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  >
+                    {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  Free tier includes ~14,400 requests/day. Your key is stored locally.
+                </p>
               </div>
             </div>
           </section>
