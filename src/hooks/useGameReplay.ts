@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { GameHistory } from "../historyTypes";
 import {
   MoveQuality,
@@ -14,6 +15,10 @@ import { usePlaybackControls } from "./usePlaybackControls";
 import { useKeyboardControls } from "./useKeyboardControls";
 import { useEvaluation } from "./useEvaluation";
 import { useDownloadPgn } from "./useDownloadPgn";
+import {
+  detectOpeningFromSan,
+  findOpeningByEco,
+} from "../utils/openingExplorer";
 
 export type {
   MoveQuality,
@@ -27,6 +32,24 @@ export type {
 export function useGameReplay(game: GameHistory) {
   // Parse moves and build positions
   const { positions, plies, moveRows, totalPlies } = usePositionParser(game);
+
+  const sanMoves = useMemo(() => {
+    if (game.moves && game.moves.length > 0) return game.moves;
+    const fromRows: string[] = [];
+    moveRows.forEach((row) => {
+      if (row.white) fromRows.push(row.white);
+      if (row.black) fromRows.push(row.black);
+    });
+    return fromRows;
+  }, [game.moves, moveRows]);
+
+  const opening = useMemo(() => {
+    if (game.eco) {
+      const byEco = findOpeningByEco(game.eco);
+      if (byEco) return byEco;
+    }
+    return detectOpeningFromSan(sanMoves);
+  }, [game.eco, sanMoves]);
 
   // Track captured pieces
   const captureTimeline = useCaptureTimeline(plies);
@@ -106,6 +129,7 @@ export function useGameReplay(game: GameHistory) {
     qualityCounts,
     accuracy,
     analysisSeries,
+    opening,
 
     // Evaluation
     evalPercent,

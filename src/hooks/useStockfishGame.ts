@@ -15,6 +15,7 @@ import { useGameStateChecker } from "./useGameStateChecker";
 import { useGameHistorySaver } from "./useGameHistorySaver";
 import { useSquareClickHandler } from "./useSquareClickHandler";
 import { useGameActions } from "./useGameActions";
+import { useOpeningExplorer } from "./useOpeningExplorer";
 
 export type { GameHistoryPayload };
 
@@ -47,6 +48,11 @@ export function useStockfishGame() {
 
   // Initialize Stockfish engine
   const engineRef = useStockfishEngine(gameSettings.difficulty);
+
+  // Opening recognition (local book + optional Lichess explorer)
+  const { opening, isLoading: openingLoading } = useOpeningExplorer(moves, {
+    enableRemote: true,
+  });
 
   // Get move options for a square
   const getMoveOptions = useMoveOptions(gameRef, setOptionSquares);
@@ -194,6 +200,8 @@ export function useStockfishGame() {
     opponentTime,
     setPlayerTime,
     setOpponentTime,
+    opening,
+    openingLoading,
 
     // Handlers
     onSquareClick,

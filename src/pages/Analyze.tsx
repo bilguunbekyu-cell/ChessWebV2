@@ -89,16 +89,20 @@ function ReplayContent({ game }: { game: GameHistory }) {
             <ArrowLeft size={16} />
             <span className="hidden sm:inline">Back</span>
           </button>
-          <ReplayHeader game={game} onDownloadPgn={replay.downloadPgn} />
+          <ReplayHeader
+            game={game}
+            opening={replay.opening}
+            onDownloadPgn={replay.downloadPgn}
+          />
         </div>
       </div>
 
       {/* Main Content - 3 columns in one row */}
-      <div className="flex-1 min-h-0 w-full px-2 sm:px-3 py-2 overflow-hidden">
-        <div className="h-full flex gap-3 w-full">
+      <div className="flex-1 min-h-0 w-full px-2 sm:px-3 py-2">
+        <div className="flex gap-3 w-full h-full min-h-0">
           {/* Left - Game Summary */}
           <div
-            className="flex-shrink-0 flex flex-col gap-2 h-full"
+            className="flex-shrink-0 flex flex-col gap-2 h-full overflow-auto pr-1"
             style={{ flexBasis: "30%", maxWidth: "30%" }}
           >
             <GameSummary
@@ -107,12 +111,13 @@ function ReplayContent({ game }: { game: GameHistory }) {
               qualityCounts={replay.qualityCounts}
               moveQualities={replay.moveQualities}
               cpSeries={replay.analysisSeries}
+              opening={replay.opening}
             />
           </div>
 
           {/* Center - Board section (sized by height) */}
           <div
-            className="h-full flex flex-col gap-1.5"
+            className="flex flex-col gap-1.5 h-full min-h-0"
             style={{ flexBasis: "40%", maxWidth: "40%" }}
           >
             {/* Captured pieces */}
@@ -124,8 +129,8 @@ function ReplayContent({ game }: { game: GameHistory }) {
             </div>
 
             {/* Board - fill remaining height */}
-            <div className="flex-1 min-h-0 flex items-center gap-2">
-              <div className="flex-1 flex items-center justify-center">
+            <div className="flex-1 min-h-0 flex items-center gap-2 overflow-hidden">
+              <div className="flex-1 flex items-center justify-center min-h-0">
                 <ReplayBoard
                   position={replay.currentFen}
                   orientation={replay.orientation}
@@ -162,7 +167,7 @@ function ReplayContent({ game }: { game: GameHistory }) {
 
           {/* Right - Eval + Move List */}
           <div
-            className="flex-shrink-0 flex flex-col gap-2 h-full"
+            className="flex-shrink-0 flex flex-col gap-2 h-full min-h-0"
             style={{ flexBasis: "30%", maxWidth: "30%" }}
           >
             {/* Move list */}
@@ -172,7 +177,7 @@ function ReplayContent({ game }: { game: GameHistory }) {
                   Moves
                 </span>
               </div>
-              <div className="flex-1">
+              <div className="flex-1 overflow-auto">
                 <ReplayMoveList
                   moveRows={replay.moveRows}
                   currentPly={replay.ply}

@@ -1,10 +1,13 @@
 import { useMemo } from "react";
-import { Flag, RotateCcw } from "lucide-react";
+import { Flag, RotateCcw, Compass } from "lucide-react";
+import { OpeningMatch } from "../../utils/openingExplorer";
 
 interface GameSidebarProps {
   moves: string[];
   gameStarted: boolean;
   gameOver: boolean;
+  opening: OpeningMatch | null;
+  openingLoading?: boolean;
   onResign: () => void;
   onNewGame: () => void;
 }
@@ -13,6 +16,8 @@ export function GameSidebar({
   moves,
   gameStarted,
   gameOver,
+  opening,
+  openingLoading,
   onResign,
   onNewGame,
 }: GameSidebarProps) {
@@ -38,6 +43,43 @@ export function GameSidebar({
         <button className="flex-1 py-3 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/30 transition-colors">
           Info
         </button>
+      </div>
+
+      {/* Opening recognition */}
+      <div className="px-4 py-3 bg-white/70 dark:bg-gray-900/70 border-b border-gray-200 dark:border-gray-800 flex items-start gap-3">
+        <div className="p-2 rounded-lg bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-300">
+          <Compass className="w-5 h-5" />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <div className="text-xs uppercase tracking-wide text-gray-500">
+              Opening
+            </div>
+            {openingLoading && (
+              <div className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
+            )}
+          </div>
+          <div className="text-sm font-semibold text-gray-900 dark:text-white">
+            {opening
+              ? opening.variation
+                ? `${opening.name}: ${opening.variation}`
+                : opening.name
+              : gameStarted
+                ? "Detecting..."
+                : "Make a move to detect"}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {opening?.eco ? `ECO ${opening.eco}` : "—"}
+            {opening?.nextMoves?.length
+              ? ` • Book hint: ${opening.nextMoves.join(" • ")}`
+              : ""}
+          </div>
+          {opening?.line && (
+            <div className="text-xs text-gray-400 mt-1 overflow-hidden text-ellipsis whitespace-nowrap">
+              {opening.line}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Move List */}

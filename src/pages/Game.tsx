@@ -19,6 +19,8 @@ export default function Game() {
     gameResult,
     isPlayerTurn,
     savedGameId,
+    opening,
+    openingLoading,
 
     // UI state
     showSetupModal,
@@ -120,6 +122,8 @@ export default function Game() {
         moves={moves}
         gameStarted={gameStarted}
         gameOver={gameOver}
+        opening={opening}
+        openingLoading={openingLoading}
         onResign={handleResign}
         onNewGame={handleNewGame}
       />

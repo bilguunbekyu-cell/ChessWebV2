@@ -1,12 +1,18 @@
-import { Download } from "lucide-react";
+import { Download, Compass } from "lucide-react";
 import { GameHistory } from "../../historyTypes";
+import { OpeningMatch } from "../../utils/openingExplorer";
 
 interface ReplayHeaderProps {
   game: GameHistory;
   onDownloadPgn: () => void;
+  opening?: OpeningMatch | null;
 }
 
-export function ReplayHeader({ game, onDownloadPgn }: ReplayHeaderProps) {
+export function ReplayHeader({
+  game,
+  onDownloadPgn,
+  opening,
+}: ReplayHeaderProps) {
   const resultColor =
     game.result === "1-0"
       ? "text-green-500"
@@ -24,6 +30,19 @@ export function ReplayHeader({ game, onDownloadPgn }: ReplayHeaderProps) {
           {game.date} • {game.timeControl} •{" "}
           <span className={`font-semibold ${resultColor}`}>{game.result}</span>
         </div>
+        {opening && (
+          <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-200 border border-teal-100 dark:border-teal-800">
+              <Compass className="w-3 h-3" />
+              {opening.eco}
+            </span>
+            <span className="text-gray-600 dark:text-gray-300">
+              {opening.variation
+                ? `${opening.name}: ${opening.variation}`
+                : opening.name}
+            </span>
+          </div>
+        )}
       </div>
 
       <button

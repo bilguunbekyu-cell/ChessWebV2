@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Chess } from "chess.js";
 import { GameSettings } from "../components/game";
 import { GameHistoryPayload } from "./useStockfishGameTypes";
+import { detectOpeningFromSan } from "../utils/openingExplorer";
 
 export function useGameHistorySaver(
   gameOver: boolean,
@@ -22,6 +23,23 @@ export function useGameHistorySaver(
     const durationMs = startTimeRef.current
       ? Date.now() - startTimeRef.current
       : undefined;
+
+    const opening = detectOpeningFromSan(currentGame.history());
+    const ecoCode = opening?.eco || "";
+    const openingName = opening
+      ? opening.variation
+        ? `${opening.name}: ${opening.variation}`
+        : opening.name
+      : "";
+    const openingSlug = openingName
+      ? openingName.replace(/[^a-z0-9]+/gi, "_").replace(/^_+|_+$/g, "")
+      : ecoCode
+        ? `eco_${ecoCode}`
+        : "";
+    const ecoUrl =
+      openingSlug.length > 0
+        ? `https://lichess.org/opening/${openingSlug}`
+        : "";
 
     const terminationReason = currentGame.in_checkmate()
       ? "checkmate"
@@ -104,8 +122,8 @@ export function useGameHistorySaver(
       `[Result "${pgnResult}"]`,
       `[CurrentPosition "${game.fen()}"]`,
       `[Timezone "UTC"]`,
-      `[ECO ""]`,
-      `[ECOUrl ""]`,
+      `[ECO "${ecoCode}"]`,
+      `[ECOUrl "${ecoUrl}"]`,
       `[TimeControl "${timeControlStr}"]`,
       `[UTCDate "${formatDate(startDate)}"]`,
       `[UTCTime "${formatTime(startDate)}"]`,
@@ -145,8 +163,8 @@ export function useGameHistorySaver(
       whiteElo: 1200,
       blackElo: 1200,
       timezone: "UTC",
-      eco: "",
-      ecoUrl: "",
+      eco: ecoCode,
+      ecoUrl,
       link: "",
       whiteUrl: "",
       whiteCountry: "",
