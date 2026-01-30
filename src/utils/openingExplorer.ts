@@ -51,6 +51,8 @@ export function verboseToUci(moves: Move[]): string[] {
   return moves.map((m) => `${m.from}${m.to}${m.promotion || ""}`);
 }
 
+const MIN_MATCH = 3; // require at least 3 plies to avoid noisy prefixes
+
 function bestBookMatch(uciMoves: string[]): OpeningMatch | null {
   if (!uciMoves.length) return null;
 
@@ -58,7 +60,7 @@ function bestBookMatch(uciMoves: string[]): OpeningMatch | null {
 
   for (const line of BOOK_LINES) {
     const matchDepth = longestPrefix(uciMoves, line.uci);
-    if (matchDepth === 0) continue;
+    if (matchDepth < MIN_MATCH) continue;
 
     const candidate: OpeningMatch = {
       eco: line.eco,

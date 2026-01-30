@@ -15,10 +15,8 @@ import { usePlaybackControls } from "./usePlaybackControls";
 import { useKeyboardControls } from "./useKeyboardControls";
 import { useEvaluation } from "./useEvaluation";
 import { useDownloadPgn } from "./useDownloadPgn";
-import {
-  detectOpeningFromSan,
-  findOpeningByEco,
-} from "../utils/openingExplorer";
+import { useOpeningExplorer } from "./useOpeningExplorer";
+import { findOpeningByEco } from "../utils/openingExplorer";
 
 export type {
   MoveQuality,
@@ -43,13 +41,17 @@ export function useGameReplay(game: GameHistory) {
     return fromRows;
   }, [game.moves, moveRows]);
 
-  const opening = useMemo(() => {
+  const { opening } = useOpeningExplorer(sanMoves, { enableRemote: true });
+
+  // Fallback to stored ECO only if explorer fails
+  const openingResolved = useMemo(() => {
+    if (opening) return opening;
     if (game.eco) {
       const byEco = findOpeningByEco(game.eco);
       if (byEco) return byEco;
     }
-    return detectOpeningFromSan(sanMoves);
-  }, [game.eco, sanMoves]);
+    return null;
+  }, [opening, game.eco]);
 
   // Track captured pieces
   const captureTimeline = useCaptureTimeline(plies);
@@ -129,7 +131,7 @@ export function useGameReplay(game: GameHistory) {
     qualityCounts,
     accuracy,
     analysisSeries,
-    opening,
+    opening: openingResolved,
 
     // Evaluation
     evalPercent,

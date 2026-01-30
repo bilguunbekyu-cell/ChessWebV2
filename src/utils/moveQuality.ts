@@ -28,6 +28,10 @@ export function evalToExpectedPoints(
   mover: "w" | "b" = "w",
 ): number {
   if (mate !== undefined) {
+    // Stockfish reports mate 0 in the position *after* the winning move.
+    if (mate === 0) {
+      return 0.99;
+    }
     // Any forced mate counts as decisive; sign indicates winner.
     const whiteWins = mate > 0;
     return mover === "w" ? (whiteWins ? 0.99 : 0.01) : whiteWins ? 0.01 : 0.99;

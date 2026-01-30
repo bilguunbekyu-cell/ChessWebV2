@@ -1,10 +1,23 @@
 export type PlayStyle = "aggressive" | "defensive" | "balanced" | "random";
 
+export interface BotConfig {
+  skillLevel: number;
+  playStyle: PlayStyle;
+  depth: number;
+  thinkTimeMs: number;
+  blunderChance: number;
+  aggressiveness: number;
+}
+
 export class StockfishEngine {
   private stockfish: Worker | null;
   private skillLevel: number = 10;
   private playStyle: PlayStyle = "balanced";
   private multiPvMoves: string[] = [];
+  private blunderChance: number = 0;
+  private customDepth: number | null = null;
+  private customThinkTime: number | null = null;
+  private allLegalMoves: string[] = [];
 
   constructor() {
     this.stockfish =
@@ -14,6 +27,21 @@ export class StockfishEngine {
     if (this.stockfish) {
       this.sendMessage("uci");
       this.sendMessage("isready");
+    }
+  }
+
+  // Configure engine with a complete bot personality
+  configureBotPersonality(config: BotConfig) {
+    this.setSkillLevel(config.skillLevel);
+    this.setPlayStyle(config.playStyle);
+    this.blunderChance = config.blunderChance;
+    this.customDepth = config.depth;
+    this.customThinkTime = config.thinkTimeMs;
+
+    if (this.stockfish) {
+      this.sendMessage(
+        `setoption name Contempt value ${config.aggressiveness}`,
+      );
     }
   }
 
@@ -65,7 +93,20 @@ export class StockfishEngine {
           this.multiPvMoves[pvIndex] = pvMatch[2];
         }
         if (bestMove) {
-          callback({ bestMove });
+          // Check if we should blunder (make a random legal move instead)
+          if (
+            this.blunderChance > 0 &&
+            Math.random() < this.blunderChance &&
+            this.allLegalMoves.length > 0
+          ) {
+            const randomMove =
+              this.allLegalMoves[
+                Math.floor(Math.random() * this.allLegalMoves.length)
+              ];
+            callback({ bestMove: randomMove });
+          } else {
+            callback({ bestMove });
+          }
         }
       };
 
@@ -76,6 +117,11 @@ export class StockfishEngine {
     }
   }
 
+  // Store legal moves for potential blundering
+  setLegalMoves(moves: string[]) {
+    this.allLegalMoves = moves;
+  }
+
   evaluatePosition(
     fen: string,
     depth: number,
@@ -84,6 +130,10 @@ export class StockfishEngine {
   ) {
     if (this.stockfish) {
       this.multiPvMoves = [];
+
+      // Use custom depth/time if set by bot personality
+      const actualDepth = this.customDepth ?? depth;
+      const actualTime = this.customThinkTime ?? minTimeMs;
 
       // Use MultiPV for opening variety (first 10 moves)
       const useMultiPv = moveNumber <= 10;
@@ -96,7 +146,7 @@ export class StockfishEngine {
       this.stockfish.postMessage(`position fen ${fen}`);
       // ensure engine thinks at least minTimeMs
       this.stockfish.postMessage(
-        `go movetime ${Math.max(minTimeMs, 3000)} depth ${depth}`,
+        `go movetime ${Math.max(actualTime, 500)} depth ${actualDepth}`,
       );
     }
   }

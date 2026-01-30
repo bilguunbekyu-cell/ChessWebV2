@@ -107,10 +107,15 @@ export function useGameHistorySaver(
           : `${tc.initial}`;
 
     const playerName = "Player";
-    const whiteName =
-      gameSettings.playAs === "white" ? playerName : "Stockfish";
-    const blackName =
-      gameSettings.playAs === "black" ? playerName : "Stockfish";
+    const botName = gameSettings.selectedBot
+      ? `${gameSettings.selectedBot.name} (${gameSettings.selectedBot.rating})`
+      : "Stockfish";
+    const botElo = gameSettings.selectedBot?.rating || 1500;
+
+    const whiteName = gameSettings.playAs === "white" ? playerName : botName;
+    const blackName = gameSettings.playAs === "black" ? playerName : botName;
+    const whiteElo = gameSettings.playAs === "white" ? 1200 : botElo;
+    const blackElo = gameSettings.playAs === "black" ? 1200 : botElo;
 
     const pgnHeaders = [
       `[Event "Live Chess"]`,
@@ -127,8 +132,8 @@ export function useGameHistorySaver(
       `[TimeControl "${timeControlStr}"]`,
       `[UTCDate "${formatDate(startDate)}"]`,
       `[UTCTime "${formatTime(startDate)}"]`,
-      `[WhiteElo "1200"]`,
-      `[BlackElo "1200"]`,
+      `[WhiteElo "${whiteElo}"]`,
+      `[BlackElo "${blackElo}"]`,
       `[Termination "${terminationText}"]`,
       `[StartTime "${formatTime(startDate)}"]`,
       `[EndDate "${formatDate(now)}"]`,
@@ -160,8 +165,8 @@ export function useGameHistorySaver(
       startTime: formatTime(startDate),
       endDate: formatDate(now),
       endTime: formatTime(now),
-      whiteElo: 1200,
-      blackElo: 1200,
+      whiteElo: whiteElo,
+      blackElo: blackElo,
       timezone: "UTC",
       eco: ecoCode,
       ecoUrl,
@@ -177,8 +182,9 @@ export function useGameHistorySaver(
       moveText,
       pgn: fullPgn,
       playAs: gameSettings.playAs,
-      opponent: "Stockfish",
-      opponentLevel: gameSettings.difficulty,
+      opponent: botName,
+      opponentLevel:
+        gameSettings.selectedBot?.skillLevel || gameSettings.difficulty,
       durationMs,
     }).then((id) => {
       if (id) setSavedGameId(id);

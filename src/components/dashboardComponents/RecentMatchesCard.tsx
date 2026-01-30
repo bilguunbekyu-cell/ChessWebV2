@@ -1,8 +1,89 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Clock } from "lucide-react";
-import { recentMatches } from "../../data/mockData";
+import { Clock, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import type { GameHistory } from "../../historyTypes";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
+interface RecentMatch {
+  id: string;
+  opponent: string;
+  result: "win" | "loss" | "draw";
+  timeControl: string;
+  date: string;
+  ratingChange: number;
+}
+
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+  return date.toLocaleDateString();
+}
+
+function transformGameHistory(game: GameHistory): RecentMatch {
+  const isWhite = game.playAs === "white";
+  const result =
+    game.result === "1-0"
+      ? isWhite
+        ? "win"
+        : "loss"
+      : game.result === "0-1"
+        ? isWhite
+          ? "loss"
+          : "win"
+        : "draw";
+
+  // Calculate rating change based on result (simplified estimation)
+  const ratingChange =
+    result === "win" ? 12 : result === "loss" ? -8 : 0;
+
+  return {
+    id: game._id,
+    opponent: game.opponent || "Stockfish",
+    result,
+    timeControl: game.timeControl || "10+0",
+    date: formatTimeAgo(game.createdAt),
+    ratingChange,
+  };
+}
 
 export function RecentMatchesCard() {
+  const [matches, setMatches] = useState<RecentMatch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    async function fetchRecentGames() {
+      try {
+        const res = await fetch(`${API_URL}/api/history?limit=5`, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          setMatches([]);
+          return;
+        }
+        const data = await res.json();
+        const transformed = (data.games || []).map(transformGameHistory);
+        setMatches(transformed);
+      } catch {
+        setMatches([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchRecentGames();
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 10 }}
@@ -16,49 +97,62 @@ export function RecentMatchesCard() {
         </h3>
         <Clock className="w-5 h-5 text-gray-400" />
       </div>
-      <div className="space-y-3">
-        {recentMatches.map((match, index) => (
-          <motion.div
-            key={match.id}
-            initial={{ opacity: 0, x: 15 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.35, delay: index * 0.1 }}
-            className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
-          >
-            <div className="flex items-center space-x-3">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  match.result === "win"
-                    ? "bg-green-500"
-                    : match.result === "loss"
-                      ? "bg-red-500"
-                      : "bg-gray-500"
-                }`}
-              ></div>
-              <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                  {match.opponent}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {match.date} • {match.timeControl}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 text-teal-500 animate-spin" />
+        </div>
+      ) : matches.length === 0 ? (
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <p className="text-sm">No games played yet</p>
+          <p className="text-xs mt-1">Start a game to see your history here</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {matches.map((match, index) => (
+            <motion.div
+              key={match.id}
+              initial={{ opacity: 0, x: 15 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.35, delay: index * 0.1 }}
+              onClick={() => navigate(`/replay/${match.id}`)}
+              className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center space-x-3">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    match.result === "win"
+                      ? "bg-green-500"
+                      : match.result === "loss"
+                        ? "bg-red-500"
+                        : "bg-gray-500"
+                  }`}
+                ></div>
+                <div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    {match.opponent}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {match.date} • {match.timeControl}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div
-              className={`text-sm font-bold ${
-                match.ratingChange > 0
-                  ? "text-green-500 dark:text-green-400"
-                  : match.ratingChange < 0
-                    ? "text-red-500 dark:text-red-400"
-                    : "text-gray-500 dark:text-gray-400"
-              }`}
-            >
-              {match.ratingChange > 0 ? "+" : ""}
-              {match.ratingChange}
-            </div>
-          </motion.div>
-        ))}
-      </div>
+              <div
+                className={`text-sm font-bold ${
+                  match.ratingChange > 0
+                    ? "text-green-500 dark:text-green-400"
+                    : match.ratingChange < 0
+                      ? "text-red-500 dark:text-red-400"
+                      : "text-gray-500 dark:text-gray-400"
+                }`}
+              >
+                {match.ratingChange > 0 ? "+" : ""}
+                {match.ratingChange}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }

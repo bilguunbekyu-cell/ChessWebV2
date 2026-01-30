@@ -124,6 +124,25 @@ export function useMoveAnalysis(
       const before = analysisByPly.get(i - 1);
       const after = analysisByPly.get(i);
 
+      // Special case: last move ends the game (mate/stalemate) — always "Best"
+      const isLastMove = i === totalPlies;
+      const gameEndedAfterMove = !after || after?.mate === 0;
+      if (isLastMove && gameEndedAfterMove) {
+        const epBefore = before
+          ? evalToExpectedPoints(before.cp, before.mate, mover)
+          : 0.5;
+        list.push({
+          ply: i,
+          mover,
+          label: "Best",
+          epBefore,
+          epAfter: 1.0,
+          epLoss: 0,
+          epGain: Math.max(0, 1 - epBefore),
+        });
+        continue;
+      }
+
       if (!after) continue; // need post-move eval to classify
 
       const epBefore = evalToExpectedPoints(before?.cp, before?.mate, mover);
@@ -196,10 +215,39 @@ export function useMoveAnalysis(
     const calc = (mover: "w" | "b") => {
       const subset = moveQualities.filter((q) => q.mover === mover);
       if (subset.length === 0) return null;
-      const avgLoss =
-        subset.reduce((sum, q) => sum + q.epLoss, 0) / subset.length;
-      const score = Math.max(0, Math.min(100, (1 - avgLoss) * 100));
-      return Number(score.toFixed(1));
+
+      // Use a weighted accuracy formula that penalizes bad moves more heavily
+      // This gives a more realistic picture of how well someone played
+      let totalWeight = 0;
+      let weightedScore = 0;
+
+      subset.forEach((q) => {
+        // Weight each move - early game moves matter less, critical positions matter more
+        const positionWeight = 1 + Math.max(0, q.epBefore - 0.5) * 2; // Higher weight when you have advantage
+
+        // Calculate move score (0-1) based on expected points loss
+        // More aggressive penalties for bad moves
+        let moveScore: number;
+        if (q.epLoss <= 0) {
+          moveScore = 1.0; // Perfect move
+        } else if (q.epLoss < 0.02) {
+          moveScore = 0.95; // Excellent
+        } else if (q.epLoss < 0.05) {
+          moveScore = 0.85; // Good
+        } else if (q.epLoss < 0.1) {
+          moveScore = 0.65; // Inaccuracy
+        } else if (q.epLoss < 0.2) {
+          moveScore = 0.4; // Mistake
+        } else {
+          moveScore = 0.1; // Blunder
+        }
+
+        totalWeight += positionWeight;
+        weightedScore += moveScore * positionWeight;
+      });
+
+      const score = totalWeight > 0 ? (weightedScore / totalWeight) * 100 : 0;
+      return Number(Math.max(0, Math.min(100, score)).toFixed(1));
     };
     return { white: calc("w"), black: calc("b") };
   }, [moveQualities]);

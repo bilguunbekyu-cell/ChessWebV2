@@ -1,7 +1,11 @@
 import { useRef, useEffect } from "react";
 import { StockfishEngine } from "../chess";
+import { BotPersonality } from "../data/botPersonalities";
 
-export function useStockfishEngine(difficulty: number) {
+export function useStockfishEngine(
+  difficulty: number,
+  selectedBot?: BotPersonality,
+) {
   const engineRef = useRef<StockfishEngine | null>(null);
 
   // Initialize Stockfish engine
@@ -12,12 +16,27 @@ export function useStockfishEngine(difficulty: number) {
     };
   }, []);
 
-  // Set engine difficulty when settings change
+  // Configure engine based on bot personality or difficulty
   useEffect(() => {
     if (engineRef.current) {
-      engineRef.current.setSkillLevel(difficulty * 2);
+      if (selectedBot) {
+        // Use bot personality configuration
+        engineRef.current.configureBotPersonality({
+          skillLevel: selectedBot.skillLevel,
+          playStyle: selectedBot.playStyle,
+          depth: selectedBot.depth,
+          thinkTimeMs: selectedBot.thinkTimeMs,
+          blunderChance: selectedBot.blunderChance,
+          aggressiveness: selectedBot.aggressiveness,
+        });
+      } else {
+        // Use simple difficulty slider (make level 1 very easy)
+        // Level 1 = Skill 0, Level 10 = Skill 20
+        const skillLevel = Math.max(0, (difficulty - 1) * 2.2);
+        engineRef.current.setSkillLevel(Math.round(skillLevel));
+      }
     }
-  }, [difficulty]);
+  }, [difficulty, selectedBot]);
 
   return engineRef;
 }

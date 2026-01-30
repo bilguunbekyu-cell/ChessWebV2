@@ -1,17 +1,119 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Shield } from "lucide-react";
+import { Shield, Loader2 } from "lucide-react";
 import { timeFormats, TimeFormat } from "../../data/mockData";
+import type { GameHistory } from "../../historyTypes";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 interface FormatRatingsCardProps {
   currentFormat: TimeFormat | null;
   setCurrentFormat: (format: TimeFormat) => void;
 }
 
+interface GameStats {
+  totalGames: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  winRate: number;
+  streak: string;
+}
+
+function calculateStats(games: GameHistory[]): GameStats {
+  const totalGames = games.length;
+  let wins = 0;
+  let losses = 0;
+  let draws = 0;
+
+  games.forEach((game) => {
+    const isWhite = game.playAs === "white";
+    if (game.result === "1-0") {
+      if (isWhite) wins++;
+      else losses++;
+    } else if (game.result === "0-1") {
+      if (isWhite) losses++;
+      else wins++;
+    } else {
+      draws++;
+    }
+  });
+
+  const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+
+  // Calculate current streak from most recent games
+  let streak = "";
+  if (games.length > 0) {
+    const sortedGames = [...games].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    
+    let streakCount = 0;
+    let streakType: "W" | "L" | "D" | null = null;
+
+    for (const game of sortedGames) {
+      const isWhite = game.playAs === "white";
+      let result: "W" | "L" | "D";
+      
+      if (game.result === "1-0") {
+        result = isWhite ? "W" : "L";
+      } else if (game.result === "0-1") {
+        result = isWhite ? "L" : "W";
+      } else {
+        result = "D";
+      }
+
+      if (streakType === null) {
+        streakType = result;
+        streakCount = 1;
+      } else if (result === streakType) {
+        streakCount++;
+      } else {
+        break;
+      }
+    }
+
+    streak = streakType ? `${streakType}${streakCount}` : "-";
+  }
+
+  return { totalGames, wins, losses, draws, winRate, streak };
+}
+
 export function FormatRatingsCard({
   currentFormat,
   setCurrentFormat,
 }: FormatRatingsCardProps) {
-  const winRate = 64; // Mock win rate
+  const [stats, setStats] = useState<GameStats>({
+    totalGames: 0,
+    wins: 0,
+    losses: 0,
+    draws: 0,
+    winRate: 0,
+    streak: "-",
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchGameStats() {
+      try {
+        const res = await fetch(`${API_URL}/api/history?limit=100`, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          setLoading(false);
+          return;
+        }
+        const data = await res.json();
+        const calculatedStats = calculateStats(data.games || []);
+        setStats(calculatedStats);
+      } catch {
+        // Keep default stats on error
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchGameStats();
+  }, []);
 
   return (
     <motion.div
@@ -64,32 +166,38 @@ export function FormatRatingsCard({
         ))}
       </div>
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="bg-white dark:bg-gray-800/50 rounded-lg p-2">
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              Win Rate
+        {loading ? (
+          <div className="flex items-center justify-center py-2">
+            <Loader2 className="w-5 h-5 text-teal-500 animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="bg-white dark:bg-gray-800/50 rounded-lg p-2">
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                Win Rate
+              </div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                {stats.winRate}%
+              </div>
             </div>
-            <div className="text-sm font-medium text-gray-900 dark:text-white">
-              {winRate}%
+            <div className="bg-white dark:bg-gray-800/50 rounded-lg p-2">
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                Games
+              </div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                {stats.totalGames}
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-800/50 rounded-lg p-2">
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                Streak
+              </div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                {stats.streak}
+              </div>
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800/50 rounded-lg p-2">
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              Games
-            </div>
-            <div className="text-sm font-medium text-gray-900 dark:text-white">
-              142
-            </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800/50 rounded-lg p-2">
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              Streak
-            </div>
-            <div className="text-sm font-medium text-gray-900 dark:text-white">
-              W3
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </motion.div>
   );

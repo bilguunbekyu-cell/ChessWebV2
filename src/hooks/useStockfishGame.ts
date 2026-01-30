@@ -46,8 +46,11 @@ export function useStockfishGame() {
   const playerColor = gameSettings.playAs === "white" ? "w" : "b";
   const isPlayerTurn = game.turn() === playerColor;
 
-  // Initialize Stockfish engine
-  const engineRef = useStockfishEngine(gameSettings.difficulty);
+  // Initialize Stockfish engine with bot personality if selected
+  const engineRef = useStockfishEngine(
+    gameSettings.difficulty,
+    gameSettings.selectedBot,
+  );
 
   // Opening recognition (local book + optional Lichess explorer)
   const { opening, isLoading: openingLoading } = useOpeningExplorer(moves, {

@@ -36,15 +36,18 @@ export function GameOverModal({
           {result}
         </h2>
         <div className="space-y-3">
-          {savedGameId && (
-            <button
-              onClick={handleAnalyze}
-              className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium flex items-center justify-center gap-2"
-            >
-              <BarChart2 size={18} />
-              Analyze Game
-            </button>
-          )}
+          <button
+            onClick={handleAnalyze}
+            disabled={!savedGameId}
+            className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 ${
+              savedGameId
+                ? "bg-purple-600 hover:bg-purple-500 text-white"
+                : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+            }`}
+          >
+            <BarChart2 size={18} />
+            {savedGameId ? "Analyze Game" : "Saving..."}
+          </button>
           <button
             onClick={onNewGame}
             className="w-full py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-lg font-medium"

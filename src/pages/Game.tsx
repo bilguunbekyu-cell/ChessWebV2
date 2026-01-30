@@ -70,9 +70,19 @@ export default function Game() {
         {/* Opponent Info */}
         <div className="w-full flex justify-center px-2 sm:px-0">
           <PlayerInfo
-            name="Stockfish"
-            subtitle={`Level ${gameSettings.difficulty}`}
-            avatarLetter="S"
+            name={
+              gameSettings.selectedBot
+                ? `${gameSettings.selectedBot.avatar} ${gameSettings.selectedBot.name}`
+                : "Stockfish"
+            }
+            subtitle={
+              gameSettings.selectedBot
+                ? `${gameSettings.selectedBot.title ? gameSettings.selectedBot.title + " • " : ""}${gameSettings.selectedBot.rating} ELO`
+                : `Level ${gameSettings.difficulty}`
+            }
+            avatarLetter={
+              gameSettings.selectedBot ? gameSettings.selectedBot.name[0] : "S"
+            }
             avatarStyle="opponent"
             initialTime={gameSettings.timeControl.initial}
             increment={gameSettings.timeControl.increment}
