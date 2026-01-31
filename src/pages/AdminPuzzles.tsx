@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -9,7 +9,14 @@ import {
   X,
   Check,
   Brain,
+  RotateCcw,
+  Play,
+  Square,
+  Eraser,
+  Star,
 } from "lucide-react";
+import { Chessboard } from "react-chessboard";
+import { Chess } from "chess.js";
 import AdminSidebar from "../components/AdminSidebar";
 import { useAdminStore } from "../store/adminStore";
 
@@ -26,8 +33,10 @@ interface Puzzle {
   solution: string[];
   rating: number;
   isWhiteToMove: boolean;
+  mateIn?: number;
   timesPlayed: number;
   timesSolved: number;
+  featured: boolean;
   createdAt: string;
 }
 
@@ -41,6 +50,8 @@ interface PuzzleFormData {
   solution: string;
   rating: number;
   isWhiteToMove: boolean;
+  mateIn: number;
+  puzzleType: "Mate in 1" | "Mate in 2" | "Mate in 3" | "Best Move" | "Tactics";
 }
 
 const defaultFormData: PuzzleFormData = {
@@ -49,11 +60,28 @@ const defaultFormData: PuzzleFormData = {
   themes: "",
   description: "",
   icon: "🧩",
-  fen: "",
+  fen: "8/8/8/8/8/8/8/8 w - - 0 1",
   solution: "",
   rating: 1200,
   isWhiteToMove: true,
+  mateIn: 2,
+  puzzleType: "Mate in 2",
 };
+
+const PIECE_PALETTE = [
+  { piece: "wK", label: "♔" },
+  { piece: "wQ", label: "♕" },
+  { piece: "wR", label: "♖" },
+  { piece: "wB", label: "♗" },
+  { piece: "wN", label: "♘" },
+  { piece: "wP", label: "♙" },
+  { piece: "bK", label: "♚" },
+  { piece: "bQ", label: "♛" },
+  { piece: "bR", label: "♜" },
+  { piece: "bB", label: "♝" },
+  { piece: "bN", label: "♞" },
+  { piece: "bP", label: "♟" },
+];
 
 export default function AdminPuzzles() {
   const navigate = useNavigate();
@@ -66,6 +94,13 @@ export default function AdminPuzzles() {
   const [formData, setFormData] = useState<PuzzleFormData>(defaultFormData);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [selectedPiece, setSelectedPiece] = useState<string | null>(null);
+  const [boardPosition, setBoardPosition] = useState<Record<string, string>>(
+    {},
+  );
+  const [isRecordingSolution, setIsRecordingSolution] = useState(false);
+  const [solutionMoves, setSolutionMoves] = useState<string[]>([]);
+  const [solutionGame, setSolutionGame] = useState<Chess | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -97,11 +132,183 @@ export default function AdminPuzzles() {
   const handleCreate = () => {
     setEditingPuzzle(null);
     setFormData(defaultFormData);
+    setBoardPosition({});
+    setSelectedPiece(null);
+    setIsRecordingSolution(false);
+    setSolutionMoves([]);
+    setSolutionGame(null);
     setShowModal(true);
+  };
+
+  // Convert board position object to FEN
+  const positionToFen = (
+    position: Record<string, string>,
+    isWhiteToMove: boolean,
+  ): string => {
+    const rows: string[] = [];
+    for (let rank = 8; rank >= 1; rank--) {
+      let row = "";
+      let emptyCount = 0;
+      for (const file of "abcdefgh") {
+        const square = `${file}${rank}`;
+        const piece = position[square];
+        if (piece) {
+          if (emptyCount > 0) {
+            row += emptyCount;
+            emptyCount = 0;
+          }
+          // Convert wK -> K, bK -> k, etc.
+          const fenPiece =
+            piece[0] === "w" ? piece[1].toUpperCase() : piece[1].toLowerCase();
+          row += fenPiece;
+        } else {
+          emptyCount++;
+        }
+      }
+      if (emptyCount > 0) row += emptyCount;
+      rows.push(row);
+    }
+    return `${rows.join("/")} ${isWhiteToMove ? "w" : "b"} - - 0 1`;
+  };
+
+  // Convert FEN to board position object
+  const fenToPosition = (fen: string): Record<string, string> => {
+    const position: Record<string, string> = {};
+    const parts = fen.split(" ");
+    const rows = parts[0].split("/");
+
+    rows.forEach((row, rowIndex) => {
+      const rank = 8 - rowIndex;
+      let fileIndex = 0;
+      for (const char of row) {
+        if (/\d/.test(char)) {
+          fileIndex += parseInt(char);
+        } else {
+          const file = "abcdefgh"[fileIndex];
+          const color = char === char.toUpperCase() ? "w" : "b";
+          const piece = char.toUpperCase();
+          position[`${file}${rank}`] = `${color}${piece}`;
+          fileIndex++;
+        }
+      }
+    });
+    return position;
+  };
+
+  // Handle clicking on board square to place/remove piece
+  const handleSquareClick = (square: string) => {
+    if (isRecordingSolution) return;
+
+    if (selectedPiece === "eraser") {
+      const newPosition = { ...boardPosition };
+      delete newPosition[square];
+      setBoardPosition(newPosition);
+      const newFen = positionToFen(newPosition, formData.isWhiteToMove);
+      setFormData({ ...formData, fen: newFen });
+    } else if (selectedPiece) {
+      const newPosition = { ...boardPosition, [square]: selectedPiece };
+      setBoardPosition(newPosition);
+      const newFen = positionToFen(newPosition, formData.isWhiteToMove);
+      setFormData({ ...formData, fen: newFen });
+    }
+  };
+
+  // Handle recording solution moves
+  const onDrop = useCallback(
+    (sourceSquare: string, targetSquare: string) => {
+      if (!isRecordingSolution || !solutionGame) return false;
+
+      try {
+        const move = solutionGame.move({
+          from: sourceSquare,
+          to: targetSquare,
+          promotion: "q",
+        });
+
+        if (move) {
+          const newMoves = [...solutionMoves, move.san];
+          setSolutionMoves(newMoves);
+          setFormData((prev) => ({ ...prev, solution: newMoves.join(", ") }));
+          return true;
+        }
+      } catch {
+        return false;
+      }
+      return false;
+    },
+    [isRecordingSolution, solutionGame, solutionMoves],
+  );
+
+  // Start recording solution
+  const startRecordingSolution = () => {
+    try {
+      const game = new Chess(formData.fen);
+      setSolutionGame(game);
+      setSolutionMoves([]);
+      setIsRecordingSolution(true);
+      setSelectedPiece(null);
+    } catch (e) {
+      alert("Invalid FEN position. Please set up a valid position first.");
+    }
+  };
+
+  // Stop recording solution
+  const stopRecordingSolution = () => {
+    setIsRecordingSolution(false);
+    setSolutionGame(null);
+  };
+
+  // Undo last solution move
+  const undoSolutionMove = () => {
+    if (solutionGame && solutionMoves.length > 0) {
+      solutionGame.undo();
+      const newMoves = solutionMoves.slice(0, -1);
+      setSolutionMoves(newMoves);
+      setFormData((prev) => ({ ...prev, solution: newMoves.join(", ") }));
+    }
+  };
+
+  // Clear the board
+  const clearBoard = () => {
+    setBoardPosition({});
+    setFormData({ ...formData, fen: "8/8/8/8/8/8/8/8 w - - 0 1" });
+  };
+
+  // Set starting position
+  const setStartingPosition = () => {
+    const startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    setBoardPosition(fenToPosition(startFen));
+    setFormData({ ...formData, fen: startFen });
+  };
+
+  // Update FEN when isWhiteToMove changes
+  const handleWhiteToMoveChange = (isWhite: boolean) => {
+    const newFen = positionToFen(boardPosition, isWhite);
+    setFormData({ ...formData, isWhiteToMove: isWhite, fen: newFen });
+  };
+
+  // Auto-generate title based on puzzle type
+  const generateTitle = () => {
+    const title = formData.puzzleType;
+    setFormData({ ...formData, title, themes: formData.puzzleType });
   };
 
   const handleEdit = (puzzle: Puzzle) => {
     setEditingPuzzle(puzzle);
+    const position = fenToPosition(puzzle.fen);
+    setBoardPosition(position);
+    setSelectedPiece(null);
+    setIsRecordingSolution(false);
+    setSolutionMoves([]);
+    setSolutionGame(null);
+
+    // Determine puzzle type from themes
+    let puzzleType: PuzzleFormData["puzzleType"] = "Tactics";
+    if (puzzle.themes.includes("Mate in 1")) puzzleType = "Mate in 1";
+    else if (puzzle.themes.includes("Mate in 2")) puzzleType = "Mate in 2";
+    else if (puzzle.themes.includes("Mate in 3")) puzzleType = "Mate in 3";
+    else if (puzzle.themes.includes("Best Move")) puzzleType = "Best Move";
+
     setFormData({
       title: puzzle.title,
       difficulty: puzzle.difficulty,
@@ -112,6 +319,8 @@ export default function AdminPuzzles() {
       solution: puzzle.solution.join(", "),
       rating: puzzle.rating,
       isWhiteToMove: puzzle.isWhiteToMove,
+      mateIn: puzzle.mateIn || 2,
+      puzzleType,
     });
     setShowModal(true);
   };
@@ -152,6 +361,7 @@ export default function AdminPuzzles() {
           .filter(Boolean),
         rating: formData.rating,
         isWhiteToMove: formData.isWhiteToMove,
+        mateIn: formData.mateIn,
       };
 
       const url = editingPuzzle
@@ -181,6 +391,25 @@ export default function AdminPuzzles() {
       p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.themes.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())),
   );
+
+  const toggleFeatured = async (puzzleId: string, currentFeatured: boolean) => {
+    try {
+      const res = await fetch(`${API_URL}/api/puzzles/${puzzleId}/featured`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ featured: !currentFeatured }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setPuzzles(puzzles.map((p) => (p._id === puzzleId ? updated : p)));
+      }
+    } catch (error) {
+      console.error("Failed to toggle featured:", error);
+    }
+  };
+
+  const featuredCount = puzzles.filter((p) => p.featured).length;
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -258,6 +487,12 @@ export default function AdminPuzzles() {
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500 dark:text-gray-400">
                       Stats
                     </th>
+                    <th className="text-center px-6 py-4 text-sm font-medium text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center justify-center gap-1">
+                        <Star size={14} />
+                        Dashboard ({featuredCount}/6)
+                      </div>
+                    </th>
                     <th className="text-right px-6 py-4 text-sm font-medium text-gray-500 dark:text-gray-400">
                       Actions
                     </th>
@@ -292,6 +527,33 @@ export default function AdminPuzzles() {
                       <td className="px-6 py-4 font-medium">{puzzle.rating}</td>
                       <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                         {puzzle.timesSolved}/{puzzle.timesPlayed} solved
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() =>
+                            toggleFeatured(puzzle._id, puzzle.featured)
+                          }
+                          disabled={!puzzle.featured && featuredCount >= 6}
+                          className={`p-2 rounded-lg transition-colors ${
+                            puzzle.featured
+                              ? "text-amber-500 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                              : featuredCount >= 6
+                                ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                                : "text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                          }`}
+                          title={
+                            puzzle.featured
+                              ? "Remove from dashboard"
+                              : featuredCount >= 6
+                                ? "Max 6 featured"
+                                : "Show on dashboard"
+                          }
+                        >
+                          <Star
+                            size={18}
+                            fill={puzzle.featured ? "currentColor" : "none"}
+                          />
+                        </button>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
@@ -344,8 +606,8 @@ export default function AdminPuzzles() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-5xl my-4">
             <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
               <h2 className="text-xl font-bold">
                 {editingPuzzle ? "Edit Puzzle" : "Create Puzzle"}
@@ -358,171 +620,395 @@ export default function AdminPuzzles() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.title}
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    required
-                  />
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Column - Board Editor */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">
+                      {isRecordingSolution
+                        ? "Record Solution"
+                        : "Setup Position"}
+                    </h3>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={clearBoard}
+                        disabled={isRecordingSolution}
+                        className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded disabled:opacity-50"
+                      >
+                        Clear
+                      </button>
+                      <button
+                        type="button"
+                        onClick={setStartingPosition}
+                        disabled={isRecordingSolution}
+                        className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded disabled:opacity-50"
+                      >
+                        Starting
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Piece Palette */}
+                  {!isRecordingSolution && (
+                    <div className="flex flex-wrap gap-1 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                      {PIECE_PALETTE.map(({ piece, label }) => (
+                        <button
+                          key={piece}
+                          type="button"
+                          onClick={() =>
+                            setSelectedPiece(
+                              selectedPiece === piece ? null : piece,
+                            )
+                          }
+                          className={`w-9 h-9 text-2xl flex items-center justify-center rounded transition-colors ${
+                            selectedPiece === piece
+                              ? "bg-teal-500 text-white"
+                              : "hover:bg-gray-200 dark:hover:bg-gray-700"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedPiece(
+                            selectedPiece === "eraser" ? null : "eraser",
+                          )
+                        }
+                        className={`w-9 h-9 flex items-center justify-center rounded transition-colors ${
+                          selectedPiece === "eraser"
+                            ? "bg-red-500 text-white"
+                            : "hover:bg-gray-200 dark:hover:bg-gray-700"
+                        }`}
+                      >
+                        <Eraser size={18} />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Chessboard */}
+                  <div className="aspect-square max-w-[360px] mx-auto">
+                    <Chessboard
+                      position={
+                        isRecordingSolution && solutionGame
+                          ? solutionGame.fen()
+                          : boardPosition
+                      }
+                      onSquareClick={handleSquareClick}
+                      onPieceDrop={onDrop}
+                      boardOrientation={
+                        formData.isWhiteToMove ? "white" : "black"
+                      }
+                      arePiecesDraggable={isRecordingSolution}
+                    />
+                  </div>
+
+                  {/* Solution Recording Controls */}
+                  <div className="flex items-center gap-2">
+                    {!isRecordingSolution ? (
+                      <button
+                        type="button"
+                        onClick={startRecordingSolution}
+                        className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-sm font-medium"
+                      >
+                        <Play size={16} />
+                        Record Solution
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={stopRecordingSolution}
+                          className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium"
+                        >
+                          <Square size={16} />
+                          Stop Recording
+                        </button>
+                        <button
+                          type="button"
+                          onClick={undoSolutionMove}
+                          disabled={solutionMoves.length === 0}
+                          className="flex items-center gap-2 px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                        >
+                          <RotateCcw size={16} />
+                          Undo
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Recorded Moves Display */}
+                  {solutionMoves.length > 0 && (
+                    <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                      <div className="text-sm font-medium mb-1">
+                        Recorded Moves:
+                      </div>
+                      <div className="font-mono text-sm">
+                        {solutionMoves.join(", ")}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Icon</label>
-                  <input
-                    type="text"
-                    value={formData.icon}
-                    onChange={(e) =>
-                      setFormData({ ...formData, icon: e.target.value })
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+
+                {/* Right Column - Form Fields */}
+                <div className="space-y-4">
+                  {/* Puzzle Type */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Puzzle Type
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {(
+                        [
+                          "Mate in 1",
+                          "Mate in 2",
+                          "Mate in 3",
+                          "Best Move",
+                          "Tactics",
+                        ] as const
+                      ).map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => {
+                            setFormData({
+                              ...formData,
+                              puzzleType: type,
+                              themes: type,
+                            });
+                            if (!formData.title) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                title: type,
+                                puzzleType: type,
+                                themes: type,
+                              }));
+                            }
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                            formData.puzzleType === type
+                              ? "bg-teal-600 text-white"
+                              : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+                          }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Who to Move */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Who to Move
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleWhiteToMoveChange(true)}
+                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          formData.isWhiteToMove
+                            ? "bg-gray-200 dark:bg-gray-600 border-2 border-teal-500"
+                            : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        }`}
+                      >
+                        ♔ White to Move
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleWhiteToMoveChange(false)}
+                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          !formData.isWhiteToMove
+                            ? "bg-gray-700 dark:bg-gray-300 text-white dark:text-gray-900 border-2 border-teal-500"
+                            : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        }`}
+                      >
+                        ♚ Black to Move
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Title
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.title}
+                        onChange={(e) =>
+                          setFormData({ ...formData, title: e.target.value })
+                        }
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Icon
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.icon}
+                        onChange={(e) =>
+                          setFormData({ ...formData, icon: e.target.value })
+                        }
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Difficulty
+                      </label>
+                      <select
+                        value={formData.difficulty}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            difficulty: e.target.value as
+                              | "Easy"
+                              | "Medium"
+                              | "Hard",
+                          })
+                        }
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Rating
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.rating}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            rating: parseInt(e.target.value) || 1200,
+                          })
+                        }
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Mate in (moves)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={5}
+                      value={formData.mateIn}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          mateIn: Math.max(
+                            1,
+                            Math.min(5, parseInt(e.target.value) || 1),
+                          ),
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Themes (comma-separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.themes}
+                      onChange={(e) =>
+                        setFormData({ ...formData, themes: e.target.value })
+                      }
+                      placeholder="Fork, Pin, Sacrifice"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      FEN Position
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.fen}
+                      onChange={(e) => {
+                        setFormData({ ...formData, fen: e.target.value });
+                        try {
+                          setBoardPosition(fenToPosition(e.target.value));
+                        } catch {}
+                      }}
+                      placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono text-xs"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Solution (comma-separated moves)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.solution}
+                      onChange={(e) =>
+                        setFormData({ ...formData, solution: e.target.value })
+                      }
+                      placeholder="Qh7+, Kf8, Qh8#"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono text-sm"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowModal(false)}
+                      className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving || isRecordingSolution}
+                      className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {editingPuzzle ? "Save Changes" : "Create Puzzle"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Difficulty
-                  </label>
-                  <select
-                    value={formData.difficulty}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        difficulty: e.target.value as
-                          | "Easy"
-                          | "Medium"
-                          | "Hard",
-                      })
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  >
-                    <option value="Easy">Easy</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Hard">Hard</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Rating
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.rating}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        rating: parseInt(e.target.value) || 1200,
-                      })
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Themes (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  value={formData.themes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, themes: e.target.value })
-                  }
-                  placeholder="Fork, Pin, Sacrifice"
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  rows={2}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  FEN Position
-                </label>
-                <input
-                  type="text"
-                  value={formData.fen}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fen: e.target.value })
-                  }
-                  placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono text-sm"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Solution (comma-separated moves)
-                </label>
-                <input
-                  type="text"
-                  value={formData.solution}
-                  onChange={(e) =>
-                    setFormData({ ...formData, solution: e.target.value })
-                  }
-                  placeholder="Qh7+, Kf8, Qh8#"
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono text-sm"
-                  required
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="isWhiteToMove"
-                  checked={formData.isWhiteToMove}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      isWhiteToMove: e.target.checked,
-                    })
-                  }
-                  className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                />
-                <label htmlFor="isWhiteToMove" className="text-sm font-medium">
-                  White to move
-                </label>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
-                >
-                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {editingPuzzle ? "Save Changes" : "Create Puzzle"}
-                </button>
               </div>
             </form>
           </div>

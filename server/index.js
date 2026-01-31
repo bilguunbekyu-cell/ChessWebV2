@@ -163,8 +163,10 @@ const PuzzleSchema = new mongoose.Schema(
     solution: { type: [String], required: true },
     rating: { type: Number, default: 1200 },
     isWhiteToMove: { type: Boolean, required: true },
+    mateIn: { type: Number, default: 2 },
     timesPlayed: { type: Number, default: 0 },
     timesSolved: { type: Number, default: 0 },
+    featured: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
@@ -613,6 +615,37 @@ app.get("/api/puzzles", async (req, res) => {
   }
 });
 
+// Get featured puzzles for dashboard
+app.get("/api/puzzles/featured", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 6;
+    const puzzles = await Puzzle.find({ featured: true })
+      .sort({ rating: 1 })
+      .limit(limit);
+    res.json(puzzles);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch featured puzzles" });
+  }
+});
+
+// Toggle puzzle featured status
+app.patch("/api/puzzles/:id/featured", async (req, res) => {
+  try {
+    const { featured } = req.body;
+    const puzzle = await Puzzle.findByIdAndUpdate(
+      req.params.id,
+      { featured },
+      { new: true },
+    );
+    if (!puzzle) {
+      return res.status(404).json({ error: "Puzzle not found" });
+    }
+    res.json(puzzle);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update puzzle" });
+  }
+});
+
 // Get single puzzle by ID
 app.get("/api/puzzles/:id", async (req, res) => {
   try {
@@ -694,6 +727,7 @@ app.post("/api/admin/puzzles", adminAuthMiddleware, async (req, res) => {
       solution,
       rating,
       isWhiteToMove,
+      mateIn,
     } = req.body;
     const puzzle = new Puzzle({
       title,
@@ -705,6 +739,7 @@ app.post("/api/admin/puzzles", adminAuthMiddleware, async (req, res) => {
       solution,
       rating: rating || 1200,
       isWhiteToMove,
+      mateIn: mateIn || 2,
     });
     await puzzle.save();
     res.status(201).json(puzzle);
@@ -726,6 +761,7 @@ app.put("/api/admin/puzzles/:id", adminAuthMiddleware, async (req, res) => {
       solution,
       rating,
       isWhiteToMove,
+      mateIn,
     } = req.body;
     const puzzle = await Puzzle.findByIdAndUpdate(
       req.params.id,
@@ -739,6 +775,7 @@ app.put("/api/admin/puzzles/:id", adminAuthMiddleware, async (req, res) => {
         solution,
         rating,
         isWhiteToMove,
+        mateIn,
       },
       { new: true },
     );

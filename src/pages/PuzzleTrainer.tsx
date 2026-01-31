@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Brain,
@@ -38,8 +38,12 @@ type PuzzleStatus = "solving" | "correct" | "wrong" | "showingSolution";
 
 export default function PuzzleTrainer() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { puzzleId } = useParams<{ puzzleId?: string }>();
   const { user, setUser } = useAuthStore();
+
+  // Check if puzzle was passed via navigation state (from Dashboard)
+  const initialPuzzle = (location.state as { puzzle?: PuzzleItem })?.puzzle;
 
   const [puzzles, setPuzzles] = useState<PuzzleItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +60,10 @@ export default function PuzzleTrainer() {
   const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(
     null,
   );
+  const [moveFrom, setMoveFrom] = useState<string | null>(null);
+  const [moveSquares, setMoveSquares] = useState<
+    Record<string, React.CSSProperties>
+  >({});
   const [boardSize, setBoardSize] = useState(560);
 
   const sidebarWidth = 256;
@@ -105,13 +113,15 @@ export default function PuzzleTrainer() {
   }, []);
 
   const currentPuzzle = useMemo(() => {
+    // First priority: puzzle passed via navigation state
+    if (initialPuzzle) return initialPuzzle;
     if (puzzles.length === 0) return null;
     if (puzzleId) {
       const found = puzzles.find((p) => p._id === puzzleId);
       if (found) return found;
     }
     return puzzles[0];
-  }, [puzzleId, puzzles]);
+  }, [initialPuzzle, puzzleId, puzzles]);
 
   const normalizeFen = (fen: string) => {
     const parts = fen.trim().split(/\s+/);
@@ -216,6 +226,8 @@ export default function PuzzleTrainer() {
     setLastMove(null);
     setStartTime(Date.now());
     setElapsedTime(0);
+    setMoveFrom(null);
+    setMoveSquares({});
   }, [currentPuzzle, puzzleFen, safeLoadGame]);
 
   const currentPuzzleIndex = useMemo(() => {
@@ -226,7 +238,13 @@ export default function PuzzleTrainer() {
   useEffect(() => {
     if (!currentPuzzle) return;
     const newGame = safeLoadGame(puzzleFen);
-    if (!newGame || newGame.board().flat().every((sq) => sq === null)) {
+    if (
+      !newGame ||
+      newGame
+        .board()
+        .flat()
+        .every((sq) => sq === null)
+    ) {
       setFenError("Puzzle FEN is invalid or empty");
     }
     setGame(newGame);
@@ -238,6 +256,8 @@ export default function PuzzleTrainer() {
     setElapsedTime(0);
     setCurrentMoveIndex(0);
     setLastMove(null);
+    setMoveFrom(null);
+    setMoveSquares({});
   }, [currentPuzzle?._id, puzzleFen]);
 
   // Auto-restart after a wrong move
@@ -385,6 +405,8 @@ export default function PuzzleTrainer() {
     setLastMove(null);
     setStartTime(Date.now());
     setElapsedTime(0);
+    setMoveFrom(null);
+    setMoveSquares({});
   };
 
   const useHint = () => {
@@ -397,19 +419,69 @@ export default function PuzzleTrainer() {
   };
 
   const customSquareStyles = useMemo(() => {
-    const styles: Record<string, React.CSSProperties> = {};
+    const styles: Record<string, React.CSSProperties> = { ...moveSquares };
     if (lastMove) {
       styles[lastMove.from] = { backgroundColor: "rgba(255, 255, 0, 0.4)" };
       styles[lastMove.to] = { backgroundColor: "rgba(255, 255, 0, 0.4)" };
     }
     return styles;
-  }, [lastMove]);
+  }, [lastMove, moveSquares]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
+
+  const highlightMoves = (from: string) => {
+    const moves = game
+      .moves({ square: from, verbose: true })
+      .map((m) => m.to)
+      .reduce<Record<string, React.CSSProperties>>((acc, sq) => {
+        acc[sq] = {
+          boxShadow:
+            "inset 0 0 0 3px rgba(20,184,166,0.8), inset 0 0 0 6px rgba(20,184,166,0.18)",
+          background:
+            "radial-gradient(circle, rgba(20,184,166,0.45) 38%, rgba(0,0,0,0) 60%)",
+        };
+        return acc;
+      }, {});
+    setMoveSquares({
+      [from]: { backgroundColor: "rgba(20,184,166,0.25)" },
+      ...moves,
+    });
+  };
+
+  const handleSquareClick = useCallback(
+    (square: string) => {
+      if (status !== "solving") return;
+      if (!moveFrom) {
+        const moves = game.moves({ square, verbose: true });
+        if (moves.length === 0) return;
+        setMoveFrom(square);
+        highlightMoves(square);
+        return;
+      }
+      if (moveFrom === square) {
+        setMoveFrom(null);
+        setMoveSquares({});
+        return;
+      }
+      const moved = onDrop(moveFrom, square);
+      if (!moved) {
+        // keep selection so user can try another target
+        return;
+      }
+      setMoveFrom(null);
+      setMoveSquares({});
+    },
+    [game, moveFrom, onDrop, status],
+  );
+
+  const handleSquareRightClick = useCallback(() => {
+    setMoveFrom(null);
+    setMoveSquares({});
+  }, []);
 
   if (loading) {
     return (
@@ -454,11 +526,14 @@ export default function PuzzleTrainer() {
             <Chessboard
               position={game.fen()}
               onPieceDrop={onDrop}
+              onSquareClick={handleSquareClick}
+              onSquareRightClick={handleSquareRightClick}
               boardOrientation={currentPuzzle.isWhiteToMove ? "white" : "black"}
               customSquareStyles={customSquareStyles}
               arePiecesDraggable={status === "solving"}
               customDarkSquareStyle={{ backgroundColor: "#779952" }}
               customLightSquareStyle={{ backgroundColor: "#edeed1" }}
+              animationDuration={200}
               boardWidth={boardSize}
             />
           </div>
