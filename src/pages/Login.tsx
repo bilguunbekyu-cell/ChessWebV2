@@ -1,12 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, ArrowRight, Github, Sun, Moon } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  ArrowRight,
+  Github,
+  Sun,
+  Moon,
+  ShieldAlert,
+} from "lucide-react";
 import { useAuthStore, authApi } from "../store/authStore";
 import { useThemeStore } from "../store/themeStore";
+import { useAdminStore } from "../store/adminStore";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { setUser, setError } = useAuthStore();
+  const { setUser, setError, banReason, setBanned } = useAuthStore();
+  const { login: adminLogin } = useAdminStore();
   const { isDarkMode, toggleTheme } = useThemeStore();
 
   const [email, setEmail] = useState("");
@@ -15,12 +25,28 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setLocalError] = useState("");
 
+  // Clear ban reason after showing it
+  useEffect(() => {
+    if (banReason) {
+      // Keep showing it, user will see it on login page
+    }
+  }, [banReason]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setLocalError("");
+    setBanned(""); // Clear any previous ban message
 
     try {
+      // Try admin login first
+      const isAdmin = await adminLogin(email, password);
+      if (isAdmin) {
+        navigate("/admin");
+        return;
+      }
+
+      // If not admin, try regular user login
       const data = await authApi.login(email, password, rememberMe);
       setUser(data.user);
       navigate("/");
@@ -60,7 +86,20 @@ export default function Login() {
           </p>
         </div>
 
-        {error && (
+        {/* Banned notice */}
+        {banReason && (
+          <div className="mb-4 p-4 rounded-lg bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-800">
+            <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-semibold mb-1">
+              <ShieldAlert className="w-5 h-5" />
+              Account Banned
+            </div>
+            <p className="text-red-600 dark:text-red-400 text-sm">
+              Your account has been banned. Reason: {banReason}
+            </p>
+          </div>
+        )}
+
+        {error && !banReason && (
           <div className="mb-4 p-3 rounded-lg bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
             {error}
           </div>

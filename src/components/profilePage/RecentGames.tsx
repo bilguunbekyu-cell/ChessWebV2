@@ -9,6 +9,7 @@ interface RecentGamesProps {
   expandedId: string | null;
   setExpandedId: (id: string | null) => void;
   setActiveTab: (tab: TabType) => void;
+  analyzeBaseUrl?: string;
 }
 
 export function RecentGames({
@@ -16,6 +17,7 @@ export function RecentGames({
   expandedId,
   setExpandedId,
   setActiveTab,
+  analyzeBaseUrl,
 }: RecentGamesProps) {
   return (
     <motion.div
@@ -45,6 +47,7 @@ export function RecentGames({
             onToggle={() =>
               setExpandedId(expandedId === game._id ? null : game._id)
             }
+            analyzeBaseUrl={analyzeBaseUrl}
           />
         ))}
       </div>

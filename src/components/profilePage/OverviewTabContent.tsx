@@ -13,6 +13,7 @@ interface OverviewTabContentProps {
   expandedId: string | null;
   setExpandedId: (id: string | null) => void;
   setActiveTab: (tab: TabType) => void;
+  analyzeBaseUrl?: string;
 }
 
 export function OverviewTabContent({
@@ -21,6 +22,7 @@ export function OverviewTabContent({
   expandedId,
   setExpandedId,
   setActiveTab,
+  analyzeBaseUrl,
 }: OverviewTabContentProps) {
   return (
     <motion.div
@@ -41,6 +43,7 @@ export function OverviewTabContent({
         expandedId={expandedId}
         setExpandedId={setExpandedId}
         setActiveTab={setActiveTab}
+        analyzeBaseUrl={analyzeBaseUrl}
       />
     </motion.div>
   );

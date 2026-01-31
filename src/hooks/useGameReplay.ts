@@ -65,6 +65,8 @@ export function useGameReplay(game: GameHistory) {
     moveRowsWithQuality,
     qualityCounts,
     accuracy,
+    isAnalyzing,
+    analysisProgress,
   } = useMoveAnalysis(game, positions, moveRows, totalPlies);
 
   // Playback controls
@@ -132,9 +134,14 @@ export function useGameReplay(game: GameHistory) {
     moveQualities,
     qualityCounts,
     accuracy,
+    sanMoves,
     analysisSeries,
     analysisByPly,
     opening: openingResolved,
+
+    // Analysis state
+    isAnalyzing,
+    analysisProgress,
 
     // Evaluation
     evalPercent,

@@ -46,11 +46,15 @@ export function evalToExpectedPoints(
   return 1 / (1 + Math.exp(-0.004 * clamped));
 }
 
-export function classifyByExpectedPointsLoss(epLoss: number): MoveQuality {
+export function classifyByExpectedPointsLoss(
+  epLoss: number,
+  playedBestMove: boolean = true,
+): MoveQuality {
   const loss = Math.max(0, epLoss);
 
   // Chess.com Expected Points cutoffs (inclusive upper bounds)
-  if (loss <= 0.0) return "Best";
+  // Only classify as "Best" if the player actually played the engine's best move
+  if (loss <= 0.0 && playedBestMove) return "Best";
   if (loss <= 0.02) return "Excellent";
   if (loss <= 0.05) return "Good";
   if (loss <= 0.1) return "Inaccuracy";
@@ -67,8 +71,7 @@ export function maybeMarkGreatMove(
   if (label !== "Best" && label !== "Excellent") return label;
 
   // Chess.com-style: Great = a rare, critical swing from roughly equal/worse to clearly winning.
-  const swungTheGame =
-    epBefore <= 0.55 && epAfter >= 0.75 && epGain >= 0.25;
+  const swungTheGame = epBefore <= 0.55 && epAfter >= 0.75 && epGain >= 0.25;
 
   if (swungTheGame) return "Great";
   return label;
@@ -89,12 +92,20 @@ export function maybeMarkMiss(
   current: MoveQuality,
   opponentPrev: MoveQuality | undefined,
   epGain: number,
+  playedBestMove: boolean = false,
 ): MoveQuality {
   // If opponent just blundered/mistaked but we failed to increase EP meaningfully.
+  // Never mark as Miss if:
+  // - Player played the engine's best move (they capitalized optimally)
+  // - Move is already classified as Best/Excellent (minimal or no loss)
+  // - Move is a Blunder (different category of mistake)
   if (
     (opponentPrev === "Mistake" || opponentPrev === "Blunder") &&
     epGain < 0.1 &&
-    current !== "Blunder"
+    current !== "Blunder" &&
+    current !== "Best" &&
+    current !== "Excellent" &&
+    !playedBestMove
   ) {
     return "Miss";
   }

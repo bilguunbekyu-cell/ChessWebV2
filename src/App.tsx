@@ -12,6 +12,7 @@ import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import Game from "./pages/Game";
 import Puzzles from "./pages/Puzzles";
+import PuzzleTrainer from "./pages/PuzzleTrainer";
 import Learn from "./pages/Learn";
 import Watch from "./pages/Watch";
 import Community from "./pages/Community";
@@ -20,25 +21,35 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import Analyze from "./pages/Analyze";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminUsers from "./pages/AdminUsers";
+import AdminUserProfile from "./pages/AdminUserProfile";
+import AdminAnalyze from "./pages/AdminAnalyze";
 import { useThemeStore } from "./store/themeStore";
 import { useAuthStore, authApi } from "./store/authStore";
 import { timeFormats, TimeFormat } from "./data/mockData";
 
 // Auth check component
 function AuthChecker() {
-  const { setUser, setLoading } = useAuthStore();
+  const { setUser, setLoading, setBanned } = useAuthStore();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const user = await authApi.getMe();
         setUser(user);
-      } catch {
-        setUser(null);
+      } catch (err: unknown) {
+        // Check if user was banned
+        if (err && typeof err === "object" && "banned" in err) {
+          const banErr = err as { banned: boolean; banReason: string };
+          setBanned(banErr.banReason);
+        } else {
+          setUser(null);
+        }
       }
     };
     checkAuth();
-  }, [setUser, setLoading]);
+  }, [setUser, setLoading, setBanned]);
 
   return null;
 }
@@ -114,7 +125,10 @@ function Layout({
   const hasOwnLayout =
     ["/watch", "/community", "/settings", "/login", "/register"].includes(
       location.pathname,
-    ) || location.pathname.startsWith("/analyze");
+    ) ||
+    location.pathname.startsWith("/puzzles/train") ||
+    location.pathname.startsWith("/analyze") ||
+    location.pathname.startsWith("/admin");
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -316,6 +330,14 @@ function App() {
             }
           />
           <Route
+            path="/puzzles/train/:puzzleId?"
+            element={
+              <ProtectedRoute>
+                <PuzzleTrainer />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/learn"
             element={
               <ProtectedRoute>
@@ -363,6 +385,12 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Admin dashboard - uses same login page, admin auth checked inside */}
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/users/:userId" element={<AdminUserProfile />} />
+          <Route path="/admin/analyze/:gameId" element={<AdminAnalyze />} />
         </Routes>
       </Layout>
     </Router>

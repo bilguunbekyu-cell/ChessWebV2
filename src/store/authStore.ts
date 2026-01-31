@@ -16,9 +16,11 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  banReason: string | null;
   setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  setBanned: (reason: string) => void;
   logout: () => void;
 }
 
@@ -31,11 +33,25 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: true,
       error: null,
+      banReason: null,
       setUser: (user) =>
-        set({ user, isAuthenticated: !!user, isLoading: false }),
+        set({
+          user,
+          isAuthenticated: !!user,
+          isLoading: false,
+          banReason: null,
+        }),
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error, isLoading: false }),
-      logout: () => set({ user: null, isAuthenticated: false }),
+      setBanned: (banReason) =>
+        set({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          banReason,
+        }),
+      logout: () =>
+        set({ user: null, isAuthenticated: false, banReason: null }),
     }),
     {
       name: "auth-storage",
@@ -87,7 +103,16 @@ export const authApi = {
     const res = await fetch(`${API_URL}/api/me`, {
       credentials: "include",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (data.banned) {
+        throw {
+          banned: true,
+          banReason: data.banReason || "No reason provided",
+        };
+      }
+      return null;
+    }
     const data = await res.json();
     return data.user;
   },

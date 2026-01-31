@@ -32,6 +32,10 @@ export interface PuzzleItem {
   themes: string[];
   description: string;
   icon: string;
+  fen: string;
+  solution: string[];
+  rating: number;
+  isWhiteToMove: boolean;
 }
 
 export interface Course {
@@ -160,6 +164,10 @@ export const puzzles: PuzzleItem[] = [
     themes: ["Back Rank", "Queen Sac"],
     description: "Find the winning move for White.",
     icon: "🧩",
+    fen: "6k1/5ppp/8/8/8/8/1Q3PPP/6K1 w - - 0 1",
+    solution: ["Qb8+", "Qxf8#"],
+    rating: 1100,
+    isWhiteToMove: true,
   },
   {
     id: "2",
@@ -168,14 +176,22 @@ export const puzzles: PuzzleItem[] = [
     themes: ["Knight Fork", "Double Attack"],
     description: "Black to move and win material.",
     icon: "🐴",
+    fen: "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4",
+    solution: ["Qxf7#"],
+    rating: 1200,
+    isWhiteToMove: true,
   },
   {
     id: "3",
     title: "Endgame Magic",
     difficulty: "Hard",
     themes: ["Promotion", "Opposition"],
-    description: "White to move and draw.",
+    description: "White to move and promote.",
     icon: "♟️",
+    fen: "8/8/8/8/8/4k3/4P3/4K3 w - - 0 1",
+    solution: ["Kf1"],
+    rating: 1600,
+    isWhiteToMove: true,
   },
   {
     id: "4",
@@ -184,6 +200,10 @@ export const puzzles: PuzzleItem[] = [
     themes: ["Pin", "Skewer"],
     description: "Exploit the pinned piece.",
     icon: "📍",
+    fen: "r2qkb1r/ppp2ppp/2n1bn2/4p3/4P3/1PN2N2/PBPP1PPP/R2QKB1R w KQkq - 0 6",
+    solution: ["Bb5"],
+    rating: 1350,
+    isWhiteToMove: true,
   },
   {
     id: "5",
@@ -192,6 +212,10 @@ export const puzzles: PuzzleItem[] = [
     themes: ["Sacrifice", "King Hunt"],
     description: "Classic bishop sacrifice on h7.",
     icon: "🎁",
+    fen: "r1bq1rk1/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQ1RK1 w - - 0 6",
+    solution: ["Bxh7+"],
+    rating: 1550,
+    isWhiteToMove: true,
   },
   {
     id: "6",
@@ -200,6 +224,10 @@ export const puzzles: PuzzleItem[] = [
     themes: ["Checkmate", "Knight"],
     description: "Beautiful mate with the knight.",
     icon: "⚔️",
+    fen: "r1b1kb1r/pppp1Npp/5n2/8/3nq3/8/PPPPBPPP/RNBQK2R b KQkq - 0 1",
+    solution: ["Qxe2#"],
+    rating: 1500,
+    isWhiteToMove: false,
   },
 ];
 

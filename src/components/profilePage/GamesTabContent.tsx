@@ -10,6 +10,7 @@ interface GamesTabContentProps {
   setFilter: (filter: FilterType) => void;
   expandedId: string | null;
   setExpandedId: (id: string | null) => void;
+  analyzeBaseUrl?: string;
 }
 
 export function GamesTabContent({
@@ -18,6 +19,7 @@ export function GamesTabContent({
   setFilter,
   expandedId,
   setExpandedId,
+  analyzeBaseUrl,
 }: GamesTabContentProps) {
   return (
     <motion.div
@@ -58,6 +60,7 @@ export function GamesTabContent({
               onToggle={() =>
                 setExpandedId(expandedId === game._id ? null : game._id)
               }
+              analyzeBaseUrl={analyzeBaseUrl}
             />
           ))
         ) : (

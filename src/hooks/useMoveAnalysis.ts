@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { Chess } from "chess.js";
 import { GameHistory } from "../historyTypes";
 import {
   MoveQualityInfo,
@@ -16,6 +17,25 @@ import {
   QualityCounts,
 } from "./useGameReplayTypes";
 
+// Helper to check if the played SAN move matches the engine's best UCI move
+function isSameMoveAsBest(
+  fen: string | undefined,
+  bestMoveUci: string,
+  playedSan: string,
+): boolean {
+  if (!fen || !bestMoveUci || !playedSan) return false;
+  try {
+    const chess = new Chess(fen);
+    const from = bestMoveUci.slice(0, 2);
+    const to = bestMoveUci.slice(2, 4);
+    const promotion = bestMoveUci.length > 4 ? bestMoveUci[4] : undefined;
+    const move = chess.move({ from, to, promotion });
+    return move?.san === playedSan;
+  } catch {
+    return false;
+  }
+}
+
 export function useMoveAnalysis(
   game: GameHistory,
   positions: string[],
@@ -25,11 +45,15 @@ export function useMoveAnalysis(
   const [analysis, setAnalysis] = useState<AnalysisEntry[]>(
     game.analysis || [],
   );
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
 
   // sync external analysis if present
   useEffect(() => {
     if (game.analysis && game.analysis.length > 0) {
       setAnalysis(game.analysis);
+      setIsAnalyzing(false);
+      setAnalysisProgress(100);
     }
   }, [game]);
 
@@ -41,9 +65,16 @@ export function useMoveAnalysis(
 
     let cancelled = false;
     let idx = 0;
+    const totalPositions = positions.length;
+    setIsAnalyzing(true);
+    setAnalysisProgress(0);
+
     const worker =
       typeof Worker !== "undefined" ? new Worker("/stockfish.js") : null;
-    if (!worker) return;
+    if (!worker) {
+      setIsAnalyzing(false);
+      return;
+    }
 
     worker.postMessage("uci");
     worker.postMessage("isready");
@@ -53,8 +84,13 @@ export function useMoveAnalysis(
       if (cancelled || idx >= positions.length) {
         worker.postMessage("quit");
         worker.terminate();
+        setIsAnalyzing(false);
+        setAnalysisProgress(100);
         return;
       }
+
+      // Update progress
+      setAnalysisProgress(Math.round((idx / totalPositions) * 100));
 
       const fen = positions[idx];
       const plyIndex = idx; // align with positions array
@@ -161,10 +197,22 @@ export function useMoveAnalysis(
       const epLoss = Math.max(0, epBefore - epAfter);
       const epGain = Math.max(0, epAfter - epBefore);
 
-      let label = classifyByExpectedPointsLoss(epLoss);
+      // Check if the player played the engine's best move
+      const beforeAnalysis = analysisByPly.get(i - 1);
+      const playedBestMove =
+        beforeAnalysis?.bestMove && san
+          ? isSameMoveAsBest(positions[i - 1], beforeAnalysis.bestMove, san)
+          : false;
+
+      let label = classifyByExpectedPointsLoss(epLoss, playedBestMove);
       label = maybeMarkGreatMove(label, epGain, epBefore, epAfter);
       label = maybeMarkBook(label, i, after.cp);
-      label = maybeMarkMiss(label, prevLabels.get(i - 1), epGain);
+      label = maybeMarkMiss(
+        label,
+        prevLabels.get(i - 1),
+        epGain,
+        playedBestMove,
+      );
       label = maybeMarkBrilliant(label, epGain, epAfter, san);
 
       prevLabels.set(i, label);
@@ -275,5 +323,7 @@ export function useMoveAnalysis(
     moveRowsWithQuality,
     qualityCounts,
     accuracy,
+    isAnalyzing,
+    analysisProgress,
   };
 }

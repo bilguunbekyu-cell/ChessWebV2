@@ -1,0 +1,194 @@
+import { useEffect, useState, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { useAdminStore } from "../store/adminStore";
+import AdminSidebar from "../components/AdminSidebar";
+import { GameHistory } from "../historyTypes";
+import {
+  ProfileHeader,
+  OverviewTabContent,
+  GamesTabContent,
+  NoGamesPlaceholder,
+  calculateStats,
+  filterGames,
+  type FilterType,
+  type TabType,
+} from "../components/profilePage";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
+interface UserData {
+  _id: string;
+  fullName: string;
+  email: string;
+  rating: number;
+  gamesPlayed: number;
+  gamesWon: number;
+  createdAt: string;
+}
+
+export default function AdminUserProfile() {
+  const { userId } = useParams<{ userId: string }>();
+  const navigate = useNavigate();
+  const {
+    isAuthenticated,
+    isLoading: authLoading,
+    checkAuth,
+  } = useAdminStore();
+
+  const [user, setUser] = useState<UserData | null>(null);
+  const [games, setGames] = useState<GameHistory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterType>("all");
+  const [activeTab, setActiveTab] = useState<TabType>("overview");
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
+  // Fetch user data
+  useEffect(() => {
+    if (!isAuthenticated || !userId) return;
+
+    async function fetchUserData() {
+      try {
+        setLoading(true);
+
+        // Fetch user info
+        const userRes = await fetch(`${API_URL}/api/admin/users/${userId}`, {
+          credentials: "include",
+        });
+        if (!userRes.ok) throw new Error("Failed to fetch user");
+        const userData = await userRes.json();
+        setUser(userData.user);
+
+        // Fetch user's games
+        const gamesRes = await fetch(
+          `${API_URL}/api/admin/users/${userId}/games`,
+          {
+            credentials: "include",
+          },
+        );
+        if (gamesRes.ok) {
+          const gamesData = await gamesRes.json();
+          setGames(gamesData.games || []);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load user");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchUserData();
+  }, [isAuthenticated, userId]);
+
+  const stats = useMemo(() => calculateStats(games), [games]);
+  const filteredGames = useMemo(
+    () => filterGames(games, filter),
+    [games, filter],
+  );
+
+  const memberSince = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      })
+    : "Unknown";
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !user) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white">
+        <AdminSidebar />
+        <main className="ml-64 p-8">
+          <button
+            onClick={() => navigate("/admin")}
+            className="flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-6"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </button>
+          <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-4 rounded-xl">
+            {error || "User not found"}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Create a user object compatible with ProfileHeader
+  const profileUser = {
+    id: user._id,
+    fullName: user.fullName,
+    email: user.email,
+    rating: user.rating,
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white transition-colors duration-300">
+      <AdminSidebar />
+
+      <div className="ml-64">
+        {/* Back Button */}
+        <div className="px-8 pt-6">
+          <button
+            onClick={() => navigate("/admin")}
+            className="flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </button>
+        </div>
+
+        <ProfileHeader
+          user={profileUser}
+          stats={stats}
+          memberSince={memberSince}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
+
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+          {stats ? (
+            activeTab === "overview" ? (
+              <OverviewTabContent
+                stats={stats}
+                games={games}
+                expandedId={expandedId}
+                setExpandedId={setExpandedId}
+                setActiveTab={setActiveTab}
+                analyzeBaseUrl="/admin/analyze"
+              />
+            ) : (
+              <GamesTabContent
+                filteredGames={filteredGames}
+                filter={filter}
+                setFilter={setFilter}
+                expandedId={expandedId}
+                setExpandedId={setExpandedId}
+                analyzeBaseUrl="/admin/analyze"
+              />
+            )
+          ) : (
+            <NoGamesPlaceholder />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

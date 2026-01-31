@@ -11,6 +11,7 @@ interface GameCardProps {
   game: GameHistory;
   isExpanded: boolean;
   onToggle: () => void;
+  analyzeBaseUrl?: string; // Optional custom base URL for analyze, defaults to "/analyze"
 }
 
 function formatDuration(ms?: number): string {
@@ -21,7 +22,12 @@ function formatDuration(ms?: number): string {
   return `${mins}:${String(secs).padStart(2, "0")}`;
 }
 
-export function GameCard({ game, isExpanded, onToggle }: GameCardProps) {
+export function GameCard({
+  game,
+  isExpanded,
+  onToggle,
+  analyzeBaseUrl = "/analyze",
+}: GameCardProps) {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
 
@@ -83,9 +89,9 @@ export function GameCard({ game, isExpanded, onToggle }: GameCardProps) {
   const handleAnalyze = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      navigate(`/analyze/${game._id}`);
+      navigate(`${analyzeBaseUrl}/${game._id}`);
     },
-    [navigate, game._id],
+    [navigate, game._id, analyzeBaseUrl],
   );
 
   const formattedMoves = game.moves.reduce((acc: string[], move, idx) => {
