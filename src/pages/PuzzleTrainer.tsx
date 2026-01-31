@@ -17,6 +17,7 @@ import {
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 import Sidebar from "../components/Sidebar";
+import { useAuthStore } from "../store/authStore";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -38,6 +39,7 @@ type PuzzleStatus = "solving" | "correct" | "wrong" | "showingSolution";
 export default function PuzzleTrainer() {
   const navigate = useNavigate();
   const { puzzleId } = useParams<{ puzzleId?: string }>();
+  const { user, setUser } = useAuthStore();
 
   const [puzzles, setPuzzles] = useState<PuzzleItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,10 +52,15 @@ export default function PuzzleTrainer() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
   const [game, setGame] = useState<Chess>(new Chess());
+  const [fenError, setFenError] = useState<string | null>(null);
   const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(
     null,
   );
   const [boardSize, setBoardSize] = useState(560);
+
+  const sidebarWidth = 256;
+  const panelMinWidth = 360;
+  const boardGutter = 48;
 
   // Timer
   useEffect(() => {
@@ -69,11 +76,14 @@ export default function PuzzleTrainer() {
     const updateSize = () => {
       const viewportW = window.innerWidth;
       const viewportH = window.innerHeight;
-      // Leave room for sidebar (256px), info panel (320px) and padding
-      const maxBoardW = Math.max(360, viewportW - 256 - 320 - 48);
-      const maxBoardH = Math.max(360, viewportH - 80); // header + padding
-      const size = Math.min(720, maxBoardW, maxBoardH);
-      setBoardSize(Math.max(360, size));
+      // Leave room for sidebar, right panel, and layout padding
+      const maxBoardW = Math.max(
+        360,
+        viewportW - sidebarWidth - panelMinWidth - boardGutter,
+      );
+      const maxBoardH = Math.max(360, viewportH - 48);
+      const size = Math.min(800, maxBoardW, maxBoardH);
+      setBoardSize(size);
     };
     updateSize();
     window.addEventListener("resize", updateSize);
@@ -103,6 +113,111 @@ export default function PuzzleTrainer() {
     return puzzles[0];
   }, [puzzleId, puzzles]);
 
+  const normalizeFen = (fen: string) => {
+    const parts = fen.trim().split(/\s+/);
+    if (parts.length >= 6) {
+      const halfmove = Number.isNaN(parseInt(parts[4], 10))
+        ? 0
+        : parseInt(parts[4], 10);
+      let fullmove = parseInt(parts[5], 10);
+      if (Number.isNaN(fullmove) || fullmove < 1) fullmove = 1;
+      parts[4] = String(halfmove);
+      parts[5] = String(fullmove);
+      return parts.slice(0, 6).join(" ");
+    }
+    // If someone saved only the board + side, patch missing fields
+    if (parts.length === 2 || parts.length === 3 || parts.length === 4) {
+      const padded = [
+        parts[0],
+        parts[1] || "w",
+        parts[2] || "-",
+        parts[3] || "-",
+        "0",
+        "1",
+      ];
+      return padded.join(" ");
+    }
+    return fen;
+  };
+
+  const safeLoadGame = (fen: string) => {
+    setFenError(null);
+    try {
+      return new Chess(fen);
+    } catch {
+      // Try with normalized fen
+      try {
+        return new Chess(normalizeFen(fen));
+      } catch (err2) {
+        try {
+          return new Chess(); // start position fallback
+        } catch {
+          setFenError("Invalid FEN for this puzzle");
+          return new Chess();
+        }
+      }
+    }
+  };
+
+  const normalizeSolution = (moves: string[]) =>
+    moves
+      .map((m) => m.trim())
+      .filter(
+        (m) =>
+          m.length > 0 &&
+          m !== "*" &&
+          m !== "..." &&
+          m !== ".." &&
+          !/^(1-0|0-1|1\/2-1\/2)$/.test(m),
+      )
+      .map((m) => m.replace(/[?!]+$/g, ""));
+
+  const puzzleFen = useMemo(
+    () => (currentPuzzle ? normalizeFen(currentPuzzle.fen) : ""),
+    [currentPuzzle],
+  );
+
+  const solutionMoves = useMemo(
+    () => (currentPuzzle ? normalizeSolution(currentPuzzle.solution) : []),
+    [currentPuzzle],
+  );
+
+  const puzzleElo = user?.puzzleElo ?? 0;
+
+  const awardPuzzleSolve = useCallback(async () => {
+    if (!currentPuzzle) return;
+    try {
+      const res = await fetch(
+        `${API_URL}/api/puzzles/${currentPuzzle._id}/solve`,
+        {
+          method: "POST",
+          credentials: "include",
+        },
+      );
+      const data = await res.json();
+      if (res.ok && data?.puzzleElo !== undefined && setUser) {
+        if (user) {
+          setUser({ ...user, puzzleElo: data.puzzleElo });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to award puzzle Elo:", err);
+    }
+  }, [currentPuzzle, setUser, user]);
+
+  const resetPuzzleState = useCallback(() => {
+    if (!currentPuzzle) return;
+    const newGame = safeLoadGame(puzzleFen);
+    setFenError(null);
+    setGame(newGame);
+    setStatus("solving");
+    setShowHint(false);
+    setCurrentMoveIndex(0);
+    setLastMove(null);
+    setStartTime(Date.now());
+    setElapsedTime(0);
+  }, [currentPuzzle, puzzleFen, safeLoadGame]);
+
   const currentPuzzleIndex = useMemo(() => {
     if (!currentPuzzle) return 0;
     return puzzles.findIndex((p) => p._id === currentPuzzle._id);
@@ -110,7 +225,10 @@ export default function PuzzleTrainer() {
 
   useEffect(() => {
     if (!currentPuzzle) return;
-    const newGame = new Chess(currentPuzzle.fen);
+    const newGame = safeLoadGame(puzzleFen);
+    if (!newGame || newGame.board().flat().every((sq) => sq === null)) {
+      setFenError("Puzzle FEN is invalid or empty");
+    }
     setGame(newGame);
     setStatus("solving");
     setShowHint(false);
@@ -120,7 +238,16 @@ export default function PuzzleTrainer() {
     setElapsedTime(0);
     setCurrentMoveIndex(0);
     setLastMove(null);
-  }, [currentPuzzle?._id]);
+  }, [currentPuzzle?._id, puzzleFen]);
+
+  // Auto-restart after a wrong move
+  useEffect(() => {
+    if (status !== "wrong") return;
+    const timer = setTimeout(() => {
+      resetPuzzleState();
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [status, resetPuzzleState]);
 
   const updatePuzzleStats = (solved: boolean) => {
     if (!currentPuzzle) return;
@@ -135,8 +262,8 @@ export default function PuzzleTrainer() {
   const handlePuzzleSolved = useCallback(() => {
     setStatus("correct");
     setStreak((s) => s + 1);
-    updatePuzzleStats(true);
-  }, [currentPuzzle]);
+    awardPuzzleSolve();
+  }, [awardPuzzleSolve]);
 
   const handleWrongMove = useCallback(() => {
     setStatus("wrong");
@@ -144,9 +271,22 @@ export default function PuzzleTrainer() {
     setStreak(0);
   }, []);
 
-  const sanToMove = (fen: string, san: string) => {
+  const isUciMove = (move: string) =>
+    /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(move);
+
+  const applyMoveString = (chess: Chess, moveStr: string) => {
+    if (isUciMove(moveStr)) {
+      const from = moveStr.slice(0, 2);
+      const to = moveStr.slice(2, 4);
+      const promotion = moveStr.length === 5 ? moveStr[4] : undefined;
+      return chess.move({ from, to, promotion });
+    }
+    return chess.move(moveStr);
+  };
+
+  const moveStringToMove = (fen: string, moveStr: string) => {
     const tempGame = new Chess(fen);
-    const move = tempGame.move(san);
+    const move = applyMoveString(tempGame, moveStr);
     return move
       ? { from: move.from, to: move.to, promotion: move.promotion }
       : null;
@@ -156,10 +296,10 @@ export default function PuzzleTrainer() {
     (sourceSquare: string, targetSquare: string) => {
       if (!currentPuzzle || status !== "solving") return false;
 
-      const expectedSan = currentPuzzle.solution[currentMoveIndex];
-      if (!expectedSan) return false;
+      const expectedMoveStr = solutionMoves[currentMoveIndex];
+      if (!expectedMoveStr) return false;
 
-      const expectedMove = sanToMove(game.fen(), expectedSan);
+      const expectedMove = moveStringToMove(game.fen(), expectedMoveStr);
       if (!expectedMove) return false;
 
       if (
@@ -180,20 +320,23 @@ export default function PuzzleTrainer() {
           const nextMoveIndex = currentMoveIndex + 1;
           setCurrentMoveIndex(nextMoveIndex);
 
-          if (nextMoveIndex >= currentPuzzle.solution.length) {
+          if (nextMoveIndex >= solutionMoves.length) {
             handlePuzzleSolved();
           } else {
             setTimeout(() => {
-              const opponentSan = currentPuzzle.solution[nextMoveIndex];
-              if (opponentSan) {
+              const opponentMoveStr = solutionMoves[nextMoveIndex];
+              if (opponentMoveStr) {
                 const opponentGame = new Chess(gameCopy.fen());
-                const opponentMove = opponentGame.move(opponentSan);
+                const opponentMove = applyMoveString(
+                  opponentGame,
+                  opponentMoveStr,
+                );
                 if (opponentMove) {
                   setGame(opponentGame);
                   setLastMove({ from: opponentMove.from, to: opponentMove.to });
                   setCurrentMoveIndex(nextMoveIndex + 1);
 
-                  if (nextMoveIndex + 1 >= currentPuzzle.solution.length) {
+                  if (nextMoveIndex + 1 >= solutionMoves.length) {
                     handlePuzzleSolved();
                   }
                 }
@@ -212,6 +355,7 @@ export default function PuzzleTrainer() {
       status,
       currentMoveIndex,
       game,
+      solutionMoves,
       handlePuzzleSolved,
       handleWrongMove,
     ],
@@ -232,7 +376,8 @@ export default function PuzzleTrainer() {
 
   const retryPuzzle = () => {
     if (!currentPuzzle) return;
-    const newGame = new Chess(currentPuzzle.fen);
+    const newGame = safeLoadGame(puzzleFen);
+    setFenError(null);
     setGame(newGame);
     setStatus("solving");
     setShowHint(false);
@@ -299,10 +444,13 @@ export default function PuzzleTrainer() {
     <div className="h-screen bg-[#0b0f19] text-white flex overflow-hidden">
       <Sidebar />
 
-      <main className="flex-1 ml-64 flex min-h-0 overflow-hidden">
+      <main className="flex-1 ml-64 min-h-0 overflow-hidden flex gap-3 pt-3 pb-3 pr-4">
         {/* Board Area - takes remaining space */}
-        <div className="flex-1 min-h-0 flex items-center justify-center bg-[#0b0f19] p-4">
+        <div className="min-h-0 flex items-center justify-start bg-[#0b0f19] pl-6 pr-3 py-4">
           <div style={{ width: boardSize, height: boardSize }}>
+            {fenError && (
+              <div className="mb-2 text-xs text-red-400">{fenError}</div>
+            )}
             <Chessboard
               position={game.fen()}
               onPieceDrop={onDrop}
@@ -317,7 +465,7 @@ export default function PuzzleTrainer() {
         </div>
 
         {/* Right Panel - Fixed width, no scroll */}
-        <div className="w-[320px] flex-shrink-0 bg-[#111521] flex flex-col h-full">
+        <div className="flex-1 min-w-[360px] bg-[#111521] flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between px-3 py-2 border-b border-[#1f2633]">
             <button
@@ -376,6 +524,12 @@ export default function PuzzleTrainer() {
               </div>
             </div>
           </div>
+          <div className="px-3 pb-2 text-sm text-gray-300 flex items-center gap-2">
+            <span className="text-gray-400">Puzzle Elo</span>
+            <span className="font-semibold text-amber-300 font-mono">
+              {puzzleElo}
+            </span>
+          </div>
 
           {/* Status Area */}
           <div className="flex-1 px-3 py-2 flex flex-col justify-center min-h-0">
@@ -415,7 +569,7 @@ export default function PuzzleTrainer() {
                   <Eye size={16} /> Solution
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  {currentPuzzle.solution.map((move, idx) => (
+                  {solutionMoves.map((move, idx) => (
                     <span
                       key={idx}
                       className="px-1.5 py-0.5 bg-blue-800 rounded font-mono text-xs"
@@ -435,7 +589,7 @@ export default function PuzzleTrainer() {
                 <p className="text-yellow-500 text-xs">
                   First move:{" "}
                   <span className="font-mono font-bold">
-                    {currentPuzzle.solution[0]?.slice(0, 2)}...
+                    {solutionMoves[0]?.slice(0, 2)}...
                   </span>
                 </p>
               </div>
@@ -450,22 +604,7 @@ export default function PuzzleTrainer() {
 
           {/* Action Button */}
           <div className="p-3">
-            {status === "wrong" ? (
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={retryPuzzle}
-                  className="flex items-center justify-center gap-1 py-2 rounded-lg font-bold text-sm bg-[#161b25] hover:bg-[#1f222e] transition-colors"
-                >
-                  <RotateCcw size={16} /> Retry
-                </button>
-                <button
-                  onClick={showSolution}
-                  className="flex items-center justify-center gap-1 py-2 rounded-lg font-bold text-sm bg-blue-600 hover:bg-blue-500 transition-colors"
-                >
-                  <Eye size={16} /> Solution
-                </button>
-              </div>
-            ) : status === "correct" || status === "showingSolution" ? (
+            {status === "correct" || status === "showingSolution" ? (
               <button
                 onClick={nextPuzzle}
                 className="w-full flex items-center justify-center gap-1 py-2 rounded-lg font-bold text-sm bg-teal-600 hover:bg-teal-500 transition-colors"

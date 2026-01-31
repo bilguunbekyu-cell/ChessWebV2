@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useStockfishGame } from "../hooks/useStockfishGame";
 import {
   GameSetupModal,
@@ -38,22 +38,46 @@ export default function Game() {
     handleTimeOut,
   } = useStockfishGame();
 
-  // Responsive board width
+  // Responsive board width based on available viewport and layout
   const [boardWidth, setBoardWidth] = useState(520);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const topInfoRef = useRef<HTMLDivElement>(null);
+  const bottomInfoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const getBoardWidth = () => {
-      const w = window.innerWidth;
-      return w < 600 ? 280 : w < 960 ? 400 : 520;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateSize = () => {
+      const rect = container.getBoundingClientRect();
+      const isWide = window.innerWidth >= 1024;
+      const topH = topInfoRef.current?.getBoundingClientRect().height ?? 0;
+      const bottomH = bottomInfoRef.current?.getBoundingClientRect().height ?? 0;
+      const sidebarWidth = isWide ? 420 : 0;
+      const columnGap = isWide ? 8 : 12;
+      const availableWidth = rect.width - sidebarWidth - columnGap;
+      const availableHeight = rect.height - topH - bottomH - columnGap * 2;
+      const size = Math.floor(Math.min(availableWidth, availableHeight));
+      setBoardWidth(Math.max(260, size));
     };
-    setBoardWidth(getBoardWidth());
-    const handleResize = () => setBoardWidth(getBoardWidth());
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+
+    updateSize();
+    const observer = new ResizeObserver(() => updateSize());
+    observer.observe(container);
+    if (topInfoRef.current) observer.observe(topInfoRef.current);
+    if (bottomInfoRef.current) observer.observe(bottomInfoRef.current);
+    window.addEventListener("resize", updateSize);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateSize);
+    };
   }, []);
 
   return (
-    <div className="h-[calc(100vh-5rem)] flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto w-full p-4">
+    <div
+      ref={containerRef}
+      className="h-full w-full flex flex-col lg:flex-row gap-2 px-3 pt-2 pb-3 overflow-hidden"
+    >
       {/* Game Setup Modal */}
       <GameSetupModal isOpen={showSetupModal} onStart={handleStartGame} />
 
@@ -66,9 +90,15 @@ export default function Game() {
       />
 
       {/* Main Game Area */}
-      <div className="flex-1 flex flex-col justify-center items-center min-h-[500px] gap-4 sm:gap-6">
+      <div
+        className="min-h-0 flex flex-col items-start gap-3 sm:gap-4"
+        style={{ width: boardWidth }}
+      >
         {/* Opponent Info */}
-        <div className="w-full flex justify-center px-2 sm:px-0">
+        <div
+          ref={topInfoRef}
+          className="w-full flex justify-start px-2 sm:px-0"
+        >
           <PlayerInfo
             name={
               gameSettings.selectedBot
@@ -98,16 +128,21 @@ export default function Game() {
         </div>
 
         {/* Chessboard */}
-        <GameBoard
-          fen={game.fen()}
-          boardWidth={boardWidth}
-          boardOrientation={gameSettings.playAs}
-          onSquareClick={onSquareClick}
-          customSquareStyles={{ ...optionSquares, ...preMoveSquares }}
-        />
+        <div className="flex-1 min-h-0 w-full flex items-center justify-start">
+          <GameBoard
+            fen={game.fen()}
+            boardWidth={boardWidth}
+            boardOrientation={gameSettings.playAs}
+            onSquareClick={onSquareClick}
+            customSquareStyles={{ ...optionSquares, ...preMoveSquares }}
+          />
+        </div>
 
         {/* Player Info */}
-        <div className="w-full flex justify-center px-2 sm:px-0">
+        <div
+          ref={bottomInfoRef}
+          className="w-full flex justify-start px-2 sm:px-0"
+        >
           <PlayerInfo
             name="You"
             subtitle={gameSettings.playAs === "white" ? "White" : "Black"}
@@ -128,15 +163,17 @@ export default function Game() {
       </div>
 
       {/* Sidebar Controls */}
-      <GameSidebar
-        moves={moves}
-        gameStarted={gameStarted}
-        gameOver={gameOver}
-        opening={opening}
-        openingLoading={openingLoading}
-        onResign={handleResign}
-        onNewGame={handleNewGame}
-      />
+      <div className="w-full lg:flex-1 lg:min-w-[420px] h-full min-h-0 p-2">
+        <GameSidebar
+          moves={moves}
+          gameStarted={gameStarted}
+          gameOver={gameOver}
+          opening={opening}
+          openingLoading={openingLoading}
+          onResign={handleResign}
+          onNewGame={handleNewGame}
+        />
+      </div>
     </div>
   );
 }

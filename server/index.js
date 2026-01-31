@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { Chess } from "chess.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -15,6 +16,7 @@ dotenv.config({ path: join(__dirname, "..", ".env") });
 
 const app = express();
 const PORT = 3001;
+const LICHESS_API_TOKEN = process.env.LICHESS_API_TOKEN;
 
 // Middleware
 app.use(express.json());
@@ -67,6 +69,7 @@ const AdminSchema = new mongoose.Schema(
     username: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    puzzleElo: { type: Number, default: 0 },
   },
   { timestamps: true },
 );
@@ -167,6 +170,25 @@ const PuzzleSchema = new mongoose.Schema(
 );
 
 const Puzzle = mongoose.models.Puzzle || mongoose.model("Puzzle", PuzzleSchema);
+
+const isUciMove = (move) => /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(move);
+
+const uciToSanMoves = (fen, moves) => {
+  if (!fen || !Array.isArray(moves) || moves.length === 0) return moves;
+  if (!moves.every(isUciMove)) return moves;
+
+  const chess = new Chess(fen);
+  const sanMoves = [];
+  for (const uci of moves) {
+    const from = uci.slice(0, 2);
+    const to = uci.slice(2, 4);
+    const promotion = uci.length === 5 ? uci[4] : undefined;
+    const move = chess.move({ from, to, promotion });
+    if (!move) return moves;
+    sanMoves.push(move.san);
+  }
+  return sanMoves;
+};
 
 // Seed puzzles on startup
 async function seedPuzzles() {
@@ -621,6 +643,124 @@ app.patch("/api/puzzles/:id/stats", async (req, res) => {
     res.json(puzzle);
   } catch (error) {
     res.status(500).json({ error: "Failed to update puzzle stats" });
+  }
+});
+
+// Puzzle solve: increment stats and award puzzle elo
+app.post("/api/puzzles/:id/solve", authMiddleware, async (req, res) => {
+  try {
+    const puzzle = await Puzzle.findById(req.params.id);
+    if (!puzzle) {
+      return res.status(404).json({ error: "Puzzle not found" });
+    }
+
+    // Stats
+    await Puzzle.findByIdAndUpdate(puzzle._id, {
+      $inc: { timesPlayed: 1, timesSolved: 1 },
+    });
+
+    // Elo gain by difficulty
+    const diff = puzzle.difficulty || "Medium";
+    const gain = diff === "Hard" ? 15 : diff === "Easy" ? 5 : 10;
+
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    user.puzzleElo = (user.puzzleElo || 0) + gain;
+    await user.save();
+
+    res.json({
+      success: true,
+      puzzleElo: user.puzzleElo,
+      gain,
+      difficulty: diff,
+    });
+  } catch (error) {
+    console.error("Solve error:", error);
+    res.status(500).json({ error: "Failed to record puzzle solve" });
+  }
+});
+
+// Admin: Create puzzle
+app.post("/api/admin/puzzles", adminAuthMiddleware, async (req, res) => {
+  try {
+    const {
+      title,
+      difficulty,
+      themes,
+      description,
+      icon,
+      fen,
+      solution,
+      rating,
+      isWhiteToMove,
+    } = req.body;
+    const puzzle = new Puzzle({
+      title,
+      difficulty,
+      themes: themes || [],
+      description: description || "",
+      icon: icon || "🧩",
+      fen,
+      solution,
+      rating: rating || 1200,
+      isWhiteToMove,
+    });
+    await puzzle.save();
+    res.status(201).json(puzzle);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to create puzzle" });
+  }
+});
+
+// Admin: Update puzzle
+app.put("/api/admin/puzzles/:id", adminAuthMiddleware, async (req, res) => {
+  try {
+    const {
+      title,
+      difficulty,
+      themes,
+      description,
+      icon,
+      fen,
+      solution,
+      rating,
+      isWhiteToMove,
+    } = req.body;
+    const puzzle = await Puzzle.findByIdAndUpdate(
+      req.params.id,
+      {
+        title,
+        difficulty,
+        themes,
+        description,
+        icon,
+        fen,
+        solution,
+        rating,
+        isWhiteToMove,
+      },
+      { new: true },
+    );
+    if (!puzzle) {
+      return res.status(404).json({ error: "Puzzle not found" });
+    }
+    res.json(puzzle);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update puzzle" });
+  }
+});
+
+// Admin: Delete puzzle
+app.delete("/api/admin/puzzles/:id", adminAuthMiddleware, async (req, res) => {
+  try {
+    const puzzle = await Puzzle.findByIdAndDelete(req.params.id);
+    if (!puzzle) {
+      return res.status(404).json({ error: "Puzzle not found" });
+    }
+    res.json({ success: true, message: "Puzzle deleted" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete puzzle" });
   }
 });
 

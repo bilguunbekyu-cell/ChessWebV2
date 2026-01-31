@@ -1,15 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Shield, Loader2 } from "lucide-react";
-import { timeFormats, TimeFormat } from "../../data/mockData";
+import { timeFormats } from "../../data/mockData";
 import type { GameHistory } from "../../historyTypes";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
-
-interface FormatRatingsCardProps {
-  currentFormat: TimeFormat | null;
-  setCurrentFormat: (format: TimeFormat) => void;
-}
 
 interface GameStats {
   totalGames: number;
@@ -45,16 +40,17 @@ function calculateStats(games: GameHistory[]): GameStats {
   let streak = "";
   if (games.length > 0) {
     const sortedGames = [...games].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
-    
+
     let streakCount = 0;
     let streakType: "W" | "L" | "D" | null = null;
 
     for (const game of sortedGames) {
       const isWhite = game.playAs === "white";
       let result: "W" | "L" | "D";
-      
+
       if (game.result === "1-0") {
         result = isWhite ? "W" : "L";
       } else if (game.result === "0-1") {
@@ -79,10 +75,7 @@ function calculateStats(games: GameHistory[]): GameStats {
   return { totalGames, wins, losses, draws, winRate, streak };
 }
 
-export function FormatRatingsCard({
-  currentFormat,
-  setCurrentFormat,
-}: FormatRatingsCardProps) {
+export function FormatRatingsCard() {
   const [stats, setStats] = useState<GameStats>({
     totalGames: 0,
     wins: 0,
@@ -132,12 +125,7 @@ export function FormatRatingsCard({
         {timeFormats.map((format) => (
           <div
             key={format.id}
-            className={`flex items-center justify-between p-3 rounded-lg transition-all cursor-pointer ${
-              currentFormat?.id === format.id
-                ? "bg-teal-100 dark:bg-teal-800/30 border border-teal-400 dark:border-teal-600"
-                : "bg-white dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-            }`}
-            onClick={() => setCurrentFormat(format)}
+            className="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center space-x-3">
               <span className="text-xl">{format.icon}</span>

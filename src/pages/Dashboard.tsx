@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Trophy } from "lucide-react";
-import { TimeFormat } from "../data/mockData";
 import {
   LiveGamesSection,
   TournamentsSection,
@@ -10,15 +9,7 @@ import {
   RecentMatchesCard,
 } from "../components/dashboardComponents";
 
-interface DashboardProps {
-  currentFormat: TimeFormat | null;
-  setCurrentFormat: (format: TimeFormat) => void;
-}
-
-export default function Dashboard({
-  currentFormat,
-  setCurrentFormat,
-}: DashboardProps) {
+export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,10 +54,7 @@ export default function Dashboard({
 
       {/* Player Dashboard (Right Column) */}
       <div className="space-y-6">
-        <FormatRatingsCard
-          currentFormat={currentFormat}
-          setCurrentFormat={setCurrentFormat}
-        />
+        <FormatRatingsCard />
         <RecentMatchesCard />
       </div>
     </div>

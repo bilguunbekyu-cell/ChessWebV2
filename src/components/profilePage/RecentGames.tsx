@@ -24,7 +24,7 @@ export function RecentGames({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
-      className="mt-8"
+      className="mt-6"
     >
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold flex items-center gap-2">

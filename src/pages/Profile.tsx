@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuthStore } from "../store/authStore";
 import { GameHistory } from "../historyTypes";
+import Sidebar from "../components/Sidebar";
 import {
   ProfileHeader,
   OverviewTabContent,
@@ -57,49 +58,53 @@ export default function Profile() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#f5f5f7] dark:bg-gray-950">
+        <Sidebar />
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white transition-colors duration-300">
-      <ProfileHeader
-        user={user}
-        stats={stats}
-        memberSince={memberSince}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
+    <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
+      <Sidebar />
+      <div className="md:ml-64">
+        <ProfileHeader
+          user={user}
+          stats={stats}
+          memberSince={memberSince}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
-        {error && (
-          <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-4 rounded-xl mb-6">
-            {error}
-          </div>
-        )}
+        <div className="px-4 lg:px-6 py-6">
+          {error && (
+            <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-4 rounded-xl mb-6">
+              {error}
+            </div>
+          )}
 
-        {stats ? (
-          activeTab === "overview" ? (
-            <OverviewTabContent
-              stats={stats}
-              games={games}
-              expandedId={expandedId}
-              setExpandedId={setExpandedId}
-              setActiveTab={setActiveTab}
-            />
+          {stats ? (
+            activeTab === "overview" ? (
+              <OverviewTabContent
+                stats={stats}
+                games={games}
+                expandedId={expandedId}
+                setExpandedId={setExpandedId}
+                setActiveTab={setActiveTab}
+              />
+            ) : (
+              <GamesTabContent
+                filteredGames={filteredGames}
+                filter={filter}
+                setFilter={setFilter}
+                expandedId={expandedId}
+                setExpandedId={setExpandedId}
+              />
+            )
           ) : (
-            <GamesTabContent
-              filteredGames={filteredGames}
-              filter={filter}
-              setFilter={setFilter}
-              expandedId={expandedId}
-              setExpandedId={setExpandedId}
-            />
-          )
-        ) : (
-          <NoGamesPlaceholder />
-        )}
+            <NoGamesPlaceholder />
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,11 +1,9 @@
 import { motion } from "framer-motion";
 import { GameHistory } from "../../historyTypes";
 import { ProfileStats, TabType } from "./types";
-import { StatsGrid } from "./StatsGrid";
 import { GameOutcomesCard } from "./GameOutcomesCard";
-import { PerformanceByColorCard } from "./PerformanceByColorCard";
-import { QuickStatsCard } from "./QuickStatsCard";
 import { RecentGames } from "./RecentGames";
+import { FormatStatsCard } from "./FormatStatsCard";
 
 interface OverviewTabContentProps {
   stats: ProfileStats;
@@ -30,12 +28,9 @@ export function OverviewTabContent({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <StatsGrid stats={stats} />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <GameOutcomesCard stats={stats} />
-        <PerformanceByColorCard stats={stats} />
-        <QuickStatsCard stats={stats} />
+        <FormatStatsCard />
       </div>
 
       <RecentGames

@@ -34,7 +34,7 @@ export function GameSidebar({
   }, [moves]);
 
   return (
-    <div className="w-full lg:w-80 bg-gray-50 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col rounded-lg lg:rounded-none">
+    <div className="w-full h-full min-h-0 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex flex-col rounded-2xl overflow-hidden">
       {/* Tabs */}
       <div className="flex border-b border-gray-200 dark:border-gray-800">
         <button className="flex-1 py-3 text-sm font-medium text-gray-900 dark:text-white border-b-2 border-teal-500 bg-gray-100 dark:bg-gray-800/50">
@@ -83,7 +83,7 @@ export function GameSidebar({
       </div>
 
       {/* Move List */}
-      <div className="flex-1 overflow-y-auto p-0 bg-white dark:bg-gray-900/50 max-h-[400px]">
+      <div className="flex-1 min-h-0 overflow-y-auto p-0 bg-white dark:bg-gray-900/50">
         <table className="w-full text-sm text-left">
           <thead className="text-xs text-gray-500 uppercase bg-gray-50 dark:bg-gray-900 sticky top-0">
             <tr>

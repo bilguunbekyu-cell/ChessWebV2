@@ -77,24 +77,6 @@ export const timeFormats: TimeFormat[] = [
     rating: 1891,
     icon: "🚀",
   },
-  {
-    id: "classical",
-    name: "Classical",
-    time: "90+30",
-    displayTime: "1h 30min",
-    description: "90 minutes, 30 second increment",
-    rating: 1765,
-    icon: "👑",
-  },
-  {
-    id: "daily",
-    name: "Daily",
-    time: "1/day",
-    displayTime: "1 day",
-    description: "1 day per move",
-    rating: 1934,
-    icon: "📅",
-  },
 ];
 
 export const liveGames: LiveGame[] = [

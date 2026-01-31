@@ -13,7 +13,7 @@ export function GameOutcomesCard({ stats }: GameOutcomesCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+      className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm"
     >
       <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
         <PieChart size={20} className="text-teal-500" />

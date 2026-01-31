@@ -8,7 +8,7 @@ import {
   LogOut,
   Shield,
   BarChart3,
-  Home,
+  Brain,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useThemeStore } from "../store/themeStore";
@@ -29,6 +29,7 @@ export default function AdminSidebar() {
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
     { icon: Users, label: "Users", path: "/admin/users" },
+    { icon: Brain, label: "Puzzles", path: "/admin/puzzles" },
     { icon: Gamepad2, label: "Games", path: "/admin/games" },
     { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
     { icon: Settings, label: "Settings", path: "/admin/settings" },
@@ -49,17 +50,6 @@ export default function AdminSidebar() {
             Admin
           </span>
         </div>
-      </div>
-
-      {/* Back to App Link */}
-      <div className="px-4 mb-2">
-        <Link
-          to="/"
-          className="flex items-center space-x-3 px-4 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors text-sm"
-        >
-          <Home className="w-4 h-4" />
-          <span>Back to App</span>
-        </Link>
       </div>
 
       {/* Navigation */}

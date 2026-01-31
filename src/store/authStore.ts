@@ -9,6 +9,7 @@ export interface User {
   rating?: number;
   gamesPlayed?: number;
   gamesWon?: number;
+  puzzleElo?: number;
 }
 
 interface AuthState {
