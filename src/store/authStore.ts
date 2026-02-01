@@ -117,4 +117,16 @@ export const authApi = {
     const data = await res.json();
     return data.user;
   },
+
+  async updateProfile(data: { fullName?: string; avatar?: string }) {
+    const res = await fetch(`${API_URL}/api/profile`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || "Failed to update profile");
+    return result.user;
+  },
 };

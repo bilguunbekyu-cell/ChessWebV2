@@ -99,10 +99,18 @@ export default function Sidebar() {
                 : "hover:bg-gray-100 dark:hover:bg-gray-800"
             }`}
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-sm">
-                {user?.fullName?.substring(0, 2).toUpperCase() || "U"}
-              </span>
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg overflow-hidden">
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.fullName || "User"}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-white font-bold text-sm">
+                  {user?.fullName?.substring(0, 2).toUpperCase() || "U"}
+                </span>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-gray-900 dark:text-white truncate">

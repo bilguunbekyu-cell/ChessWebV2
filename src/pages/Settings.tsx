@@ -1,9 +1,7 @@
 import { useState } from "react";
 import {
   User,
-  Mail,
   Bell,
-  Shield,
   Moon,
   Globe,
   Save,
@@ -14,11 +12,14 @@ import {
 import Sidebar from "../components/Sidebar";
 import { useThemeStore } from "../store/themeStore";
 import { useSettingsStore } from "../store/settingsStore";
+import { useAuthStore } from "../store/authStore";
+import { ProfileAvatarUpload } from "../components/profilePage";
 import { isGroqConfigured } from "../utils/groqApi";
 
 export default function Settings() {
   const { isDarkMode, toggleTheme } = useThemeStore();
   const { enableAiExplanations, setEnableAiExplanations } = useSettingsStore();
+  const { user } = useAuthStore();
   const [notifications, setNotifications] = useState(true);
   const groqConfigured = isGroqConfigured();
 
@@ -38,9 +39,10 @@ export default function Settings() {
             </h2>
 
             <div className="flex items-start space-x-6 mb-6">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg text-3xl font-bold text-white">
-                GM
-              </div>
+              <ProfileAvatarUpload
+                currentAvatar={user?.avatar}
+                userName={user?.fullName}
+              />
               <div className="flex-1 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -49,7 +51,7 @@ export default function Settings() {
                     </label>
                     <input
                       type="text"
-                      defaultValue="GrandMaster"
+                      defaultValue={user?.fullName || ""}
                       className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-teal-500 transition-colors"
                     />
                   </div>
@@ -59,19 +61,11 @@ export default function Settings() {
                     </label>
                     <input
                       type="email"
-                      defaultValue="gm@chessflow.com"
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-teal-500 transition-colors"
+                      defaultValue={user?.email || ""}
+                      disabled
+                      className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 text-gray-500 cursor-not-allowed"
                     />
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Bio
-                  </label>
-                  <textarea
-                    defaultValue="Chess enthusiast and full-stack developer. Love the Sicilian Defense."
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-teal-500 transition-colors h-24 resize-none"
-                  />
                 </div>
               </div>
             </div>

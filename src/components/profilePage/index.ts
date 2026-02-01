@@ -1,4 +1,5 @@
 export { ProfileHeader } from "./ProfileHeader";
+export { ProfileAvatarUpload } from "./ProfileAvatarUpload";
 export { StatsGrid } from "./StatsGrid";
 export { GameOutcomesCard } from "./GameOutcomesCard";
 export { PerformanceByColorCard } from "./PerformanceByColorCard";

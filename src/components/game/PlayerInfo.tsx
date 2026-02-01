@@ -4,6 +4,7 @@ interface PlayerInfoProps {
   name: string;
   subtitle: string;
   avatarLetter: string;
+  avatarImage?: string;
   avatarStyle: "opponent" | "player";
   initialTime: number;
   increment: number;
@@ -16,6 +17,7 @@ export function PlayerInfo({
   name,
   subtitle,
   avatarLetter,
+  avatarImage,
   avatarStyle,
   initialTime,
   increment,
@@ -24,16 +26,24 @@ export function PlayerInfo({
   onTimeChange,
 }: PlayerInfoProps) {
   return (
-    <div className="w-full max-w-[720px] bg-white/70 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-lg px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 backdrop-blur">
+    <div className="w-full bg-white/70 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-lg px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 backdrop-blur">
       <div className="flex items-center gap-3 sm:gap-4">
         <div
-          className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-semibold text-white shadow-sm ${
+          className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-semibold text-white shadow-sm overflow-hidden flex-shrink-0 ${
             avatarStyle === "opponent"
               ? "bg-gradient-to-br from-gray-600 to-gray-700 ring-1 ring-white/10"
               : "bg-gradient-to-br from-teal-500 to-emerald-500 ring-2 ring-teal-200/60 dark:ring-emerald-500/50 shadow-teal-500/30"
           }`}
         >
-          {avatarLetter}
+          {avatarImage ? (
+            <img
+              src={avatarImage}
+              alt={name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            avatarLetter
+          )}
         </div>
         <div className="leading-tight">
           <div className="font-semibold text-gray-900 dark:text-white text-base sm:text-lg">

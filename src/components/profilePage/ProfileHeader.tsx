@@ -9,9 +9,10 @@ import {
   History,
 } from "lucide-react";
 import { ProfileStats, TabType } from "./types";
+import { ProfileAvatarUpload } from "./ProfileAvatarUpload";
 
 interface ProfileHeaderProps {
-  user: { fullName?: string; email?: string } | null;
+  user: { fullName?: string; email?: string; avatar?: string } | null;
   stats: ProfileStats | null;
   memberSince: string;
   activeTab: TabType;
@@ -35,11 +36,10 @@ export function ProfileHeader({
         >
           <div className="flex flex-col lg:flex-row lg:items-start gap-6">
             <div className="flex-shrink-0">
-              <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg ring-4 ring-white dark:ring-gray-900">
-                <span className="text-white font-bold text-4xl">
-                  {user?.fullName?.substring(0, 2).toUpperCase() || "U"}
-                </span>
-              </div>
+              <ProfileAvatarUpload
+                currentAvatar={user?.avatar}
+                userName={user?.fullName}
+              />
             </div>
 
             <div className="flex-1 min-w-0">
