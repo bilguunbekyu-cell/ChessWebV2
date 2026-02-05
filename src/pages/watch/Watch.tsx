@@ -4,9 +4,26 @@ import Sidebar from "../../components/Sidebar";
 import { FeaturedMatch } from "./FeaturedMatch";
 import { LiveGamesGrid } from "./LiveGamesGrid";
 import { StreamersSection } from "./StreamersSection";
+import { useWatchPageData } from "../../hooks/useWatchPage";
 
 export default function Watch() {
   const [activeTab, setActiveTab] = useState("Top Rated");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const { liveGames, streamers, featured, isLoading } = useWatchPageData();
+  const liveError = liveGames.error;
+  const streamError = streamers.error;
+
+  // Filter games by search query
+  const filteredGames = liveGames.games.filter((game) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      game.white.toLowerCase().includes(query) ||
+      game.black.toLowerCase().includes(query) ||
+      game.type.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex transition-colors duration-300">
@@ -30,6 +47,8 @@ export default function Watch() {
               <input
                 type="text"
                 placeholder="Search players or events..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-300 pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:border-teal-500 w-64 transition-colors shadow-sm"
               />
             </div>
@@ -39,14 +58,34 @@ export default function Watch() {
           </div>
         </header>
 
-        {/* Featured Game */}
-        <FeaturedMatch />
+        {/* Featured Game - Admin content or Lichess fallback */}
+        <FeaturedMatch
+          event={featured.featuredEvent}
+          fallbackGame={liveGames.games[0]}
+          loading={isLoading && !featured.featuredEvent}
+        />
 
-        {/* Live Games Grid */}
-        <LiveGamesGrid activeTab={activeTab} onTabChange={setActiveTab} />
+        {/* Live Games Grid - From Lichess */}
+        <LiveGamesGrid
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          games={filteredGames}
+          loading={liveGames.loading}
+          onRefresh={liveGames.refetch}
+        />
 
-        {/* Streamers Section */}
-        <StreamersSection />
+        {(liveError || streamError) && (
+          <div className="mt-4 text-sm text-amber-600 dark:text-amber-400">
+            {liveError || streamError}
+          </div>
+        )}
+
+        {/* Streamers Section - From Lichess */}
+        <StreamersSection
+          streamers={streamers.streamers}
+          loading={streamers.loading}
+          onRefresh={streamers.refetch}
+        />
       </main>
     </div>
   );

@@ -8,6 +8,53 @@ export function usePositionParser(game: GameHistory): PositionData {
     const chess = new Chess();
     const verboseMoves: Move[] = [];
 
+    const loadPgn = (pgnText: string) => {
+      if (!pgnText) return false;
+      try {
+        chess.reset();
+        const loader =
+          (chess as any).load_pgn?.bind(chess) ||
+          (chess as any).loadPgn?.bind(chess);
+        if (typeof loader !== "function") return false;
+        const ok = loader(pgnText, { sloppy: true });
+        if (ok === false) return false;
+        const hist = chess.history({ verbose: true });
+        if (hist.length > 0) {
+          verboseMoves.push(...hist);
+          return true;
+        }
+      } catch (e) {
+        console.warn("Failed to parse PGN:", e);
+      }
+      return false;
+    };
+
+    const loadMoveText = (moveText: string) => {
+      if (!moveText) return false;
+      const sanitized = moveText
+        .replace(/\{[^}]*\}/g, " ")
+        .replace(/\([^)]*\)/g, " ")
+        .replace(/\$\d+/g, " ")
+        .replace(/\d+\.(\.\.)?/g, " ")
+        .replace(/\b1-0\b|\b0-1\b|\b1\/2-1\/2\b|\*/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!sanitized) return false;
+
+      chess.reset();
+      for (const token of sanitized.split(" ")) {
+        if (!token) continue;
+        try {
+          const res = chess.move(token, { sloppy: true });
+          if (res) verboseMoves.push(res);
+        } catch (e) {
+          console.warn("Invalid move token:", token, e);
+          return false;
+        }
+      }
+      return verboseMoves.length > 0;
+    };
+
     // Try primary source: stored moves array (SAN expected)
     if (game.moves && game.moves.length > 0) {
       chess.reset();
@@ -23,17 +70,13 @@ export function usePositionParser(game: GameHistory): PositionData {
 
     // Fallback: parse PGN if moves array failed/empty
     if (verboseMoves.length === 0 && game.pgn) {
-      try {
-        chess.reset();
-        // chess.js uses load_pgn
-        // @ts-ignore
-        chess.load_pgn
-          ? chess.load_pgn(game.pgn, { sloppy: true })
-          : chess.loadPgn?.(game.pgn);
-        const hist = chess.history({ verbose: true });
-        verboseMoves.push(...hist);
-      } catch (e) {
-        console.warn("Failed to parse PGN:", e);
+      loadPgn(game.pgn);
+    }
+
+    // Fallback: parse moveText if still empty
+    if (verboseMoves.length === 0 && game.moveText) {
+      if (!loadPgn(game.moveText)) {
+        loadMoveText(game.moveText);
       }
     }
 
@@ -71,6 +114,19 @@ export function usePositionParser(game: GameHistory): PositionData {
               : applied.captured.toUpperCase()
             : undefined;
 
+          const isCheck =
+            typeof (chess as any).inCheck === "function"
+              ? (chess as any).inCheck()
+              : chess.in_check?.() ?? false;
+          const isCheckmate =
+            typeof (chess as any).isCheckmate === "function"
+              ? (chess as any).isCheckmate()
+              : chess.in_checkmate?.() ?? false;
+          const isStalemate =
+            typeof (chess as any).isStalemate === "function"
+              ? (chess as any).isStalemate()
+              : chess.in_stalemate?.() ?? false;
+
           plyStates.push({
             fen: chess.fen(),
             moveSAN: applied.san,
@@ -78,9 +134,9 @@ export function usePositionParser(game: GameHistory): PositionData {
             to: applied.to,
             color: applied.color,
             captured: capturedPiece,
-            isCheck: chess.in_check?.() ?? false,
-            isCheckmate: chess.in_checkmate?.() ?? false,
-            isStalemate: chess.in_stalemate?.() ?? false,
+            isCheck,
+            isCheckmate,
+            isStalemate,
           });
 
           fens.push(chess.fen());

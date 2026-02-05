@@ -1,22 +1,26 @@
 import { motion } from "framer-motion";
-import { Eye, ChevronRight } from "lucide-react";
-import { LiveGame, LIVE_GAMES } from "./types";
+import { Eye, ChevronRight, ExternalLink, RefreshCw } from "lucide-react";
+import { TransformedLiveGame } from "../../utils/lichessApi";
 
 interface LiveGameCardProps {
-  game: LiveGame;
+  game: TransformedLiveGame;
 }
 
 export function LiveGameCard({ game }: LiveGameCardProps) {
+  const label = game.category || game.type;
   return (
-    <motion.div
+    <motion.a
+      href={game.gameUrl}
+      target="_blank"
+      rel="noopener noreferrer"
       whileHover={{ y: -4 }}
-      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-colors cursor-pointer group shadow-sm hover:shadow-md"
+      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-colors cursor-pointer group shadow-sm hover:shadow-md block"
     >
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center space-x-2 text-xs font-medium text-gray-500 dark:text-gray-400">
           <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
           <span>
-            {game.type} • {game.time}
+            {label} • {game.time}
           </span>
         </div>
         <div className="flex items-center space-x-1 text-xs text-gray-500">
@@ -31,9 +35,16 @@ export function LiveGameCard({ game }: LiveGameCardProps) {
             <div className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs">
               ♟️
             </div>
-            <span className="font-medium text-gray-900 dark:text-gray-200">
-              {game.white}
-            </span>
+            <div className="flex items-center gap-1">
+              {game.whiteTitle && (
+                <span className="text-amber-500 text-xs font-bold">
+                  {game.whiteTitle}
+                </span>
+              )}
+              <span className="font-medium text-gray-900 dark:text-gray-200">
+                {game.white}
+              </span>
+            </div>
           </div>
           <span className="text-xs font-mono text-gray-500">
             {game.whiteRating}
@@ -44,9 +55,16 @@ export function LiveGameCard({ game }: LiveGameCardProps) {
             <div className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-100 flex items-center justify-center text-xs text-black">
               ♙
             </div>
-            <span className="font-medium text-gray-900 dark:text-gray-200">
-              {game.black}
-            </span>
+            <div className="flex items-center gap-1">
+              {game.blackTitle && (
+                <span className="text-amber-500 text-xs font-bold">
+                  {game.blackTitle}
+                </span>
+              )}
+              <span className="font-medium text-gray-900 dark:text-gray-200">
+                {game.black}
+              </span>
+            </div>
           </div>
           <span className="text-xs font-mono text-gray-500">
             {game.blackRating}
@@ -55,57 +73,164 @@ export function LiveGameCard({ game }: LiveGameCardProps) {
       </div>
 
       <div className="pt-4 border-t border-gray-200 dark:border-gray-800 flex justify-between items-center">
-        <div className="flex -space-x-2">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-white dark:border-gray-900"
-            ></div>
-          ))}
-        </div>
-        <button className="text-teal-600 dark:text-teal-500 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+        <span className="text-xs text-gray-400 flex items-center gap-1">
+          <ExternalLink className="w-3 h-3" />
+          Lichess
+        </span>
+        <span className="text-teal-600 dark:text-teal-500 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
           Watch <ChevronRight className="w-4 h-4 ml-1" />
-        </button>
+        </span>
       </div>
-    </motion.div>
+    </motion.a>
+  );
+}
+
+// Skeleton loader
+function GameCardSkeleton() {
+  return (
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 animate-pulse">
+      <div className="flex justify-between items-start mb-4">
+        <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
+      </div>
+      <div className="space-y-3 mb-4">
+        <div className="flex justify-between items-center">
+          <div className="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        </div>
+        <div className="flex justify-between items-center">
+          <div className="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        </div>
+      </div>
+      <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
+        <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+      </div>
+    </div>
   );
 }
 
 interface LiveGamesGridProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  games: TransformedLiveGame[];
+  loading?: boolean;
+  onRefresh?: () => void;
 }
 
-export function LiveGamesGrid({ activeTab, onTabChange }: LiveGamesGridProps) {
+export function LiveGamesGrid({
+  activeTab,
+  onTabChange,
+  games,
+  loading,
+  onRefresh,
+}: LiveGamesGridProps) {
+  const getCategory = (game: TransformedLiveGame) => {
+    if (game.category) return game.category;
+    if (game.speed) {
+      const speed = game.speed.toLowerCase();
+      if (speed === "bullet" || speed === "ultrabullet") return "Blitz";
+      if (speed === "blitz") return "Blitz";
+      if (speed === "rapid") return "Rapid";
+      if (speed === "classical" || speed === "correspondence")
+        return "Classical";
+    }
+    const time = game.time || "";
+    const match = time.match(/^([0-9.]+)\+(\d+)/);
+    if (match) {
+      const minutes = parseFloat(match[1]);
+      if (minutes <= 8) return "Blitz";
+      if (minutes <= 25) return "Rapid";
+      return "Classical";
+    }
+    return game.type || "Blitz";
+  };
+
+  // Filter games based on tab - now uses both speed and type fields
+  const filteredGames = games.filter((game) => {
+    const category = getCategory(game);
+    if (activeTab === "Top Rated") return true;
+    if (activeTab === "Blitz") {
+      return category === "Blitz";
+    }
+    if (activeTab === "Rapid") {
+      return category === "Rapid";
+    }
+    if (activeTab === "Classical") {
+      return category === "Classical";
+    }
+    return true;
+  });
+
   return (
     <section>
       {/* Tabs */}
-      <div className="flex space-x-6 border-b border-gray-200 dark:border-gray-800 mb-6">
-        {["Top Rated", "Friends", "Tournaments", "Streamers"].map((tab) => (
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 mb-6">
+        <div className="flex space-x-6">
+          {["Top Rated", "Blitz", "Rapid", "Classical"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => onTabChange(tab)}
+              className={`pb-4 text-sm font-medium transition-colors relative ${
+                activeTab === tab
+                  ? "text-gray-900 dark:text-white"
+                  : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              }`}
+            >
+              {tab}
+              {activeTab === tab && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-500"
+                />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {onRefresh && (
           <button
-            key={tab}
-            onClick={() => onTabChange(tab)}
-            className={`pb-4 text-sm font-medium transition-colors relative ${
-              activeTab === tab
-                ? "text-gray-900 dark:text-white"
-                : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-            }`}
+            onClick={onRefresh}
+            className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 pb-4"
           >
-            {tab}
-            {activeTab === tab && (
-              <motion.div
-                layoutId="activeTab"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-500"
-              />
-            )}
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
           </button>
-        ))}
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {LIVE_GAMES.map((game) => (
-          <LiveGameCard key={game.id} game={game} />
-        ))}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <GameCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : filteredGames.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredGames.map((game, index) => (
+            <LiveGameCard key={`${game.id}-${index}`} game={game} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+          <p>No live games in this category right now</p>
+          <p className="text-sm mt-2">
+            Check back soon or try another category
+          </p>
+        </div>
+      )}
+
+      {/* Lichess attribution */}
+      <div className="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">
+        Live games powered by{" "}
+        <a
+          href="https://lichess.org"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-teal-600 dark:text-teal-500 hover:underline"
+        >
+          Lichess.org
+        </a>
       </div>
     </section>
   );

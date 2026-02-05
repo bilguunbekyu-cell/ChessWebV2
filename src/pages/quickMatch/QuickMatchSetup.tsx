@@ -18,12 +18,16 @@ const TIME_CATEGORIES: TimeCategory[] = [
 ];
 
 interface QuickMatchSetupProps {
+  playAs: "white" | "black" | "random";
+  onPlayAsChange: (value: "white" | "black" | "random") => void;
   timeControl: { initial: number; increment: number };
   onTimeControlChange: (value: { initial: number; increment: number }) => void;
   onStart: () => void;
 }
 
 export function QuickMatchSetup({
+  playAs,
+  onPlayAsChange,
   timeControl,
   onTimeControlChange,
   onStart,
@@ -32,7 +36,7 @@ export function QuickMatchSetup({
   const [activeCategory, setActiveCategory] = useState<string>("Blitz");
 
   // Responsive board width
-  const [boardWidth, setBoardWidth] = useState(620);
+  const [boardWidth, setBoardWidth] = useState(640);
   const containerRef = useRef<HTMLDivElement>(null);
   const leftRef = useRef<HTMLDivElement>(null);
   const topBarRef = useRef<HTMLDivElement>(null);
@@ -44,14 +48,14 @@ export function QuickMatchSetup({
 
     const updateSize = () => {
       const rect = container.getBoundingClientRect();
-      const padding = 6;
-      const headerH = topBarRef.current?.offsetHeight ?? 36;
-      const footerH = bottomBarRef.current?.offsetHeight ?? 32;
+      const padding = 8;
+      const headerH = topBarRef.current?.offsetHeight ?? 40;
+      const footerH = bottomBarRef.current?.offsetHeight ?? 36;
       const availableWidth = rect.width - padding - BOARD_FRAME;
       const availableHeight =
         Math.min(rect.height, window.innerHeight) - headerH - footerH - padding;
       const size = Math.floor(Math.min(availableWidth, availableHeight));
-      setBoardWidth(Math.max(300, Math.min(size, 700)));
+      setBoardWidth(Math.max(320, Math.min(size, 720)));
     };
 
     updateSize();
@@ -88,18 +92,18 @@ export function QuickMatchSetup({
   return (
     <div
       ref={containerRef}
-      className="relative h-screen w-full bg-slate-100 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 overflow-hidden"
+      className="relative min-h-screen w-full bg-slate-100 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
     >
-      <div className="h-full grid grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]">
+      <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
         {/* Left Side - Board Preview with Player Info */}
         <div
           ref={leftRef}
-          className="min-w-0 flex flex-col items-center justify-center p-2 gap-2 h-full"
+          className="flex flex-col items-center justify-center p-3 lg:p-4 gap-3 lg:gap-4"
         >
           {/* Top Opponent Info Bar */}
           <div
             ref={topBarRef}
-            className="w-full max-w-[900px] flex items-center gap-1.5 px-2"
+            className="w-full max-w-[900px] flex items-center gap-2 px-2"
           >
             <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-700 flex-shrink-0">
               <div className="w-full h-full bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center">
@@ -108,10 +112,10 @@ export function QuickMatchSetup({
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-gray-900 dark:text-white text-[13px]">
+                <span className="font-semibold text-gray-900 dark:text-white text-sm">
                   Opponent
                 </span>
-                <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                <span className="text-[11px] text-gray-500 dark:text-gray-400">
                   (Waiting...)
                 </span>
               </div>
@@ -135,7 +139,7 @@ export function QuickMatchSetup({
           {/* Bottom Player Info Bar */}
           <div
             ref={bottomBarRef}
-            className="w-full max-w-[900px] flex items-center gap-1.5 px-2 justify-start"
+            className="w-full max-w-[900px] flex items-center gap-2 px-2 justify-start"
           >
             <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-700 flex-shrink-0">
               {user?.avatar ? (
@@ -153,7 +157,7 @@ export function QuickMatchSetup({
               )}
             </div>
             <div className="flex-1">
-              <span className="font-semibold text-gray-900 dark:text-white text-[13px]">
+              <span className="font-semibold text-gray-900 dark:text-white text-sm">
                 {user?.fullName || "You"}
               </span>
             </div>
@@ -161,21 +165,21 @@ export function QuickMatchSetup({
         </div>
 
         {/* Right Side - Time Format Selection Panel */}
-        <div className="min-w-0 w-full bg-white/90 dark:bg-slate-900/95 border-l border-gray-200/60 dark:border-white/10 flex flex-col h-full overflow-hidden">
+        <div className="w-full bg-white/90 dark:bg-slate-900/95 border-t border-gray-200/60 dark:border-white/10 lg:border-t-0 lg:border-l flex flex-col">
           {/* Panel Header */}
           <div className="p-3 border-b border-gray-200/60 dark:border-white/10">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-teal-500" />
-                <h2 className="font-bold text-[15px] text-gray-900 dark:text-white">
+                <h2 className="font-bold text-base text-gray-900 dark:text-white">
                   Quick Match
                 </h2>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-300 px-2.5 py-0.5 text-[11px] font-semibold">
+                <span className="rounded-full bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-300 px-2 py-0.5 text-[11px] font-semibold">
                   {selectedTimeOption?.label || "Select Time"}
                 </span>
-                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                   {selectedTimeOption?.category || ""}
                 </span>
               </div>
@@ -185,21 +189,21 @@ export function QuickMatchSetup({
             </p>
           </div>
 
-          <div className="flex-1 flex flex-col gap-3 px-3 py-3 overflow-hidden min-h-0">
+          <div className="flex-1 flex flex-col gap-3 px-4 py-3">
             {/* Time Control */}
-            <div className="flex-1 min-h-0 rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 p-3 flex flex-col">
-              <div className="flex items-center gap-2 text-[13px] font-semibold text-gray-900 dark:text-white mb-2">
+            <div className="rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 p-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
                 <Timer className="w-4 h-4 text-teal-500" />
                 <span>Time Control</span>
               </div>
-              <div className="flex flex-wrap gap-2 mb-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 {TIME_CATEGORIES.map((cat) => {
                   const isActive = activeCategory === cat.key;
                   return (
                     <button
                       key={cat.key}
                       onClick={() => setActiveCategory(cat.key)}
-                      className={`flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold transition-all ${
+                      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
                         isActive
                           ? "bg-teal-500 text-white shadow-sm"
                           : "bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-200"
@@ -211,7 +215,7 @@ export function QuickMatchSetup({
                   );
                 })}
               </div>
-              <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2 auto-rows-min">
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {activeOptions.map((opt) => {
                   const isSelected =
                     timeControl.initial === opt.initial &&
@@ -225,7 +229,7 @@ export function QuickMatchSetup({
                           increment: opt.increment,
                         })
                       }
-                      className={`py-2 px-3 rounded-xl text-center text-[13px] font-semibold transition-all ${
+                      className={`py-2 px-3 rounded-lg text-center text-sm font-semibold transition-all ${
                         isSelected
                           ? "bg-teal-500 text-white ring-2 ring-teal-500"
                           : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 ring-1 ring-gray-200 dark:ring-slate-700 hover:ring-gray-300 dark:hover:ring-slate-600"
@@ -238,13 +242,47 @@ export function QuickMatchSetup({
               </div>
             </div>
 
+            {/* Play As Section */}
+            <div className="rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 p-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
+                <span className="text-lg">♟️</span>
+                <span>Play As</span>
+              </div>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {(["white", "black", "random"] as const).map((color) => {
+                  const isSelected = playAs === color;
+                  return (
+                    <button
+                      key={color}
+                      onClick={() => onPlayAsChange(color)}
+                      className={`py-2 px-2 rounded-lg transition-all flex flex-col items-center gap-1 ${
+                        isSelected
+                          ? "bg-teal-500 text-white ring-2 ring-teal-500"
+                          : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 ring-1 ring-gray-200 dark:ring-slate-700 hover:ring-gray-300 dark:hover:ring-slate-600"
+                      }`}
+                    >
+                      <span className="text-lg">
+                        {color === "white"
+                          ? "♔"
+                          : color === "black"
+                            ? "♚"
+                            : "🎲"}
+                      </span>
+                      <span className="text-[11px] font-medium capitalize">
+                        {color}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* Play Button */}
-          <div className="p-3 border-t border-gray-200/60 dark:border-white/10 flex-shrink-0">
+          <div className="p-4 pt-2 border-t border-gray-200/60 dark:border-white/10">
             <button
               onClick={onStart}
-              className="w-full py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-[15px] transition-all shadow-lg hover:shadow-xl active:scale-[0.98]"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-lg transition-all shadow-lg hover:shadow-xl active:scale-[0.98]"
             >
               Play
             </button>

@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useStockfishGame } from "../../hooks/useStockfishGame";
-import type { GameSettings } from "../../components/game";
-import { defaultGameSettings } from "../../hooks/useStockfishGameTypes";
+import { useAuthStore } from "../../store/authStore";
+import { useOnlineQuickMatch } from "../../hooks/useOnlineQuickMatch";
 import { QuickMatchSetup } from "./QuickMatchSetup";
 import { QuickMatchGameView } from "./QuickMatchGameView";
 
 export default function QuickMatch() {
+  const { user } = useAuthStore();
   const {
     game,
     lastMove,
@@ -22,32 +22,23 @@ export default function QuickMatch() {
     setPlayerTime,
     setOpponentTime,
     onSquareClick,
-    handleStartGame,
-    handleResign,
-    handleTimeOut,
-  } = useStockfishGame();
+    opponentName,
+    isSearching,
+    queueStatus,
+    startMatch,
+    cancelMatch,
+    resign,
+    timeOut,
+    rematch,
+    leaveGame,
+  } = useOnlineQuickMatch();
 
   const [timeControl, setTimeControl] = useState({
     initial: 300,
     increment: 0,
   });
-  const difficulty = 5;
-
   const handleStartMatch = () => {
-    const actualPlayAs = Math.random() < 0.5 ? "white" : "black";
-
-    const settings: GameSettings = {
-      ...defaultGameSettings,
-      playAs: actualPlayAs,
-      difficulty,
-      timeControl,
-    };
-
-    handleStartGame(settings);
-  };
-
-  const handleRematch = () => {
-    handleStartGame({ ...gameSettings });
+    startMatch(timeControl, user?.fullName || "Player");
   };
 
   // If game started, show the game board
@@ -67,11 +58,13 @@ export default function QuickMatch() {
         optionSquares={optionSquares}
         preMoveSquares={preMoveSquares}
         onSquareClick={onSquareClick}
+        opponentName={opponentName}
         setOpponentTime={setOpponentTime}
         setPlayerTime={setPlayerTime}
-        onTimeOut={handleTimeOut}
-        onResign={handleResign}
-        onRematch={handleRematch}
+        onTimeOut={timeOut}
+        onResign={resign}
+        onRematch={rematch}
+        onLeave={leaveGame}
       />
     );
   }
@@ -82,6 +75,9 @@ export default function QuickMatch() {
       timeControl={timeControl}
       onTimeControlChange={setTimeControl}
       onStart={handleStartMatch}
+      isSearching={isSearching}
+      queueStatus={queueStatus}
+      onCancel={cancelMatch}
     />
   );
 }

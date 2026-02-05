@@ -8,6 +8,10 @@ import adminUsersRoutes from "./adminUsers.js";
 import adminGamesRoutes from "./adminGames.js";
 import adminPuzzlesRoutes from "./adminPuzzles.js";
 import adminBotsRoutes from "./adminBots.js";
+import featuredEventsRoutes from "./featuredEvents.js";
+import adminFeaturedEventsRoutes from "./adminFeaturedEvents.js";
+import lichessRoutes from "./lichess.js";
+// streamers route included inside lichessRoutes
 
 export {
   authRoutes,
@@ -20,4 +24,7 @@ export {
   adminGamesRoutes,
   adminPuzzlesRoutes,
   adminBotsRoutes,
+  featuredEventsRoutes,
+  adminFeaturedEventsRoutes,
+  lichessRoutes,
 };
