@@ -1,6 +1,8 @@
 import { useCallback } from "react";
 import { API_URL, GameHistoryPayload } from "./useStockfishGameTypes";
 
+let historyErrorLogged = false;
+
 export function useSaveGameHistory() {
   const saveGameHistory = useCallback(
     async (payload: GameHistoryPayload): Promise<string | null> => {
@@ -17,7 +19,12 @@ export function useSaveGameHistory() {
         }
         return null;
       } catch (err) {
-        console.error("Save history failed:", err);
+        if (!historyErrorLogged) {
+          console.warn(
+            "History save skipped (API unavailable). Game continues locally.",
+          );
+          historyErrorLogged = true;
+        }
         return null;
       }
     },

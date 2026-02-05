@@ -17,9 +17,13 @@ export function useGameActions(
   setGameResult: React.Dispatch<React.SetStateAction<string | null>>,
   setPlayerTime: React.Dispatch<React.SetStateAction<number>>,
   setOpponentTime: React.Dispatch<React.SetStateAction<number>>,
+  setSavedGameId: React.Dispatch<React.SetStateAction<string | null>>,
   isEngineThinking: React.MutableRefObject<boolean>,
   historySavedRef: React.MutableRefObject<boolean>,
   startTimeRef: React.MutableRefObject<number | null>,
+  setLastMove?: React.Dispatch<
+    React.SetStateAction<{ from: Square; to: Square } | null>
+  >,
 ) {
   const handleStartGame = useCallback(
     (settings: GameSettings) => {
@@ -28,8 +32,11 @@ export function useGameActions(
       setGame(newGame);
       setGameSettings(settings);
       setShowSetupModal(false);
+      setShowGameOverModal(false);
       setGameStarted(true);
       setGameOver(false);
+      setGameResult(null);
+      setSavedGameId(null);
       setMoves([]);
       setMoveFrom(null);
       setOptionSquares({});
@@ -38,24 +45,29 @@ export function useGameActions(
       isEngineThinking.current = false;
       historySavedRef.current = false;
       startTimeRef.current = Date.now();
+      setLastMove?.(null);
     },
     [
       gameRef,
       setGame,
       setGameSettings,
       setShowSetupModal,
+      setShowGameOverModal,
       setGameStarted,
       setGameOver,
+      setGameResult,
+      setSavedGameId,
       setMoves,
       setMoveFrom,
       setOptionSquares,
       setPlayerTime,
       setOpponentTime,
-      isEngineThinking,
-      historySavedRef,
-      startTimeRef,
-    ],
-  );
+    isEngineThinking,
+    historySavedRef,
+    startTimeRef,
+    setLastMove,
+  ],
+);
 
   const handleNewGame = useCallback(() => {
     const newGame = new Chess();
@@ -69,9 +81,11 @@ export function useGameActions(
     setShowGameOverModal(false);
     setGameOver(false);
     setGameResult(null);
+    setSavedGameId(null);
     isEngineThinking.current = false;
     historySavedRef.current = false;
     startTimeRef.current = null;
+    setLastMove?.(null);
   }, [
     gameRef,
     setGame,
@@ -83,9 +97,11 @@ export function useGameActions(
     setShowGameOverModal,
     setGameOver,
     setGameResult,
+    setSavedGameId,
     isEngineThinking,
     historySavedRef,
     startTimeRef,
+    setLastMove,
   ]);
 
   const handleResign = useCallback(() => {

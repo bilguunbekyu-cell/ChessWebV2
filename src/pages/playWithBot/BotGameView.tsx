@@ -1,0 +1,231 @@
+import { useNavigate } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { useAuthStore } from "../../store/authStore";
+import { GameOverModal, PlayerInfo, GameBoard } from "../../components/game";
+import type { GameSettings } from "../../components/game";
+import { BOARD_FRAME } from "./types";
+import type { CSSProperties } from "react";
+
+interface BotGameViewProps {
+  containerRef: React.RefObject<HTMLDivElement>;
+  leftRef: React.RefObject<HTMLDivElement>;
+  boardWidth: number;
+  game: { fen: () => string };
+  moves: string[];
+  gameSettings: GameSettings;
+  gameStarted: boolean;
+  gameOver: boolean;
+  gameResult: string | null;
+  isPlayerTurn: boolean;
+  savedGameId: string | null;
+  showGameOverModal: boolean;
+  optionSquares: Record<string, CSSProperties>;
+  preMoveSquares: Record<string, CSSProperties>;
+  lastMove?: { from: string; to: string } | null;
+  onSquareClick: (square: string) => void;
+  setOpponentTime: (time: number) => void;
+  setPlayerTime: (time: number) => void;
+  onTimeOut: (isPlayer: boolean) => void;
+  onResign: () => void;
+  onRematch: () => void;
+  onNewGame: () => void;
+}
+
+export function BotGameView({
+  containerRef,
+  leftRef,
+  boardWidth,
+  game,
+  moves,
+  gameSettings,
+  gameStarted,
+  gameOver,
+  gameResult,
+  isPlayerTurn,
+  savedGameId,
+  showGameOverModal,
+  optionSquares,
+  preMoveSquares,
+  lastMove,
+  onSquareClick,
+  setOpponentTime,
+  setPlayerTime,
+  onTimeOut,
+  onResign,
+  onRematch,
+  onNewGame,
+}: BotGameViewProps) {
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
+  const movesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-scroll moves list to the latest move
+  useEffect(() => {
+    if (movesEndRef.current) {
+      movesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [moves]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative h-screen w-full bg-slate-100 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 overflow-hidden"
+    >
+      <div className="h-full grid grid-cols-1 lg:grid-cols-2 min-h-0">
+        <GameOverModal
+          isOpen={showGameOverModal}
+          result={gameResult}
+          onTryAgain={onRematch}
+          onNewGame={onNewGame}
+          savedGameId={savedGameId}
+        />
+
+        {/* Left Side - Board with Player Info */}
+        <div
+          ref={leftRef}
+          className="flex flex-col items-center justify-center p-4 gap-4 h-full min-h-0"
+        >
+          {/* Top Player Info Bar (Opponent) */}
+          <div className="w-full max-w-[900px] flex items-center gap-3 px-2">
+            <PlayerInfo
+              name={gameSettings.selectedBot?.name || "Stockfish"}
+              subtitle={`${gameSettings.selectedBot?.title || ""} ${gameSettings.selectedBot?.rating || gameSettings.difficulty * 100}`}
+              avatarLetter={gameSettings.selectedBot?.avatar || "🤖"}
+              avatarStyle="opponent"
+              initialTime={gameSettings.timeControl.initial}
+              increment={gameSettings.timeControl.increment}
+              isTimerActive={
+                gameStarted &&
+                !isPlayerTurn &&
+                !gameOver &&
+                gameSettings.timeControl.initial > 0
+              }
+              onTimeOut={() => onTimeOut(false)}
+              onTimeChange={setOpponentTime}
+            />
+          </div>
+
+          {/* Chess Board */}
+          <div
+            className="rounded-2xl overflow-hidden shadow-2xl border border-gray-200/60 dark:border-white/10"
+            style={{ width: boardWidth }}
+          >
+            <GameBoard
+              fen={game.fen()}
+              boardWidth={boardWidth}
+              boardOrientation={gameSettings.playAs}
+              onSquareClick={onSquareClick}
+              customSquareStyles={{ ...optionSquares, ...preMoveSquares }}
+              lastMove={lastMove}
+            />
+          </div>
+
+          {/* Bottom Player Info Bar (You) */}
+          <div className="w-full max-w-[900px] flex items-center gap-3 px-2 justify-start">
+            <PlayerInfo
+              name={user?.fullName || "You"}
+              subtitle={gameSettings.playAs === "white" ? "White" : "Black"}
+              avatarLetter={
+                user?.fullName?.substring(0, 2).toUpperCase() || "U"
+              }
+              avatarImage={user?.avatar}
+              avatarStyle="player"
+              initialTime={gameSettings.timeControl.initial}
+              increment={gameSettings.timeControl.increment}
+              isTimerActive={
+                gameStarted &&
+                isPlayerTurn &&
+                !gameOver &&
+                gameSettings.timeControl.initial > 0
+              }
+              onTimeOut={() => onTimeOut(true)}
+              onTimeChange={setPlayerTime}
+            />
+          </div>
+        </div>
+
+        {/* Right Side - Game Panel (same width as bot selection) */}
+          <div className="w-full bg-white/90 dark:bg-slate-900/95 border-l border-gray-200/60 dark:border-white/10 flex flex-col h-full">
+          {/* Panel Header */}
+          <div className="p-4 border-b border-gray-200/60 dark:border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="text-3xl">
+                {gameSettings.selectedBot?.avatar || "🤖"}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    {gameSettings.selectedBot?.name || "Stockfish"}
+                  </h2>
+                  {gameSettings.selectedBot?.title && (
+                    <span className="px-2 py-0.5 text-xs font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded">
+                      {gameSettings.selectedBot.title}
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Rating: {gameSettings.selectedBot?.rating || "N/A"}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Move List */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="p-3">
+              {moves.length === 0 ? (
+                <div className="text-center text-gray-400 dark:text-gray-500 text-sm py-8">
+                  Game in progress...
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-1">
+                    {Array.from(
+                      { length: Math.ceil(moves.length / 2) },
+                      (_, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center text-sm font-mono"
+                        >
+                          <span className="w-8 text-gray-400 dark:text-gray-500">
+                            {i + 1}.
+                          </span>
+                          <span className="flex-1 px-2 text-gray-800 dark:text-gray-200">
+                            {moves[i * 2]}
+                          </span>
+                          {moves[i * 2 + 1] && (
+                            <span className="flex-1 px-2 text-gray-800 dark:text-gray-200">
+                              {moves[i * 2 + 1]}
+                            </span>
+                          )}
+                        </div>
+                      ),
+                    )}
+                  </div>
+                  <div ref={movesEndRef} />
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="p-4 pb-6 border-t border-gray-200/60 dark:border-white/10 flex flex-col gap-2">
+            <button
+              onClick={onResign}
+              disabled={gameOver}
+              className="w-full py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-medium transition-colors disabled:opacity-50"
+            >
+              Resign
+            </button>
+            <button
+              onClick={() => navigate("/play/bot")}
+              className="w-full py-3 rounded-xl bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 font-medium transition-colors"
+            >
+              Back to Bot Selection
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

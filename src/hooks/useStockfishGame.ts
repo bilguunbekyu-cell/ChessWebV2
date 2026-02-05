@@ -36,6 +36,9 @@ export function useStockfishGame() {
   const [showGameOverModal, setShowGameOverModal] = useState(false);
   const [gameResult, setGameResult] = useState<string | null>(null);
   const [gameOver, setGameOver] = useState(false);
+  const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(
+    null,
+  );
   const [playerTime, setPlayerTime] = useState(300);
   const [opponentTime, setOpponentTime] = useState(300);
   const [savedGameId, setSavedGameId] = useState<string | null>(null);
@@ -81,6 +84,7 @@ export function useStockfishGame() {
         gameRef.current = currentGame;
         setGame(new Chess(currentGame.fen()));
         setMoves(currentGame.history());
+        setLastMove({ from: queued.from as Square, to: queued.to as Square });
       }
     } catch {
       // invalid premove in new position; just drop it
@@ -98,6 +102,7 @@ export function useStockfishGame() {
       gameOver,
       setGame,
       setMoves,
+      setLastMove,
       tryApplyPreMove,
     );
 
@@ -159,6 +164,7 @@ export function useStockfishGame() {
     getMoveOptions,
     setPreMove,
     clearPreMove,
+    setLastMove,
   );
 
   // Game actions
@@ -177,9 +183,11 @@ export function useStockfishGame() {
       setGameResult,
       setPlayerTime,
       setOpponentTime,
+      setSavedGameId,
       isEngineThinking,
       historySavedRef,
       startTimeRef,
+      setLastMove,
     );
 
   return {
@@ -193,6 +201,7 @@ export function useStockfishGame() {
     isPlayerTurn,
     playerColor,
     savedGameId,
+    lastMove,
 
     // UI state
     showSetupModal,

@@ -1,0 +1,73 @@
+import mongoose from "mongoose";
+
+const HistorySchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    // PGN Headers
+    event: { type: String, default: "ChessFlow Game" },
+    site: { type: String, default: "ChessFlow" },
+    date: { type: String },
+    round: { type: String, default: "-" },
+    white: { type: String, required: true },
+    black: { type: String, required: true },
+    result: { type: String, required: true },
+
+    // Position
+    currentPosition: { type: String },
+
+    // Time
+    timeControl: { type: String },
+    utcDate: { type: String },
+    utcTime: { type: String },
+    startTime: { type: String },
+    endDate: { type: String },
+    endTime: { type: String },
+
+    // Ratings
+    whiteElo: { type: Number, default: 1200 },
+    blackElo: { type: Number, default: 1200 },
+
+    // Game info
+    timezone: { type: String, default: "UTC" },
+    eco: { type: String, default: "" },
+    ecoUrl: { type: String, default: "" },
+    link: { type: String, default: "" },
+    termination: { type: String },
+    whiteUrl: { type: String, default: "" },
+    whiteCountry: { type: String, default: "" },
+    whiteTitle: { type: String, default: "" },
+    blackUrl: { type: String, default: "" },
+    blackCountry: { type: String, default: "" },
+    blackTitle: { type: String, default: "" },
+
+    // Moves
+    moves: { type: [String], default: [] },
+    moveText: { type: String, default: "" },
+    pgn: { type: String },
+    analysis: [
+      {
+        ply: { type: Number, required: true },
+        cp: { type: Number },
+        mate: { type: Number },
+      },
+    ],
+    moveTimes: { type: [Number], default: [] },
+
+    // Additional metadata
+    playAs: { type: String, enum: ["white", "black"], required: true },
+    opponent: { type: String, default: "Stockfish" },
+    opponentLevel: { type: Number },
+    durationMs: { type: Number },
+  },
+  { timestamps: true },
+);
+
+const History =
+  mongoose.models.History || mongoose.model("History", HistorySchema);
+
+export default History;

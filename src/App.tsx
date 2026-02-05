@@ -8,22 +8,28 @@ import {
 } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
-import Game from "./pages/Game";
-import Puzzles from "./pages/Puzzles";
-import PuzzleTrainer from "./pages/PuzzleTrainer";
+import Game from "./pages/game";
+import PlayWithBot, { BotGamePage } from "./pages/playWithBot";
+import QuickMatch from "./pages/quickMatch";
+import PlayWithFriend from "./pages/playWithFriend";
+import PlayVariants from "./pages/playVariants";
+import PlayPractice from "./pages/playPractice";
+import Puzzles from "./pages/puzzles";
+import PuzzleTrainer from "./pages/puzzleTrainer";
 import Learn from "./pages/Learn";
-import Watch from "./pages/Watch";
+import Watch from "./pages/watch";
 import Community from "./pages/Community";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
-import Analyze from "./pages/Analyze";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminUsers from "./pages/AdminUsers";
+import Analyze from "./pages/analyze";
+import AdminDashboard from "./pages/adminDashboard";
+import AdminUsers from "./pages/adminUsers";
 import AdminUserProfile from "./pages/AdminUserProfile";
-import AdminAnalyze from "./pages/AdminAnalyze";
+import AdminAnalyze from "./pages/adminAnalyze";
 import AdminPuzzles from "./pages/AdminPuzzles";
+import { AdminBots } from "./pages/adminBots";
 import { useThemeStore } from "./store/themeStore";
 import { useAuthStore, authApi } from "./store/authStore";
 
@@ -107,7 +113,13 @@ function ThemeController() {
 
 function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const isGamePage = location.pathname === "/play";
+  const isGamePage =
+    location.pathname === "/play" ||
+    location.pathname === "/play/bot" ||
+    location.pathname === "/play/quick" ||
+    location.pathname === "/play/friend" ||
+    location.pathname === "/play/variants" ||
+    location.pathname === "/play/practice";
 
   // Pages that have their own sidebar or are auth pages
   const hasOwnLayout =
@@ -121,7 +133,8 @@ function Layout({ children }: { children: React.ReactNode }) {
     ].includes(location.pathname) ||
     location.pathname.startsWith("/puzzles/train") ||
     location.pathname.startsWith("/analyze") ||
-    location.pathname.startsWith("/admin");
+    location.pathname.startsWith("/admin") ||
+    location.pathname.match(/^\/play\/bot\/.+/);
 
   // For pages with their own layout, just render children
   if (hasOwnLayout) {
@@ -129,13 +142,17 @@ function Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white font-sans selection:bg-teal-500/30 transition-colors duration-300">
+    <div
+      className={`bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white font-sans selection:bg-teal-500/30 transition-colors duration-300 ${
+        isGamePage ? "h-screen overflow-hidden" : "min-h-screen"
+      }`}
+    >
       <Sidebar />
 
       {/* Main Content Wrapper */}
       <div
         className={`flex-1 flex flex-col md:ml-64 relative z-10 ${
-          isGamePage ? "h-screen" : "min-h-screen"
+          isGamePage ? "h-screen overflow-hidden" : "min-h-screen"
         }`}
       >
         {/* Main Content */}
@@ -155,7 +172,12 @@ function Layout({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <ThemeController />
       <AuthChecker />
       <Layout>
@@ -192,6 +214,54 @@ function App() {
             element={
               <ProtectedRoute>
                 <Game />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/play/bot"
+            element={
+              <ProtectedRoute>
+                <PlayWithBot />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/play/bot/:botId"
+            element={
+              <ProtectedRoute>
+                <BotGamePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/play/quick"
+            element={
+              <ProtectedRoute>
+                <QuickMatch />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/play/variants"
+            element={
+              <ProtectedRoute>
+                <PlayVariants />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/play/practice"
+            element={
+              <ProtectedRoute>
+                <PlayPractice />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/play/friend"
+            element={
+              <ProtectedRoute>
+                <PlayWithFriend />
               </ProtectedRoute>
             }
           />
@@ -265,6 +335,7 @@ function App() {
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/users/:userId" element={<AdminUserProfile />} />
           <Route path="/admin/puzzles" element={<AdminPuzzles />} />
+          <Route path="/admin/bots" element={<AdminBots />} />
           <Route path="/admin/analyze/:gameId" element={<AdminAnalyze />} />
         </Routes>
       </Layout>

@@ -10,6 +10,9 @@ export function useEngineMoves(
   gameOver: boolean,
   setGame: React.Dispatch<React.SetStateAction<Chess>>,
   setMoves: React.Dispatch<React.SetStateAction<string[]>>,
+  setLastMove?: React.Dispatch<
+    React.SetStateAction<{ from: Square; to: Square } | null>
+  >,
   tryApplyPreMove: () => void,
 ) {
   const isEngineThinking = useRef(false);
@@ -64,6 +67,7 @@ export function useEngineMoves(
               gameRef.current = currentGame;
               setGame(new Chess(currentGame.fen()));
               setMoves(currentGame.history());
+              setLastMove?.({ from, to });
             }
           } catch (e) {
             console.error("Engine move error:", e);

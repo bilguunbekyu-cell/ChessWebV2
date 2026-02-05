@@ -15,6 +15,9 @@ export function useSquareClickHandler(
   getMoveOptions: (square: Square) => boolean,
   setPreMove: (from: string, to: string, promotion?: string) => void,
   clearPreMove: () => void,
+  setLastMove?: React.Dispatch<
+    React.SetStateAction<{ from: Square; to: Square } | null>
+  >,
 ) {
   const onSquareClick = useCallback(
     (square: Square) => {
@@ -71,6 +74,7 @@ export function useSquareClickHandler(
           setGame(new Chess(currentGame.fen()));
           setMoves(currentGame.history());
           clearPreMove();
+          setLastMove?.({ from: moveFrom, to: square });
         }
       } catch {
         const piece = currentGame.get(square);
@@ -97,6 +101,7 @@ export function useSquareClickHandler(
       getMoveOptions,
       setPreMove,
       clearPreMove,
+      setLastMove,
     ],
   );
 

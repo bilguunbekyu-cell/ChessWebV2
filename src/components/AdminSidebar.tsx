@@ -9,6 +9,7 @@ import {
   Shield,
   BarChart3,
   Brain,
+  Bot,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useThemeStore } from "../store/themeStore";
@@ -29,6 +30,7 @@ export default function AdminSidebar() {
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
     { icon: Users, label: "Users", path: "/admin/users" },
+    { icon: Bot, label: "Bots", path: "/admin/bots" },
     { icon: Brain, label: "Puzzles", path: "/admin/puzzles" },
     { icon: Gamepad2, label: "Games", path: "/admin/games" },
     { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },

@@ -4,6 +4,7 @@ export interface BotPersonality {
   id: string;
   name: string;
   avatar: string; // emoji or image path
+  avatarUrl?: string; // actual image URL
   rating: number;
   title?: string; // GM, IM, etc.
   description: string;

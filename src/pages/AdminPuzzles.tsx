@@ -11,11 +11,16 @@ import {
   Brain,
   RotateCcw,
   Play,
-  Square,
+  Square as SquareIcon,
   Eraser,
   Star,
 } from "lucide-react";
 import { Chessboard } from "react-chessboard";
+import type {
+  BoardPosition,
+  Piece,
+  Square,
+} from "react-chessboard/dist/chessboard/types";
 import { Chess } from "chess.js";
 import AdminSidebar from "../components/AdminSidebar";
 import { useAdminStore } from "../store/adminStore";
@@ -68,20 +73,26 @@ const defaultFormData: PuzzleFormData = {
   puzzleType: "Mate in 2",
 };
 
-const PIECE_PALETTE = [
-  { piece: "wK", label: "♔" },
-  { piece: "wQ", label: "♕" },
-  { piece: "wR", label: "♖" },
-  { piece: "wB", label: "♗" },
-  { piece: "wN", label: "♘" },
-  { piece: "wP", label: "♙" },
-  { piece: "bK", label: "♚" },
-  { piece: "bQ", label: "♛" },
-  { piece: "bR", label: "♜" },
-  { piece: "bB", label: "♝" },
-  { piece: "bN", label: "♞" },
-  { piece: "bP", label: "♟" },
-];
+type SelectedTool = Piece | "eraser" | null;
+
+// Piece image URLs from the same source react-chessboard uses
+const PIECE_IMAGES: Record<Piece, string> = {
+  wK: "https://react-chessboard.com/img/chesspieces/wikipedia/wK.png",
+  wQ: "https://react-chessboard.com/img/chesspieces/wikipedia/wQ.png",
+  wR: "https://react-chessboard.com/img/chesspieces/wikipedia/wR.png",
+  wB: "https://react-chessboard.com/img/chesspieces/wikipedia/wB.png",
+  wN: "https://react-chessboard.com/img/chesspieces/wikipedia/wN.png",
+  wP: "https://react-chessboard.com/img/chesspieces/wikipedia/wP.png",
+  bK: "https://react-chessboard.com/img/chesspieces/wikipedia/bK.png",
+  bQ: "https://react-chessboard.com/img/chesspieces/wikipedia/bQ.png",
+  bR: "https://react-chessboard.com/img/chesspieces/wikipedia/bR.png",
+  bB: "https://react-chessboard.com/img/chesspieces/wikipedia/bB.png",
+  bN: "https://react-chessboard.com/img/chesspieces/wikipedia/bN.png",
+  bP: "https://react-chessboard.com/img/chesspieces/wikipedia/bP.png",
+};
+
+const WHITE_PIECES: Piece[] = ["wK", "wQ", "wR", "wB", "wN", "wP"];
+const BLACK_PIECES: Piece[] = ["bK", "bQ", "bR", "bB", "bN", "bP"];
 
 export default function AdminPuzzles() {
   const navigate = useNavigate();
@@ -94,10 +105,7 @@ export default function AdminPuzzles() {
   const [formData, setFormData] = useState<PuzzleFormData>(defaultFormData);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [selectedPiece, setSelectedPiece] = useState<string | null>(null);
-  const [boardPosition, setBoardPosition] = useState<Record<string, string>>(
-    {},
-  );
+  const [selectedPiece, setSelectedPiece] = useState<SelectedTool>(null);
   const [isRecordingSolution, setIsRecordingSolution] = useState(false);
   const [solutionMoves, setSolutionMoves] = useState<string[]>([]);
   const [solutionGame, setSolutionGame] = useState<Chess | null>(null);
@@ -132,7 +140,6 @@ export default function AdminPuzzles() {
   const handleCreate = () => {
     setEditingPuzzle(null);
     setFormData(defaultFormData);
-    setBoardPosition({});
     setSelectedPiece(null);
     setIsRecordingSolution(false);
     setSolutionMoves([]);
@@ -142,7 +149,7 @@ export default function AdminPuzzles() {
 
   // Convert board position object to FEN
   const positionToFen = (
-    position: Record<string, string>,
+    position: BoardPosition,
     isWhiteToMove: boolean,
   ): string => {
     const rows: string[] = [];
@@ -172,8 +179,8 @@ export default function AdminPuzzles() {
   };
 
   // Convert FEN to board position object
-  const fenToPosition = (fen: string): Record<string, string> => {
-    const position: Record<string, string> = {};
+  const fenToPosition = (fen: string): BoardPosition => {
+    const position: BoardPosition = {};
     const parts = fen.split(" ");
     const rows = parts[0].split("/");
 
@@ -196,21 +203,23 @@ export default function AdminPuzzles() {
   };
 
   // Handle clicking on board square to place/remove piece
-  const handleSquareClick = (square: string) => {
-    if (isRecordingSolution) return;
+  const handleSquareClick = (square: Square) => {
+    if (isRecordingSolution || !selectedPiece) return;
 
-    if (selectedPiece === "eraser") {
-      const newPosition = { ...boardPosition };
-      delete newPosition[square];
-      setBoardPosition(newPosition);
-      const newFen = positionToFen(newPosition, formData.isWhiteToMove);
-      setFormData({ ...formData, fen: newFen });
-    } else if (selectedPiece) {
-      const newPosition = { ...boardPosition, [square]: selectedPiece };
-      setBoardPosition(newPosition);
-      const newFen = positionToFen(newPosition, formData.isWhiteToMove);
-      setFormData({ ...formData, fen: newFen });
-    }
+    setFormData((prevForm) => {
+      const nextPosition = fenToPosition(prevForm.fen);
+
+      if (selectedPiece === "eraser") {
+        delete nextPosition[square];
+      } else {
+        nextPosition[square] = selectedPiece;
+      }
+
+      return {
+        ...prevForm,
+        fen: positionToFen(nextPosition, prevForm.isWhiteToMove),
+      };
+    });
   };
 
   // Handle recording solution moves
@@ -270,21 +279,28 @@ export default function AdminPuzzles() {
 
   // Clear the board
   const clearBoard = () => {
-    setBoardPosition({});
-    setFormData({ ...formData, fen: "8/8/8/8/8/8/8/8 w - - 0 1" });
+    setFormData((prev) => ({
+      ...prev,
+      fen: positionToFen({}, prev.isWhiteToMove),
+    }));
   };
 
   // Set starting position
   const setStartingPosition = () => {
-    const startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    setBoardPosition(fenToPosition(startFen));
-    setFormData({ ...formData, fen: startFen });
+    setFormData((prev) => {
+      const startFenBase = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+      const startFen = `${startFenBase} ${prev.isWhiteToMove ? "w" : "b"} KQkq - 0 1`;
+      return { ...prev, fen: startFen };
+    });
   };
 
   // Update FEN when isWhiteToMove changes
   const handleWhiteToMoveChange = (isWhite: boolean) => {
-    const newFen = positionToFen(boardPosition, isWhite);
-    setFormData({ ...formData, isWhiteToMove: isWhite, fen: newFen });
+    setFormData((prev) => ({
+      ...prev,
+      isWhiteToMove: isWhite,
+      fen: positionToFen(fenToPosition(prev.fen), isWhite),
+    }));
   };
 
   // Auto-generate title based on puzzle type
@@ -295,8 +311,6 @@ export default function AdminPuzzles() {
 
   const handleEdit = (puzzle: Puzzle) => {
     setEditingPuzzle(puzzle);
-    const position = fenToPosition(puzzle.fen);
-    setBoardPosition(position);
     setSelectedPiece(null);
     setIsRecordingSolution(false);
     setSolutionMoves([]);
@@ -652,40 +666,88 @@ export default function AdminPuzzles() {
 
                   {/* Piece Palette */}
                   {!isRecordingSolution && (
-                    <div className="flex flex-wrap gap-1 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                      {PIECE_PALETTE.map(({ piece, label }) => (
+                    <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg space-y-2">
+                      {/* White Pieces Row */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-300 w-12">
+                          White
+                        </span>
+                        <div className="flex gap-1">
+                          {WHITE_PIECES.map((piece) => (
+                            <button
+                              key={piece}
+                              type="button"
+                              onClick={() =>
+                                setSelectedPiece(
+                                  selectedPiece === piece ? null : piece,
+                                )
+                              }
+                              className={`w-9 h-9 flex items-center justify-center rounded transition-colors ${
+                                selectedPiece === piece
+                                  ? "bg-teal-500 ring-2 ring-teal-400"
+                                  : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+                              }`}
+                            >
+                              <img
+                                src={PIECE_IMAGES[piece]}
+                                alt={piece}
+                                className="w-7 h-7"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {/* Black Pieces Row */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-300 w-12">
+                          Black
+                        </span>
+                        <div className="flex gap-1">
+                          {BLACK_PIECES.map((piece) => (
+                            <button
+                              key={piece}
+                              type="button"
+                              onClick={() =>
+                                setSelectedPiece(
+                                  selectedPiece === piece ? null : piece,
+                                )
+                              }
+                              className={`w-9 h-9 flex items-center justify-center rounded transition-colors ${
+                                selectedPiece === piece
+                                  ? "bg-teal-500 ring-2 ring-teal-400"
+                                  : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+                              }`}
+                            >
+                              <img
+                                src={PIECE_IMAGES[piece]}
+                                alt={piece}
+                                className="w-7 h-7"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {/* Eraser */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-300 w-12">
+                          Tool
+                        </span>
                         <button
-                          key={piece}
                           type="button"
                           onClick={() =>
                             setSelectedPiece(
-                              selectedPiece === piece ? null : piece,
+                              selectedPiece === "eraser" ? null : "eraser",
                             )
                           }
-                          className={`w-9 h-9 text-2xl flex items-center justify-center rounded transition-colors ${
-                            selectedPiece === piece
-                              ? "bg-teal-500 text-white"
-                              : "hover:bg-gray-200 dark:hover:bg-gray-700"
+                          className={`w-9 h-9 flex items-center justify-center rounded transition-colors ${
+                            selectedPiece === "eraser"
+                              ? "bg-red-500 text-white"
+                              : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
                           }`}
                         >
-                          {label}
+                          <Eraser size={18} />
                         </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedPiece(
-                            selectedPiece === "eraser" ? null : "eraser",
-                          )
-                        }
-                        className={`w-9 h-9 flex items-center justify-center rounded transition-colors ${
-                          selectedPiece === "eraser"
-                            ? "bg-red-500 text-white"
-                            : "hover:bg-gray-200 dark:hover:bg-gray-700"
-                        }`}
-                      >
-                        <Eraser size={18} />
-                      </button>
+                      </div>
                     </div>
                   )}
 
@@ -695,7 +757,7 @@ export default function AdminPuzzles() {
                       position={
                         isRecordingSolution && solutionGame
                           ? solutionGame.fen()
-                          : boardPosition
+                          : formData.fen
                       }
                       onSquareClick={handleSquareClick}
                       onPieceDrop={onDrop}
@@ -724,7 +786,7 @@ export default function AdminPuzzles() {
                           onClick={stopRecordingSolution}
                           className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium"
                         >
-                          <Square size={16} />
+                          <SquareIcon size={16} />
                           Stop Recording
                         </button>
                         <button

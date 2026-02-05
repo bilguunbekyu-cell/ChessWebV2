@@ -5,6 +5,7 @@ import { BarChart2 } from "lucide-react";
 interface GameOverModalProps {
   isOpen: boolean;
   result: string | null;
+  onTryAgain: () => void;
   onNewGame: () => void;
   savedGameId: string | null;
 }
@@ -12,6 +13,7 @@ interface GameOverModalProps {
 export function GameOverModal({
   isOpen,
   result,
+  onTryAgain,
   onNewGame,
   savedGameId,
 }: GameOverModalProps) {
@@ -49,8 +51,17 @@ export function GameOverModal({
             {savedGameId ? "Analyze Game" : "Saving..."}
           </button>
           <button
-            onClick={onNewGame}
+            onClick={onTryAgain}
             className="w-full py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-lg font-medium"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={() => {
+              onNewGame();
+              navigate("/play/bot");
+            }}
+            className="w-full py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium"
           >
             New Game
           </button>

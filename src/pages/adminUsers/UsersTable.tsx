@@ -1,0 +1,129 @@
+import { User, SortField } from "./types";
+import { UsersTableHeader, UsersTableEmpty } from "./UsersTableHeader";
+import { UserRow } from "./UserRow";
+
+interface UsersTableProps {
+  users: User[];
+  loadingUsers: boolean;
+  searchQuery: string;
+  sortBy: SortField;
+  sortOrder: "asc" | "desc";
+  deleteConfirm: string | null;
+  banConfirm: string | null;
+  banReason: string;
+  deleting: boolean;
+  banning: boolean;
+  onSearchChange: (query: string) => void;
+  onSort: (field: SortField) => void;
+  onDeleteConfirm: (userId: string | null) => void;
+  onBanConfirm: (userId: string | null) => void;
+  onBanReasonChange: (reason: string) => void;
+  onDelete: (userId: string) => void;
+  onBan: (userId: string, shouldBan: boolean, reason: string) => void;
+}
+
+export function UsersTable({
+  users,
+  loadingUsers,
+  searchQuery,
+  sortBy,
+  sortOrder,
+  deleteConfirm,
+  banConfirm,
+  banReason,
+  deleting,
+  banning,
+  onSearchChange,
+  onSort,
+  onDeleteConfirm,
+  onBanConfirm,
+  onBanReasonChange,
+  onDelete,
+  onBan,
+}: UsersTableProps) {
+  return (
+    <>
+      <UsersTableHeader
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSort={onSort}
+      />
+
+      {loadingUsers || users.length === 0 ? (
+        <UsersTableEmpty
+          searchQuery={searchQuery}
+          onClearSearch={() => onSearchChange("")}
+          isLoading={loadingUsers}
+        />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 dark:bg-gray-800/50">
+              <tr>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+                  User
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+                  <button
+                    onClick={() => onSort("rating")}
+                    className="hover:text-teal-500"
+                  >
+                    Rating
+                  </button>
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+                  <button
+                    onClick={() => onSort("gamesPlayed")}
+                    className="hover:text-teal-500"
+                  >
+                    Games
+                  </button>
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+                  W/L/D
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Win Rate
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Status
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+                  <button
+                    onClick={() => onSort("createdAt")}
+                    className="hover:text-teal-500"
+                  >
+                    Joined
+                  </button>
+                </th>
+                <th className="text-right px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+              {users.map((user) => (
+                <UserRow
+                  key={user._id}
+                  user={user}
+                  deleteConfirm={deleteConfirm}
+                  banConfirm={banConfirm}
+                  banReason={banReason}
+                  deleting={deleting}
+                  banning={banning}
+                  onDeleteConfirm={onDeleteConfirm}
+                  onBanConfirm={onBanConfirm}
+                  onBanReasonChange={onBanReasonChange}
+                  onDelete={onDelete}
+                  onBan={onBan}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
+}

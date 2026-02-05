@@ -1,0 +1,112 @@
+import { motion } from "framer-motion";
+import { Eye, ChevronRight } from "lucide-react";
+import { LiveGame, LIVE_GAMES } from "./types";
+
+interface LiveGameCardProps {
+  game: LiveGame;
+}
+
+export function LiveGameCard({ game }: LiveGameCardProps) {
+  return (
+    <motion.div
+      whileHover={{ y: -4 }}
+      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-colors cursor-pointer group shadow-sm hover:shadow-md"
+    >
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex items-center space-x-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+          <span>
+            {game.type} • {game.time}
+          </span>
+        </div>
+        <div className="flex items-center space-x-1 text-xs text-gray-500">
+          <Eye className="w-3 h-3" />
+          <span>{game.viewers}</span>
+        </div>
+      </div>
+
+      <div className="space-y-3 mb-4">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <div className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs">
+              ♟️
+            </div>
+            <span className="font-medium text-gray-900 dark:text-gray-200">
+              {game.white}
+            </span>
+          </div>
+          <span className="text-xs font-mono text-gray-500">
+            {game.whiteRating}
+          </span>
+        </div>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <div className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-100 flex items-center justify-center text-xs text-black">
+              ♙
+            </div>
+            <span className="font-medium text-gray-900 dark:text-gray-200">
+              {game.black}
+            </span>
+          </div>
+          <span className="text-xs font-mono text-gray-500">
+            {game.blackRating}
+          </span>
+        </div>
+      </div>
+
+      <div className="pt-4 border-t border-gray-200 dark:border-gray-800 flex justify-between items-center">
+        <div className="flex -space-x-2">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-white dark:border-gray-900"
+            ></div>
+          ))}
+        </div>
+        <button className="text-teal-600 dark:text-teal-500 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+          Watch <ChevronRight className="w-4 h-4 ml-1" />
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+interface LiveGamesGridProps {
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+}
+
+export function LiveGamesGrid({ activeTab, onTabChange }: LiveGamesGridProps) {
+  return (
+    <section>
+      {/* Tabs */}
+      <div className="flex space-x-6 border-b border-gray-200 dark:border-gray-800 mb-6">
+        {["Top Rated", "Friends", "Tournaments", "Streamers"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => onTabChange(tab)}
+            className={`pb-4 text-sm font-medium transition-colors relative ${
+              activeTab === tab
+                ? "text-gray-900 dark:text-white"
+                : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+            }`}
+          >
+            {tab}
+            {activeTab === tab && (
+              <motion.div
+                layoutId="activeTab"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-500"
+              />
+            )}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {LIVE_GAMES.map((game) => (
+          <LiveGameCard key={game.id} game={game} />
+        ))}
+      </div>
+    </section>
+  );
+}

@@ -1,0 +1,38 @@
+import { motion } from "framer-motion";
+
+interface CustomDifficultySelectorProps {
+  difficulty: number;
+  setDifficulty: (level: number) => void;
+}
+
+export function CustomDifficultySelector({
+  difficulty,
+  setDifficulty,
+}: CustomDifficultySelectorProps) {
+  return (
+    <motion.div
+      key="custom"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+    >
+      <div className="mb-6">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+          Difficulty: Level {difficulty}
+        </label>
+        <input
+          type="range"
+          min="1"
+          max="10"
+          value={difficulty}
+          onChange={(e) => setDifficulty(Number(e.target.value))}
+          className="w-full accent-teal-600"
+        />
+        <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <span>Easy</span>
+          <span>Hard</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}

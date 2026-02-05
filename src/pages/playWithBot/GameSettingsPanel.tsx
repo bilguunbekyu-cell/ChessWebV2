@@ -1,0 +1,117 @@
+import { BotPersonality } from "../../data/botPersonalities";
+import { TIME_OPTIONS } from "./types";
+
+interface GameSettingsPanelProps {
+  selectedBot: BotPersonality | null;
+  playAs: "white" | "black" | "random";
+  onPlayAsChange: (value: "white" | "black" | "random") => void;
+  timeControl: { initial: number; increment: number };
+  onTimeControlChange: (value: { initial: number; increment: number }) => void;
+  onStart: () => void;
+}
+
+export function GameSettingsPanel({
+  selectedBot,
+  playAs,
+  onPlayAsChange,
+  timeControl,
+  onTimeControlChange,
+  onStart,
+}: GameSettingsPanelProps) {
+  return (
+    <div className="lg:col-span-1">
+      <div className="rounded-2xl border border-gray-200/60 dark:border-white/10 bg-white/80 dark:bg-slate-800/80 p-5 sticky top-6">
+        {/* Selected Bot Preview */}
+        {selectedBot ? (
+          <div className="mb-6 pb-4 border-b border-gray-200/60 dark:border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="text-4xl">{selectedBot.avatar}</div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-gray-900 dark:text-white">
+                    {selectedBot.name}
+                  </span>
+                  {selectedBot.title && (
+                    <span className="px-1.5 py-0.5 text-xs font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded">
+                      {selectedBot.title}
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Rating: {selectedBot.rating}
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 italic">
+              "{selectedBot.personality}"
+            </p>
+          </div>
+        ) : (
+          <div className="mb-6 pb-4 border-b border-gray-200/60 dark:border-white/10 text-center text-gray-400 dark:text-gray-500">
+            Select a bot to play against
+          </div>
+        )}
+
+        {/* Play As */}
+        <div className="mb-5">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Play as
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {(["white", "black", "random"] as const).map((color) => (
+              <button
+                key={color}
+                onClick={() => onPlayAsChange(color)}
+                className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors capitalize ${
+                  playAs === color
+                    ? "bg-teal-500 text-white"
+                    : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600"
+                }`}
+              >
+                {color === "random" ? "🎲 Random" : color}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Time Control */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Time Control
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {TIME_OPTIONS.map((opt) => (
+              <button
+                key={opt.label}
+                onClick={() =>
+                  onTimeControlChange({
+                    initial: opt.initial,
+                    increment: opt.increment,
+                  })
+                }
+                className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                  timeControl.initial === opt.initial &&
+                  timeControl.increment === opt.increment
+                    ? "bg-teal-500 text-white"
+                    : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600"
+                }`}
+              >
+                <opt.icon className="w-3.5 h-3.5" />
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Start Button */}
+        <button
+          onClick={onStart}
+          disabled={!selectedBot}
+          className="w-full py-4 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+        >
+          {selectedBot ? `Play vs ${selectedBot.name}` : "Select a Bot"}
+        </button>
+      </div>
+    </div>
+  );
+}

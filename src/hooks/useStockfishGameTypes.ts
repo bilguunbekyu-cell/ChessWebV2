@@ -1,5 +1,6 @@
 import { Square } from "chess.js";
 import { GameSettings } from "../components/game";
+import type { CSSProperties } from "react";
 
 export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -40,10 +41,7 @@ export interface GameHistoryPayload {
   durationMs?: number;
 }
 
-export type OptionSquares = Record<
-  string,
-  { background: string; borderRadius?: string }
->;
+export type OptionSquares = Record<string, CSSProperties>;
 
 export interface StockfishGameState {
   gameStarted: boolean;

@@ -45,7 +45,7 @@ export function PuzzlesSection() {
   }, []);
 
   const handleSolve = (puzzle: Puzzle) => {
-    navigate("/puzzles", { state: { puzzle } });
+    navigate(`/puzzles/train/${puzzle._id}`);
   };
 
   if (loading) {

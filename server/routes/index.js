@@ -1,0 +1,23 @@
+import authRoutes from "./auth.js";
+import historyRoutes from "./history.js";
+import puzzleRoutes from "./puzzles.js";
+import gameConfigRoutes from "./gameConfig.js";
+import botsRoutes from "./bots.js";
+import adminRoutes from "./admin.js";
+import adminUsersRoutes from "./adminUsers.js";
+import adminGamesRoutes from "./adminGames.js";
+import adminPuzzlesRoutes from "./adminPuzzles.js";
+import adminBotsRoutes from "./adminBots.js";
+
+export {
+  authRoutes,
+  historyRoutes,
+  puzzleRoutes,
+  gameConfigRoutes,
+  botsRoutes,
+  adminRoutes,
+  adminUsersRoutes,
+  adminGamesRoutes,
+  adminPuzzlesRoutes,
+  adminBotsRoutes,
+};
