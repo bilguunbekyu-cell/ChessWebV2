@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
-import { difficultyBadge } from "./types";
+import { Chessboard } from "react-chessboard";
 
 interface Puzzle {
   _id: string;
@@ -20,10 +20,72 @@ interface Puzzle {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
-export function PuzzlesSection() {
+interface PuzzlesSectionProps {
+  showTopDivider?: boolean;
+}
+
+interface PuzzlePreviewBoardProps {
+  puzzleId: string;
+  fen: string;
+}
+
+function PuzzlePreviewBoard({ puzzleId, fen }: PuzzlePreviewBoardProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [boardWidth, setBoardWidth] = useState(260);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateSize = () => {
+      const nextWidth = Math.floor(container.clientWidth);
+      if (nextWidth > 0) {
+        setBoardWidth(nextWidth);
+      }
+    };
+
+    updateSize();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateSize);
+      return () => window.removeEventListener("resize", updateSize);
+    }
+
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(container);
+    window.addEventListener("resize", updateSize);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateSize);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      className="w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm"
+    >
+      <Chessboard
+        id={`dashboard-puzzle-${puzzleId}`}
+        position={fen || "start"}
+        boardWidth={boardWidth}
+        arePiecesDraggable={false}
+        showBoardNotation={false}
+        customDarkSquareStyle={{ backgroundColor: "#8ea8bb" }}
+        customLightSquareStyle={{ backgroundColor: "#dde7ee" }}
+      />
+    </div>
+  );
+}
+
+export function PuzzlesSection({ showTopDivider = true }: PuzzlesSectionProps) {
   const navigate = useNavigate();
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
   const [loading, setLoading] = useState(true);
+  const wrapperClass = showTopDivider
+    ? "mt-6 pt-4 border-t border-gray-200 dark:border-gray-800"
+    : "";
 
   useEffect(() => {
     const fetchPuzzles = async () => {
@@ -50,7 +112,7 @@ export function PuzzlesSection() {
 
   if (loading) {
     return (
-      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800">
+      <div className={wrapperClass}>
         <div className="flex items-center justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-teal-500" />
         </div>
@@ -60,7 +122,7 @@ export function PuzzlesSection() {
 
   if (puzzles.length === 0) {
     return (
-      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800">
+      <div className={wrapperClass}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-2">
             <span className="text-xl">🧩</span>
@@ -77,7 +139,7 @@ export function PuzzlesSection() {
   }
 
   return (
-    <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800">
+    <div className={wrapperClass}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
           <span className="text-xl">🧩</span>
@@ -99,44 +161,18 @@ export function PuzzlesSection() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: idx * 0.06 }}
-            className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-slate-50 dark:from-slate-900/25 to-blue-50 dark:to-blue-900/15 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+            className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3 hover:border-gray-300 dark:hover:border-gray-600 transition-all shadow-sm hover:shadow-md"
           >
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center space-x-2">
-                <span className="text-lg">{pz.icon || "🧩"}</span>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {pz.title}
-                </span>
-              </div>
-              <span
-                className={`text-xs px-2 py-1 rounded ${difficultyBadge(pz.difficulty)}`}
-              >
-                {pz.difficulty}
-              </span>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
-              {pz.description || `Rating: ${pz.rating}`}
-            </p>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {pz.themes.slice(0, 3).map((t) => (
-                <span
-                  key={t}
-                  className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
-                >
-                  {t}
-                </span>
-              ))}
-            </div>
-            <div className="flex items-center justify-between">
+            <PuzzlePreviewBoard puzzleId={pz._id} fen={pz.fen} />
+
+            <div className="pt-3">
               <button
+                type="button"
                 onClick={() => handleSolve(pz)}
-                className="px-3 py-1 bg-teal-600 hover:bg-teal-500 text-white text-xs rounded-md transition-colors"
+                className="w-full px-4 py-2.5 bg-gray-900 dark:bg-gray-800 hover:bg-gray-800 dark:hover:bg-gray-700 text-white text-sm rounded-lg transition-colors"
               >
-                Solve
+                Solve Puzzle
               </button>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {pz.isWhiteToMove ? "White" : "Black"} to move
-              </span>
             </div>
           </motion.div>
         ))}

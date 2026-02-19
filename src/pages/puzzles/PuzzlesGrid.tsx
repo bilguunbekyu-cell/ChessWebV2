@@ -35,12 +35,9 @@ export function PuzzleCard({ puzzle, index }: PuzzleCardProps) {
         </div>
       </div>
 
-      <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+      <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-4 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
         {puzzle.title}
       </h4>
-      <p className="text-gray-500 dark:text-gray-400 text-sm mb-4 line-clamp-2">
-        {puzzle.description}
-      </p>
 
       <div className="flex flex-wrap gap-2 mb-4">
         {puzzle.themes.map((theme) => (

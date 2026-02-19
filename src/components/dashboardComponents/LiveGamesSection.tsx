@@ -1,16 +1,23 @@
 import { motion } from "framer-motion";
 import { Users, Clock, RefreshCw } from "lucide-react";
-import { useLichessLiveGames } from "../../hooks/useWatchPage";
+import type { TransformedLiveGame } from "../../utils/lichessApi";
 
 interface LiveGamesSectionProps {
   loading: boolean;
+  games: TransformedLiveGame[];
+  apiLoading: boolean;
+  error: string | null;
+  refetch: () => void | Promise<void>;
 }
 
 export function LiveGamesSection({
-  loading: initialLoading,
+  loading,
+  games,
+  apiLoading,
+  error,
+  refetch,
 }: LiveGamesSectionProps) {
-  const { games, loading: apiLoading, error, refetch } = useLichessLiveGames();
-  const isLoading = initialLoading || apiLoading;
+  const isLoading = loading || apiLoading;
 
   return (
     <motion.div
