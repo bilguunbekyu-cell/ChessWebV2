@@ -115,6 +115,7 @@ function ThemeController() {
 
 function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const isDashboardPage = location.pathname === "/";
   const isGamePage =
     location.pathname === "/play" ||
     location.pathname === "/play/bot" ||
@@ -163,7 +164,9 @@ function Layout({ children }: { children: React.ReactNode }) {
           className={`w-full flex-1 flex flex-col ${
             isGamePage
               ? "min-h-0 overflow-hidden px-0 py-0"
-              : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+              : isDashboardPage
+                ? "w-full px-4 sm:px-5 lg:px-6 xl:px-8 py-8"
+                : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
           }`}
         >
           {children}

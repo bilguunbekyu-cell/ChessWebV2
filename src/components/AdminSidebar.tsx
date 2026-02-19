@@ -1,5 +1,4 @@
 import {
-  LayoutDashboard,
   Users,
   Gamepad2,
   Settings,
@@ -29,7 +28,6 @@ export default function AdminSidebar() {
   };
 
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
     { icon: Users, label: "Users", path: "/admin/users" },
     { icon: Bot, label: "Bots", path: "/admin/bots" },
     { icon: Brain, label: "Puzzles", path: "/admin/puzzles" },
@@ -42,7 +40,7 @@ export default function AdminSidebar() {
   return (
     <div className="w-72 h-screen bg-[#ebebed] dark:bg-gray-900 border-r border-gray-200/60 dark:border-gray-800 flex flex-col fixed left-0 top-0 z-50 transition-colors duration-300">
       {/* Logo */}
-      <div className="p-6 flex items-center space-x-3">
+      <Link to="/admin" className="p-6 flex items-center space-x-3">
         <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-lg flex items-center justify-center">
           <Shield className="w-4 h-4 text-white" />
         </div>
@@ -54,7 +52,7 @@ export default function AdminSidebar() {
             Admin
           </span>
         </div>
-      </div>
+      </Link>
 
       {/* Navigation */}
       <nav className="flex-1 px-4 space-y-2 mt-2">

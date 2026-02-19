@@ -1,5 +1,4 @@
 import {
-  LayoutDashboard,
   Play,
   Puzzle,
   GraduationCap,
@@ -37,7 +36,6 @@ export default function Sidebar() {
   };
 
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/" },
     { icon: Play, label: "Play", path: "/play" },
     { icon: Puzzle, label: "Puzzles", path: "/puzzles" },
     { icon: GraduationCap, label: "Learn", path: "/learn" },
@@ -52,7 +50,8 @@ export default function Sidebar() {
       }`}
     >
       {/* Logo */}
-      <div
+      <Link
+        to="/"
         className={`flex items-center space-x-3 border-b border-gray-200/60 dark:border-gray-800 ${isCompact ? "px-5 py-4" : "px-6 py-5"}`}
       >
         <div
@@ -73,7 +72,7 @@ export default function Sidebar() {
         >
           ChessFlow
         </span>
-      </div>
+      </Link>
 
       {/* Navigation */}
       <nav

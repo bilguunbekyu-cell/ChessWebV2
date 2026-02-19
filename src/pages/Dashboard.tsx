@@ -81,31 +81,6 @@ export default function Dashboard() {
         className="grid grid-cols-1 2xl:grid-cols-[minmax(0,_1fr)_380px] gap-6"
       >
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-          <div className="px-4 sm:px-6 pt-4">
-            <div className="flex items-end justify-between border-b border-gray-200 dark:border-gray-800">
-              <div className="flex items-center gap-6 sm:gap-9 overflow-x-auto no-scrollbar">
-                <button className="pb-3 text-sm sm:text-base font-medium border-b-2 border-teal-500 text-teal-600 dark:text-teal-400 whitespace-nowrap">
-                  Quick pairing
-                </button>
-                <Link
-                  to="/friends"
-                  className="pb-3 text-sm sm:text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white whitespace-nowrap transition-colors"
-                >
-                  Lobby
-                </Link>
-                <Link
-                  to="/community"
-                  className="pb-3 text-sm sm:text-base font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white whitespace-nowrap transition-colors"
-                >
-                  Correspondence
-                </Link>
-              </div>
-              <p className="hidden lg:block pb-3 text-xs text-gray-500 dark:text-gray-400">
-                Pick a time control to start quick match
-              </p>
-            </div>
-          </div>
-
           <div className="p-4 sm:p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {pairingOptions.map((option) => (
