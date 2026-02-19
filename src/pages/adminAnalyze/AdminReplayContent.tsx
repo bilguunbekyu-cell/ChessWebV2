@@ -31,7 +31,7 @@ export function AdminReplayContent({ game }: AdminReplayContentProps) {
     <div className="h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex">
       <AdminSidebar />
 
-      <div className="flex-1 ml-64 flex flex-col overflow-hidden pt-4">
+      <div className="flex-1 ml-72 flex flex-col overflow-hidden pt-4">
         {/* Back Button */}
         <div className="flex-shrink-0 px-4 sm:px-6 mb-2">
           <button

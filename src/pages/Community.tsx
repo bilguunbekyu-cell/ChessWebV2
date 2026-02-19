@@ -54,7 +54,7 @@ export default function Community() {
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex transition-colors duration-300">
       <Sidebar />
 
-      <main className="flex-1 ml-64 flex">
+      <main className="flex-1 ml-72 flex">
         {/* Main Feed */}
         <div className="flex-1 max-w-2xl border-r border-gray-200 dark:border-gray-800 min-h-screen">
           <header className="sticky top-0 z-10 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 p-4">

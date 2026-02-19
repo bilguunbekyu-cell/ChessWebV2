@@ -19,7 +19,7 @@ function mapDbBotToPersonality(dbBot: any): BotPersonality {
   if (avatarUrl && !avatarUrl.startsWith("http")) {
     avatarUrl = `${API_URL}${avatarUrl.startsWith("/") ? "" : "/"}${avatarUrl}`;
   }
-  
+
   return {
     id: dbBot._id,
     name: dbBot.name,
@@ -190,7 +190,7 @@ export default function BotGamePage() {
       <Sidebar />
 
       {/* Main Content */}
-      <div className="flex flex-col md:ml-64 h-screen overflow-hidden">
+      <div className="flex flex-col ml-72 h-screen overflow-hidden">
         <main className="flex-1 flex flex-col overflow-hidden">
           <div
             ref={containerRef}

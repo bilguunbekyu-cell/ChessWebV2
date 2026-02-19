@@ -173,10 +173,10 @@ export default function AdminBots() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="flex min-h-screen bg-[#f5f5f7] dark:bg-gray-950">
       <AdminSidebar />
 
-      <div className="flex-1 ml-64 p-8">
+      <div className="flex-1 ml-72 p-8">
         {/* Notification */}
         {notification && (
           <div

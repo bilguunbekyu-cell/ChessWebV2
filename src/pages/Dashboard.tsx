@@ -18,13 +18,13 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
+    <div className="grid grid-cols-1 xl:grid-cols-[5fr_2fr] gap-6">
       {/* Left Column */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="space-y-6"
+        className="space-y-6 min-w-0"
       >
         {/* Live Games */}
         <LiveGamesSection loading={loading} />
@@ -33,7 +33,7 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
           className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm"
         >
           <div className="flex items-center justify-between mb-4">
@@ -53,10 +53,15 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Player Dashboard (Right Column) */}
-      <div className="space-y-6">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.15 }}
+        className="space-y-6"
+      >
         <FormatRatingsCard />
         <RecentMatchesCard />
-      </div>
+      </motion.div>
     </div>
   );
 }

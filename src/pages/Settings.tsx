@@ -27,7 +27,7 @@ export default function Settings() {
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex transition-colors duration-300">
       <Sidebar />
 
-      <main className="flex-1 ml-64 p-8 max-w-4xl">
+      <main className="flex-1 ml-72 p-8 max-w-4xl">
         <h1 className="text-3xl font-bold mb-8">Settings</h1>
 
         <div className="space-y-6">

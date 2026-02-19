@@ -24,6 +24,7 @@ import {
   featuredEventsRoutes,
   adminFeaturedEventsRoutes,
   lichessRoutes,
+  friendsRoutes,
 } from "./routes/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -79,6 +80,7 @@ app.use("/api/admin/bots", adminBotsRoutes);
 app.use("/api/admin/featured-events", adminFeaturedEventsRoutes);
 app.use("/api/featured-events", featuredEventsRoutes);
 app.use("/api/lichess", lichessRoutes);
+app.use("/api/friends", friendsRoutes);
 
 function getQueueKey(timeControl) {
   const initial = Number(timeControl?.initial ?? 300);
@@ -103,8 +105,16 @@ function removeFromQueues(socketId) {
 function clearGameForPlayers(game) {
   const whiteSocket = io.sockets.sockets.get(game.players.white);
   const blackSocket = io.sockets.sockets.get(game.players.black);
-  if (whiteSocket) whiteSocket.data.gameId = null;
-  if (blackSocket) blackSocket.data.gameId = null;
+  if (whiteSocket) {
+    whiteSocket.data.gameId = null;
+    whiteSocket.data.inQueue = false;
+    whiteSocket.data.queueKey = null;
+  }
+  if (blackSocket) {
+    blackSocket.data.gameId = null;
+    blackSocket.data.inQueue = false;
+    blackSocket.data.queueKey = null;
+  }
 }
 
 function emitGameOver(gameId, reason, winner) {
@@ -151,11 +161,11 @@ io.on("connection", (socket) => {
   socket.on("findMatch", ({ name, timeControl } = {}) => {
     if (socket.data.gameId) return;
     socket.data.name = name || "Player";
-
     if (socket.data.inQueue) return;
-    socket.data.inQueue = true;
 
     const queueKey = getQueueKey(timeControl);
+    removeFromQueues(socket.id);
+    socket.data.inQueue = true;
     socket.data.queueKey = queueKey;
 
     const queue = getQueue(queueKey);
@@ -164,14 +174,24 @@ io.on("connection", (socket) => {
     while (queue.length > 0 && !opponentSocket) {
       const opponentId = queue.shift();
       const candidate = io.sockets.sockets.get(opponentId);
-      if (candidate && candidate.id !== socket.id) {
+      if (
+        candidate &&
+        candidate.id !== socket.id &&
+        candidate.data.inQueue &&
+        !candidate.data.gameId &&
+        candidate.data.queueKey === queueKey
+      ) {
         opponentSocket = candidate;
       }
     }
 
     if (opponentSocket) {
+      removeFromQueues(socket.id);
+      removeFromQueues(opponentSocket.id);
       opponentSocket.data.inQueue = false;
+      opponentSocket.data.queueKey = null;
       socket.data.inQueue = false;
+      socket.data.queueKey = null;
 
       const gameId = crypto.randomBytes(8).toString("hex");
       const room = `game:${gameId}`;
@@ -217,13 +237,16 @@ io.on("connection", (socket) => {
         },
       });
     } else {
-      queue.push(socket.id);
+      if (!queue.includes(socket.id)) {
+        queue.push(socket.id);
+      }
       socket.emit("queued", { timeControl });
     }
   });
 
   socket.on("cancelFind", () => {
     socket.data.inQueue = false;
+    socket.data.queueKey = null;
     removeFromQueues(socket.id);
     socket.emit("queueCancelled");
   });
@@ -319,6 +342,8 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
+    socket.data.inQueue = false;
+    socket.data.queueKey = null;
     removeFromQueues(socket.id);
     const gameId = socket.data.gameId;
     if (gameId) {

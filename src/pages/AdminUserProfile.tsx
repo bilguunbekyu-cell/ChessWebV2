@@ -115,7 +115,7 @@ export default function AdminUserProfile() {
     return (
       <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white">
         <AdminSidebar />
-        <main className="ml-64 p-8">
+        <main className="ml-72 p-8">
           <button
             onClick={() => navigate("/admin")}
             className="flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-6"
@@ -143,7 +143,7 @@ export default function AdminUserProfile() {
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white transition-colors duration-300">
       <AdminSidebar />
 
-      <div className="ml-64">
+      <div className="ml-72">
         {/* Back Button */}
         <div className="px-8 pt-6">
           <button

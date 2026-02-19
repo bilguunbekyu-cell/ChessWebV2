@@ -11,7 +11,7 @@ export function AdminAnalysisLoadingOverlay({
   return (
     <div className="h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex">
       <AdminSidebar />
-      <div className="flex-1 ml-64 flex items-center justify-center">
+      <div className="flex-1 ml-72 flex items-center justify-center">
         <div className="text-center">
           {/* Animated chess analysis icon */}
           <div className="relative mb-8">

@@ -1,12 +1,17 @@
 import { motion } from "framer-motion";
-import { Users, Clock } from "lucide-react";
-import { liveGames } from "../../data/mockData";
+import { Users, Clock, RefreshCw } from "lucide-react";
+import { useLichessLiveGames } from "../../hooks/useWatchPage";
 
 interface LiveGamesSectionProps {
   loading: boolean;
 }
 
-export function LiveGamesSection({ loading }: LiveGamesSectionProps) {
+export function LiveGamesSection({
+  loading: initialLoading,
+}: LiveGamesSectionProps) {
+  const { games, loading: apiLoading, error, refetch } = useLichessLiveGames();
+  const isLoading = initialLoading || apiLoading;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -22,16 +27,33 @@ export function LiveGamesSection({ loading }: LiveGamesSectionProps) {
               Live Games
             </h2>
             <span className="px-2 py-1 bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs rounded-full">
-              {liveGames.length} active
+              {games.length} active
             </span>
           </div>
-          <button className="text-sm text-teal-600 dark:text-teal-400 hover:text-teal-500 dark:hover:text-teal-300 transition-colors">
-            View All
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={refetch}
+              disabled={apiLoading}
+              className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors disabled:opacity-50"
+              title="Refresh live games"
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${apiLoading ? "animate-spin" : ""}`}
+              />
+            </button>
+            <button className="text-sm text-teal-600 dark:text-teal-400 hover:text-teal-500 dark:hover:text-teal-300 transition-colors">
+              View All
+            </button>
+          </div>
         </div>
+        {error && (
+          <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+            {error}
+          </p>
+        )}
       </div>
       <div className="p-6 space-y-4">
-        {loading
+        {isLoading
           ? [0, 1, 2].map((i) => (
               <div
                 key={i}
@@ -46,7 +68,7 @@ export function LiveGamesSection({ loading }: LiveGamesSectionProps) {
                 </div>
               </div>
             ))
-          : liveGames.map((game, index) => (
+          : games.slice(0, 5).map((game, index) => (
               <motion.div
                 key={game.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -60,26 +82,40 @@ export function LiveGamesSection({ loading }: LiveGamesSectionProps) {
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full animate-pulse"></div>
                         <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {game.status}
+                          {game.type || game.speed}
                         </span>
                       </div>
                       <div className="flex items-center space-x-1 text-gray-600 dark:text-gray-300">
                         <Clock className="w-3 h-3" />
-                        <span className="text-sm font-mono">
-                          {game.timeControl}
-                        </span>
+                        <span className="text-sm font-mono">{game.time}</span>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
                       <div className="text-sm">
                         <span className="text-gray-900 dark:text-white font-medium">
-                          {game.players.white}
+                          {game.whiteTitle && (
+                            <span className="text-amber-600 dark:text-amber-400 mr-1">
+                              {game.whiteTitle}
+                            </span>
+                          )}
+                          {game.white}
+                          <span className="text-gray-400 dark:text-gray-500 ml-1">
+                            ({game.whiteRating})
+                          </span>
                         </span>
                         <span className="text-gray-400 dark:text-gray-500 mx-2">
                           vs
                         </span>
                         <span className="text-gray-900 dark:text-white font-medium">
-                          {game.players.black}
+                          {game.blackTitle && (
+                            <span className="text-amber-600 dark:text-amber-400 mr-1">
+                              {game.blackTitle}
+                            </span>
+                          )}
+                          {game.black}
+                          <span className="text-gray-400 dark:text-gray-500 ml-1">
+                            ({game.blackRating})
+                          </span>
                         </span>
                       </div>
                     </div>
@@ -88,14 +124,17 @@ export function LiveGamesSection({ loading }: LiveGamesSectionProps) {
                     <div className="text-right">
                       <div className="flex items-center space-x-1 text-gray-500 dark:text-gray-400">
                         <Users className="w-3 h-3" />
-                        <span className="text-sm">
-                          {game.viewers.toLocaleString()}
-                        </span>
+                        <span className="text-sm">{game.viewers}</span>
                       </div>
                     </div>
-                    <button className="px-3 py-1 bg-teal-600 hover:bg-teal-500 text-white text-sm rounded-md transition-colors opacity-0 group-hover:opacity-100 shadow-sm hover:shadow-teal-600/20">
+                    <a
+                      href={game.gameUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1 bg-teal-600 hover:bg-teal-500 text-white text-sm rounded-md transition-colors opacity-0 group-hover:opacity-100 shadow-sm hover:shadow-teal-600/20"
+                    >
                       Watch
-                    </button>
+                    </a>
                   </div>
                 </div>
               </motion.div>

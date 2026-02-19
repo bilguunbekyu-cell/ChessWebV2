@@ -34,7 +34,7 @@ export default function AdminUsers() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
       </div>
     );
@@ -44,7 +44,7 @@ export default function AdminUsers() {
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white">
       <AdminSidebar />
 
-      <main className="ml-64 p-8">
+      <main className="ml-72 p-8">
         {/* Page Header */}
         <div className="flex items-center justify-between mb-8">
           <div>

@@ -57,17 +57,19 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#f5f5f7] dark:bg-gray-950">
+      <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 flex">
         <Sidebar />
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
+        <div className="flex-1 ml-72 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
+    <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex transition-colors duration-300">
       <Sidebar />
-      <div className="md:ml-64">
+      <div className="flex-1 ml-72">
         <ProfileHeader
           user={user}
           stats={stats}

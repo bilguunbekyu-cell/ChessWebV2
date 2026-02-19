@@ -19,6 +19,7 @@ import PuzzleTrainer from "./pages/puzzleTrainer";
 import Learn from "./pages/Learn";
 import Watch from "./pages/watch";
 import Community from "./pages/Community";
+import Friends from "./pages/friends";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -127,6 +128,7 @@ function Layout({ children }: { children: React.ReactNode }) {
     [
       "/watch",
       "/community",
+      "/friends",
       "/settings",
       "/login",
       "/register",
@@ -152,7 +154,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Wrapper */}
       <div
-        className={`flex-1 flex flex-col md:ml-64 relative z-10 ${
+        className={`flex-1 flex flex-col ml-72 relative z-10 ${
           isGamePage ? "h-screen overflow-hidden" : "min-h-screen"
         }`}
       >
@@ -303,6 +305,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Community />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/friends"
+            element={
+              <ProtectedRoute>
+                <Friends />
               </ProtectedRoute>
             }
           />

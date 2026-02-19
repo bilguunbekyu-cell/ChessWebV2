@@ -25,6 +25,7 @@ export default function QuickMatch() {
     opponentName,
     isSearching,
     queueStatus,
+    isConnected,
     startMatch,
     cancelMatch,
     resign,
@@ -77,6 +78,7 @@ export default function QuickMatch() {
       onStart={handleStartMatch}
       isSearching={isSearching}
       queueStatus={queueStatus}
+      isConnected={isConnected}
       onCancel={cancelMatch}
     />
   );

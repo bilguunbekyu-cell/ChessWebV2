@@ -284,10 +284,10 @@ export default function AdminFeaturedEvents() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex">
+    <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex">
       <AdminSidebar />
 
-      <main className="flex-1 ml-64 p-8">
+      <main className="flex-1 ml-72 p-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>

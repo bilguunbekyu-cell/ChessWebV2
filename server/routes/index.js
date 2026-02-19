@@ -11,6 +11,7 @@ import adminBotsRoutes from "./adminBots.js";
 import featuredEventsRoutes from "./featuredEvents.js";
 import adminFeaturedEventsRoutes from "./adminFeaturedEvents.js";
 import lichessRoutes from "./lichess.js";
+import friendsRoutes from "./friends.js";
 // streamers route included inside lichessRoutes
 
 export {
@@ -27,4 +28,5 @@ export {
   featuredEventsRoutes,
   adminFeaturedEventsRoutes,
   lichessRoutes,
+  friendsRoutes,
 };

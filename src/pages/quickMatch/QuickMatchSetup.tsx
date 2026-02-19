@@ -18,19 +18,23 @@ const TIME_CATEGORIES: TimeCategory[] = [
 ];
 
 interface QuickMatchSetupProps {
-  playAs: "white" | "black" | "random";
-  onPlayAsChange: (value: "white" | "black" | "random") => void;
   timeControl: { initial: number; increment: number };
   onTimeControlChange: (value: { initial: number; increment: number }) => void;
   onStart: () => void;
+  isSearching: boolean;
+  queueStatus: string | null;
+  isConnected: boolean;
+  onCancel: () => void;
 }
 
 export function QuickMatchSetup({
-  playAs,
-  onPlayAsChange,
   timeControl,
   onTimeControlChange,
   onStart,
+  isSearching,
+  queueStatus,
+  isConnected,
+  onCancel,
 }: QuickMatchSetupProps) {
   const { user } = useAuthStore();
   const [activeCategory, setActiveCategory] = useState<string>("Blitz");
@@ -88,6 +92,11 @@ export function QuickMatchSetup({
   );
 
   const activeOptions = groupedTimeOptions[activeCategory] || [];
+  const statusText =
+    queueStatus ??
+    (isConnected
+      ? "Connected. Select a time control and press Play."
+      : "Matchmaking server is offline.");
 
   return (
     <div
@@ -242,39 +251,31 @@ export function QuickMatchSetup({
               </div>
             </div>
 
-            {/* Play As Section */}
+            {/* Matchmaking Status */}
             <div className="rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 p-3">
               <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
-                <span className="text-lg">♟️</span>
-                <span>Play As</span>
+                <span className="text-lg">🌐</span>
+                <span>Matchmaking Status</span>
               </div>
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                {(["white", "black", "random"] as const).map((color) => {
-                  const isSelected = playAs === color;
-                  return (
-                    <button
-                      key={color}
-                      onClick={() => onPlayAsChange(color)}
-                      className={`py-2 px-2 rounded-lg transition-all flex flex-col items-center gap-1 ${
-                        isSelected
-                          ? "bg-teal-500 text-white ring-2 ring-teal-500"
-                          : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 ring-1 ring-gray-200 dark:ring-slate-700 hover:ring-gray-300 dark:hover:ring-slate-600"
-                      }`}
-                    >
-                      <span className="text-lg">
-                        {color === "white"
-                          ? "♔"
-                          : color === "black"
-                            ? "♚"
-                            : "🎲"}
-                      </span>
-                      <span className="text-[11px] font-medium capitalize">
-                        {color}
-                      </span>
-                    </button>
-                  );
-                })}
+              <div className="mt-2 rounded-lg border border-gray-200/70 dark:border-white/10 bg-gray-50 dark:bg-slate-800/60 px-3 py-2">
+                <p
+                  className={`text-sm ${
+                    isConnected
+                      ? "text-gray-700 dark:text-gray-200"
+                      : "text-red-600 dark:text-red-400"
+                  }`}
+                >
+                  {statusText}
+                </p>
               </div>
+              {isSearching && (
+                <button
+                  onClick={onCancel}
+                  className="mt-3 w-full py-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold transition-colors"
+                >
+                  Cancel Search
+                </button>
+              )}
             </div>
           </div>
 
@@ -282,9 +283,10 @@ export function QuickMatchSetup({
           <div className="p-4 pt-2 border-t border-gray-200/60 dark:border-white/10">
             <button
               onClick={onStart}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-lg transition-all shadow-lg hover:shadow-xl active:scale-[0.98]"
+              disabled={isSearching || !isConnected}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold text-lg transition-all shadow-lg hover:shadow-xl active:scale-[0.98] disabled:cursor-not-allowed disabled:shadow-none"
             >
-              Play
+              {isSearching ? "Searching..." : isConnected ? "Play" : "Server Offline"}
             </button>
           </div>
         </div>

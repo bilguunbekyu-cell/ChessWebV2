@@ -40,7 +40,7 @@ export default function AdminSidebar() {
   ];
 
   return (
-    <div className="w-64 h-screen bg-[#ebebed] dark:bg-gray-900 border-r border-gray-200/60 dark:border-gray-800 flex flex-col fixed left-0 top-0 z-50 transition-colors duration-300">
+    <div className="w-72 h-screen bg-[#ebebed] dark:bg-gray-900 border-r border-gray-200/60 dark:border-gray-800 flex flex-col fixed left-0 top-0 z-50 transition-colors duration-300">
       {/* Logo */}
       <div className="p-6 flex items-center space-x-3">
         <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-lg flex items-center justify-center">

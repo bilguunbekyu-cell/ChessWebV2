@@ -14,10 +14,11 @@ import {
 import { detectOpeningFromSan } from "../utils/openingExplorer";
 import { useAuthStore } from "../store/authStore";
 
-const SOCKET_URL =
+const socketBaseUrl =
   import.meta.env.VITE_SOCKET_URL ||
   import.meta.env.VITE_API_URL ||
   "http://localhost:3001";
+const SOCKET_URL = socketBaseUrl.replace(/\/api\/?$/, "");
 
 type PlayerColor = "w" | "b";
 type GameOverReason =
@@ -151,6 +152,12 @@ export function useOnlineQuickMatch() {
       setIsConnected(false);
       setIsSearching(false);
       setQueueStatus("Disconnected from server.");
+    });
+
+    socket.on("connect_error", () => {
+      setIsConnected(false);
+      setIsSearching(false);
+      setQueueStatus("Unable to connect to matchmaking server.");
     });
 
     socket.on("queued", () => {
@@ -362,6 +369,11 @@ export function useOnlineQuickMatch() {
   const startMatch = useCallback(
     (timeControl: { initial: number; increment: number }, name?: string) => {
       if (!socketRef.current) return;
+      if (!socketRef.current.connected) {
+        setIsSearching(false);
+        setQueueStatus("Matchmaking server is offline.");
+        return;
+      }
       playerNameRef.current = name || "Player";
       resetGameState();
       setIsSearching(true);

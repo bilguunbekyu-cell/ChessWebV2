@@ -15,6 +15,6 @@ export interface PuzzleItem {
 
 export type PuzzleStatus = "solving" | "correct" | "wrong" | "showingSolution";
 
-export const SIDEBAR_WIDTH = 256;
+export const SIDEBAR_WIDTH = 288;
 export const PANEL_MIN_WIDTH = 360;
 export const BOARD_GUTTER = 48;
