@@ -4,6 +4,11 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["Inter", "sans-serif"],
+        serif: ["Playfair Display", "serif"],
+        mono: ["Roboto Mono", "monospace"],
+      },
       colors: {
         // Softer light mode colors
         "light-bg": "#f5f5f7",

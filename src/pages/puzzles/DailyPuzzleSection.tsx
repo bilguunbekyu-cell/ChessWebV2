@@ -4,6 +4,7 @@ import { Puzzle, Clock, Play, ArrowRight, Award } from "lucide-react";
 
 export function DailyPuzzleCard() {
   const navigate = useNavigate();
+  const dailyPuzzlePath = "/puzzles/train/697e04834e244759b6123158";
 
   return (
     <motion.div
@@ -12,9 +13,14 @@ export function DailyPuzzleCard() {
       transition={{ duration: 0.5 }}
       className="lg:col-span-2 bg-gradient-to-br from-white dark:from-gray-900 to-gray-50 dark:to-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden relative group shadow-lg"
     >
-      <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+      <button
+        type="button"
+        onClick={() => navigate(dailyPuzzlePath)}
+        className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity cursor-pointer"
+        aria-label="Open daily puzzle"
+      >
         <Puzzle className="w-48 h-48 text-teal-500" />
-      </div>
+      </button>
 
       <div className="p-8 relative z-10">
         <div className="flex items-center gap-3 mb-4">
@@ -36,7 +42,7 @@ export function DailyPuzzleCard() {
 
         <div className="flex flex-wrap gap-4">
           <button
-            onClick={() => navigate("/puzzles/train")}
+            onClick={() => navigate(dailyPuzzlePath)}
             className="px-6 py-3 bg-teal-600 hover:bg-teal-500 text-white font-semibold rounded-lg transition-all shadow-lg shadow-teal-900/20 flex items-center gap-2 transform hover:translate-y-[-2px]"
           >
             <Play className="w-5 h-5" /> Start Training{" "}

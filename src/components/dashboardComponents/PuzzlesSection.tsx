@@ -27,9 +27,10 @@ interface PuzzlesSectionProps {
 interface PuzzlePreviewBoardProps {
   puzzleId: string;
   fen: string;
+  onClick?: () => void;
 }
 
-function PuzzlePreviewBoard({ puzzleId, fen }: PuzzlePreviewBoardProps) {
+function PuzzlePreviewBoard({ puzzleId, fen, onClick }: PuzzlePreviewBoardProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [boardWidth, setBoardWidth] = useState(260);
 
@@ -62,25 +63,33 @@ function PuzzlePreviewBoard({ puzzleId, fen }: PuzzlePreviewBoardProps) {
   }, []);
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm"
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/70"
+      aria-label="Open puzzle training"
     >
-      <Chessboard
-        id={`dashboard-puzzle-${puzzleId}`}
-        position={fen || "start"}
-        boardWidth={boardWidth}
-        arePiecesDraggable={false}
-        showBoardNotation={false}
-        customDarkSquareStyle={{ backgroundColor: "#8ea8bb" }}
-        customLightSquareStyle={{ backgroundColor: "#dde7ee" }}
-      />
-    </div>
+      <div
+        ref={containerRef}
+        className="w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm cursor-pointer"
+      >
+        <Chessboard
+          id={`dashboard-puzzle-${puzzleId}`}
+          position={fen || "start"}
+          boardWidth={boardWidth}
+          arePiecesDraggable={false}
+          showBoardNotation={false}
+          customDarkSquareStyle={{ backgroundColor: "#8ea8bb" }}
+          customLightSquareStyle={{ backgroundColor: "#dde7ee" }}
+        />
+      </div>
+    </button>
   );
 }
 
 export function PuzzlesSection({ showTopDivider = true }: PuzzlesSectionProps) {
   const navigate = useNavigate();
+  const featuredPuzzleTrainPath = "/puzzles/train/697e04834e244759b6123158";
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
   const [loading, setLoading] = useState(true);
   const wrapperClass = showTopDivider
@@ -163,7 +172,11 @@ export function PuzzlesSection({ showTopDivider = true }: PuzzlesSectionProps) {
             transition={{ duration: 0.35, delay: idx * 0.06 }}
             className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3 hover:border-gray-300 dark:hover:border-gray-600 transition-all shadow-sm hover:shadow-md"
           >
-            <PuzzlePreviewBoard puzzleId={pz._id} fen={pz.fen} />
+            <PuzzlePreviewBoard
+              puzzleId={pz._id}
+              fen={pz.fen}
+              onClick={() => navigate(featuredPuzzleTrainPath)}
+            />
 
             <div className="pt-3">
               <button

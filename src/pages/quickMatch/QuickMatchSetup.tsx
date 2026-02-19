@@ -37,7 +37,21 @@ export function QuickMatchSetup({
   onCancel,
 }: QuickMatchSetupProps) {
   const { user } = useAuthStore();
-  const [activeCategory, setActiveCategory] = useState<string>("Blitz");
+  const resolveCategoryForTimeControl = (value: {
+    initial: number;
+    increment: number;
+  }): string =>
+    TIME_OPTIONS.find(
+      (opt) =>
+        opt.initial === value.initial && opt.increment === value.increment,
+    )?.category || "Blitz";
+  const [activeCategory, setActiveCategory] = useState<string>(() =>
+    resolveCategoryForTimeControl(timeControl),
+  );
+
+  useEffect(() => {
+    setActiveCategory(resolveCategoryForTimeControl(timeControl));
+  }, [timeControl.initial, timeControl.increment]);
 
   // Responsive board width
   const [boardWidth, setBoardWidth] = useState(640);

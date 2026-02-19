@@ -50,9 +50,11 @@ export default function Register() {
 
       <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-800">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-teal-500 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-500/20">
-            <span className="text-white font-bold text-2xl">C</span>
-          </div>
+          <img
+            src="/images/Logo.png"
+            alt="ChessFlow"
+            className="w-36 h-36 object-contain mx-auto mb-4"
+          />
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             Create Account
           </h1>

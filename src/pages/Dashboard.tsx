@@ -1,12 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  Cpu,
-  MessageCircle,
-  Trophy,
-  Users,
-} from "lucide-react";
+import { Trophy } from "lucide-react";
+import { QUICK_ACTIONS, iconMap } from "./game/types";
 import { useLichessLiveGames } from "../hooks/useWatchPage";
 import {
   LiveGamesSection,
@@ -36,26 +32,10 @@ const pairingOptions: PairingOption[] = [
   { label: "Custom", category: "Choose setup" },
 ];
 
-const lobbyActions = [
-  {
-    title: "Create lobby game",
-    hint: "Start a private game room",
-    to: "/play/friend",
-    icon: Users,
-  },
-  {
-    title: "Challenge a friend",
-    hint: "Invite from your friend list",
-    to: "/friends",
-    icon: MessageCircle,
-  },
-  {
-    title: "Play against computer",
-    hint: "Choose a bot personality",
-    to: "/play/bot",
-    icon: Cpu,
-  },
-];
+const fontSizeGroup = {
+  primary: "text-base",
+  secondary: "text-sm",
+} as const;
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
@@ -86,13 +66,17 @@ export default function Dashboard() {
               {pairingOptions.map((option) => (
                 <Link
                   key={option.label}
-                  to="/play/quick"
+                  to={
+                    option.initial !== undefined && option.increment !== undefined
+                      ? `/play/quick?initial=${option.initial}&increment=${option.increment}`
+                      : "/play/quick"
+                  }
                   state={
                     option.initial !== undefined && option.increment !== undefined
                       ? { initial: option.initial, increment: option.increment }
                       : undefined
                   }
-                  className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/35 min-h-[124px] p-4 sm:p-5 flex flex-col items-center justify-center text-center hover:border-teal-300 dark:hover:border-teal-700/50 hover:bg-white dark:hover:bg-gray-800/60 transition-colors"
+                  className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/35 min-h-[124px] p-4 sm:p-5 flex flex-col items-center justify-center text-center hover:border-teal-300 dark:hover:border-teal-700/50 hover:bg-white dark:hover:bg-gray-800/60 transition-colors cursor-pointer"
                 >
                   <p className="text-4xl sm:text-[2.65rem] leading-none font-light text-gray-900 dark:text-white tracking-tight">
                     {option.label}
@@ -108,28 +92,37 @@ export default function Dashboard() {
 
         <aside className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-5 shadow-sm flex flex-col">
           <div className="space-y-3">
-            {lobbyActions.map((item) => (
-              <Link
-                key={item.title}
-                to={item.to}
-                className="group w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/35 px-4 py-4 hover:border-teal-300 dark:hover:border-teal-700/50 hover:bg-white dark:hover:bg-gray-800/60 transition-colors flex items-center gap-3"
-              >
-                <span className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700 group-hover:border-teal-300 dark:group-hover:border-teal-700/50 transition-colors">
-                  <item.icon className="w-5 h-5 text-gray-500 dark:text-gray-300" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-base font-medium text-gray-900 dark:text-white">
-                    {item.title}
+            {QUICK_ACTIONS.map((item) => {
+              const Icon = iconMap[item.icon];
+              return (
+                <Link
+                  key={item.id}
+                  to={item.route}
+                  className="group w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/35 px-4 py-4 hover:border-teal-300 dark:hover:border-teal-700/50 hover:bg-white dark:hover:bg-gray-800/60 transition-colors flex items-center gap-3"
+                >
+                  <span className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700 group-hover:border-teal-300 dark:group-hover:border-teal-700/50 transition-colors">
+                    <Icon className="w-5 h-5 text-gray-500 dark:text-gray-300" />
                   </span>
-                  <span className="block text-xs text-gray-500 dark:text-gray-400">
-                    {item.hint}
+                  <span className="min-w-0">
+                    <span
+                      className={`block ${fontSizeGroup.primary} font-medium text-gray-900 dark:text-white`}
+                    >
+                      {item.title}
+                    </span>
+                    <span
+                      className={`block ${fontSizeGroup.secondary} text-gray-500 dark:text-gray-400`}
+                    >
+                      {item.description}
+                    </span>
                   </span>
-                </span>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
 
-          <div className="mt-auto pt-6 text-sm text-gray-600 dark:text-gray-300">
+          <div
+            className={`mt-auto pt-6 ${fontSizeGroup.secondary} text-gray-600 dark:text-gray-300`}
+          >
             <p>
               <span className="font-semibold text-gray-900 dark:text-white">
                 {loading || apiLoading ? "..." : viewerCount.toLocaleString()}

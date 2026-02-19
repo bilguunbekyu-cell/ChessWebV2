@@ -41,11 +41,13 @@ export default function AdminSidebar() {
     <div className="w-72 h-screen bg-[#ebebed] dark:bg-gray-900 border-r border-gray-200/60 dark:border-gray-800 flex flex-col fixed left-0 top-0 z-50 transition-colors duration-300">
       {/* Logo */}
       <Link to="/admin" className="p-6 flex items-center space-x-3">
-        <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-lg flex items-center justify-center">
-          <Shield className="w-4 h-4 text-white" />
-        </div>
+        <img
+          src="/images/Logo.png"
+          alt="ChessFlow"
+          className="h-20 object-contain"
+        />
         <div>
-          <span className="text-gray-900 dark:text-white font-bold text-xl tracking-tight">
+          <span className="text-gray-900 dark:text-white font-bold text-2xl tracking-tight">
             ChessFlow
           </span>
           <span className="ml-2 text-xs bg-teal-500/20 text-teal-600 dark:text-teal-400 px-2 py-0.5 rounded-full font-medium">

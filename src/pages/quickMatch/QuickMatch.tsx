@@ -24,6 +24,20 @@ function getTimeControlFromState(
   return null;
 }
 
+function getTimeControlFromSearch(
+  search: string,
+): { initial: number; increment: number } | null {
+  const params = new URLSearchParams(search);
+  const initial = Number(params.get("initial"));
+  const increment = Number(params.get("increment"));
+
+  if (Number.isFinite(initial) && Number.isFinite(increment)) {
+    return { initial, increment };
+  }
+
+  return null;
+}
+
 export default function QuickMatch() {
   const { user } = useAuthStore();
   const location = useLocation();
@@ -57,7 +71,8 @@ export default function QuickMatch() {
 
   const [timeControl, setTimeControl] = useState(() => {
     return (
-      getTimeControlFromState(location.state) || {
+      getTimeControlFromState(location.state) ||
+      getTimeControlFromSearch(location.search) || {
         initial: 300,
         increment: 0,
       }
@@ -65,11 +80,13 @@ export default function QuickMatch() {
   });
 
   useEffect(() => {
-    const selectedTimeControl = getTimeControlFromState(location.state);
+    const selectedTimeControl =
+      getTimeControlFromState(location.state) ||
+      getTimeControlFromSearch(location.search);
     if (selectedTimeControl) {
       setTimeControl(selectedTimeControl);
     }
-  }, [location.state]);
+  }, [location.state, location.search]);
 
   const handleStartMatch = () => {
     startMatch(timeControl, user?.fullName || "Player");

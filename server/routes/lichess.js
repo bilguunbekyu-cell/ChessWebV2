@@ -3,11 +3,15 @@ import { Router } from "express";
 const router = Router();
 
 const LICHESS_API_BASE = "https://lichess.org/api";
-const DEFAULT_TIMEOUT_MS = 5000;
+const DEFAULT_TIMEOUT_MS = 8000;
+const TV_CACHE_TTL_MS = 15000;
+const TV_REQUEST_COOLDOWN_MS = 2500;
 
 // simple in-memory cache to keep last good response
 let cachedGames = [];
 let cachedAt = 0;
+let lastTvFetchAt = 0;
+let tvInFlightPromise = null;
 
 const sampleGames = [
   {
@@ -111,18 +115,36 @@ function getPlayerRating(player) {
   return player?.rating || player?.user?.rating || 1500;
 }
 
+function isAbortError(error) {
+  return (
+    error?.name === "AbortError" ||
+    error?.code === "ABORT_ERR" ||
+    String(error?.message || "").toLowerCase().includes("aborted")
+  );
+}
+
+async function fetchWithTimeout(
+  url,
+  options = {},
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function fetchGameExport(gameId) {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${LICHESS_API_BASE}/game/export/${gameId}?pgnInJson=true`,
       {
         headers: { Accept: "application/json" },
-        signal: controller.signal,
       },
     );
-    clearTimeout(timeout);
     if (!response.ok) return null;
     return response.json();
   } catch (error) {
@@ -132,13 +154,10 @@ async function fetchGameExport(gameId) {
 
 async function fetchGameStreamHead(gameId) {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${LICHESS_API_BASE}/stream/game/${gameId}`,
-      { headers: { Accept: "application/x-ndjson" }, signal: controller.signal },
+      { headers: { Accept: "application/x-ndjson" } },
     );
-    clearTimeout(timeout);
     if (!response.ok || !response.body) return null;
 
     const reader = response.body.getReader();
@@ -194,67 +213,44 @@ function mergePlayer(primary, fallback) {
   return { name, rating, title };
 }
 
-router.get("/tv", async (req, res) => {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
-    const response = await fetch(`${LICHESS_API_BASE}/tv/channels`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    if (!response.ok) throw new Error("Failed to fetch Lichess TV");
+async function buildTvPayload() {
+  const response = await fetchWithTimeout(`${LICHESS_API_BASE}/tv/channels`);
+  if (!response.ok) throw new Error("Failed to fetch Lichess TV");
 
-    const channels = await response.json();
-    const entries = Object.entries(channels);
+  const channels = await response.json();
+  const entries = Object.entries(channels || {});
 
-    const games = await Promise.all(
-      entries.map(async ([channel, data]) => {
-        if (!data?.gameId) return null;
-        const gameDetails = await fetchGameExport(data.gameId);
-        const speed = (gameDetails?.speed || channel || "").toLowerCase();
-        const time = formatTimeControl(gameDetails?.clock, speed);
-        const category = categoryFromClockOrSpeed(gameDetails?.clock, speed);
+  const games = await Promise.all(
+    entries.map(async ([channel, data]) => {
+      if (!data?.gameId) return null;
+      const gameDetails = await fetchGameExport(data.gameId);
+      const speed = (gameDetails?.speed || channel || "").toLowerCase();
+      const time = formatTimeControl(gameDetails?.clock, speed);
+      const category = categoryFromClockOrSpeed(gameDetails?.clock, speed);
 
-        const streamDetails =
-          !gameDetails?.players || !gameDetails?.players?.white
-            ? await fetchGameStreamHead(data.gameId)
-            : null;
+      const streamDetails =
+        !gameDetails?.players || !gameDetails?.players?.white
+          ? await fetchGameStreamHead(data.gameId)
+          : null;
 
-        if (gameDetails?.players || streamDetails?.white || streamDetails?.black) {
-          const white = mergePlayer(
-            gameDetails?.players?.white,
-            streamDetails?.white,
-          );
-          const black = mergePlayer(
-            gameDetails?.players?.black,
-            streamDetails?.black,
-          );
-
-          return {
-            id: data.gameId,
-            white: white.name,
-            whiteRating: white.rating,
-            whiteTitle: white.title,
-            black: black.name,
-            blackRating: black.rating,
-            blackTitle: black.title,
-            viewers: `${Math.floor(Math.random() * 1000) + 100}`,
-            time,
-            type: category,
-            category,
-            speed,
-            gameUrl: `https://lichess.org/${data.gameId}`,
-          };
-        }
+      if (gameDetails?.players || streamDetails?.white || streamDetails?.black) {
+        const white = mergePlayer(
+          gameDetails?.players?.white,
+          streamDetails?.white,
+        );
+        const black = mergePlayer(
+          gameDetails?.players?.black,
+          streamDetails?.black,
+        );
 
         return {
           id: data.gameId,
-          white: data.user?.name || "Unknown",
-          whiteRating: data.rating || data.user?.rating || 1500,
-          whiteTitle: data.user?.title,
-          black: "Opponent",
-          blackRating: data.rating ? data.rating - 50 : 1500,
-          blackTitle: undefined,
+          white: white.name,
+          whiteRating: white.rating,
+          whiteTitle: white.title,
+          black: black.name,
+          blackRating: black.rating,
+          blackTitle: black.title,
           viewers: `${Math.floor(Math.random() * 1000) + 100}`,
           time,
           type: category,
@@ -262,39 +258,88 @@ router.get("/tv", async (req, res) => {
           speed,
           gameUrl: `https://lichess.org/${data.gameId}`,
         };
-      }),
-    );
+      }
 
-    const result = games.filter(Boolean);
-    if (result.length > 0) {
-      cachedGames = result;
-      cachedAt = Date.now();
-      return res.json({ games: result, source: "live" });
-    }
+      return {
+        id: data.gameId,
+        white: data.user?.name || "Unknown",
+        whiteRating: data.rating || data.user?.rating || 1500,
+        whiteTitle: data.user?.title,
+        black: "Opponent",
+        blackRating: data.rating ? data.rating - 50 : 1500,
+        blackTitle: undefined,
+        viewers: `${Math.floor(Math.random() * 1000) + 100}`,
+        time,
+        type: category,
+        category,
+        speed,
+        gameUrl: `https://lichess.org/${data.gameId}`,
+      };
+    }),
+  );
 
-    if (cachedGames.length > 0) {
-      return res.json({ games: cachedGames, cachedAt, source: "cache" });
-    }
+  const result = games.filter(Boolean);
+  if (result.length > 0) {
+    cachedGames = result;
+    cachedAt = Date.now();
+    return { games: result, source: "live" };
+  }
 
-    return res.json({ games: sampleGames, source: "sample" });
-  } catch (err) {
-    console.error("Lichess TV proxy error:", err);
+  if (cachedGames.length > 0) {
+    return { games: cachedGames, cachedAt, source: "cache" };
+  }
+
+  return { games: sampleGames, source: "sample" };
+}
+
+router.get("/tv", async (_req, res) => {
+  const now = Date.now();
+
+  if (cachedGames.length > 0 && now - cachedAt < TV_CACHE_TTL_MS) {
+    return res.json({ games: cachedGames, cachedAt, source: "cache" });
+  }
+
+  if (tvInFlightPromise) {
+    const payload = await tvInFlightPromise;
+    return res.json(payload);
+  }
+
+  if (now - lastTvFetchAt < TV_REQUEST_COOLDOWN_MS) {
     if (cachedGames.length > 0) {
       return res.json({ games: cachedGames, cachedAt, source: "cache" });
     }
     return res.json({ games: sampleGames, source: "sample" });
   }
+
+  lastTvFetchAt = now;
+  tvInFlightPromise = (async () => {
+    try {
+      return await buildTvPayload();
+    } catch (err) {
+      if (isAbortError(err)) {
+        console.warn(
+          "Lichess TV proxy timeout/abort. Serving cache or sample.",
+        );
+      } else {
+        console.error("Lichess TV proxy error:", err);
+      }
+      if (cachedGames.length > 0) {
+        return { games: cachedGames, cachedAt, source: "cache" };
+      }
+      return { games: sampleGames, source: "sample" };
+    } finally {
+      tvInFlightPromise = null;
+    }
+  })();
+
+  const payload = await tvInFlightPromise;
+  return res.json(payload);
 });
 
 // Streamers proxy with fallback
 router.get("/streamers", async (_req, res) => {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
-    const response = await fetch(`${LICHESS_API_BASE}/streamer/live`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
+    const response = await fetchWithTimeout(`${LICHESS_API_BASE}/streamer/live`);
     if (!response.ok) throw new Error("Failed to fetch streamers");
     const data = await response.json();
     const mapped = (data || []).slice(0, 8).map((s) => ({
@@ -313,7 +358,13 @@ router.get("/streamers", async (_req, res) => {
     }));
     return res.json({ streamers: mapped, source: "live" });
   } catch (err) {
-    console.error("Lichess streamers proxy error:", err);
+    if (isAbortError(err)) {
+      console.warn(
+        "Lichess streamers proxy timeout/abort. Serving sample streamers.",
+      );
+    } else {
+      console.error("Lichess streamers proxy error:", err);
+    }
     const sample = [
       {
         id: "s1",
