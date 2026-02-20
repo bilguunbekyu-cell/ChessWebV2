@@ -106,6 +106,7 @@ function FourPlayerBoard({
 }) {
   const gridRef = useRef<HTMLDivElement>(null);
   const suppressClickRef = useRef(false);
+  const dragPointerIdRef = useRef<number | null>(null);
   const [dragging, setDragging] = useState<{
     fromRow: number;
     fromCol: number;
@@ -116,6 +117,24 @@ function FourPlayerBoard({
     startY: number;
     moved: boolean;
   } | null>(null);
+
+  // Compute cell size from board width (grid has 4px margin = m-1)
+  const cellSize = useMemo(
+    () => (boardWidth - 8) / FOUR_PLAYER_BOARD_SIZE,
+    [boardWidth],
+  );
+
+  // Compute drag-time legal highlights
+  const dragLegalSet = useMemo(() => {
+    if (!dragging) return null;
+    const from = { row: dragging.fromRow, col: dragging.fromCol };
+    const piece = state.board[from.row]?.[from.col];
+    if (!piece || piece.color !== state.turn) return null;
+    const moves = getLegalMoves(state, from);
+    return new Set(moves.map((sq) => `${sq.row},${sq.col}`));
+  }, [dragging, state]);
+
+  const activeLegalSet = dragging?.moved ? (dragLegalSet ?? legalMoveSet) : legalMoveSet;
 
   const squareFromClient = useCallback((clientX: number, clientY: number) => {
     const grid = gridRef.current;
@@ -131,9 +150,9 @@ function FourPlayerBoard({
       return null;
     }
 
-    const cellSize = rect.width / FOUR_PLAYER_BOARD_SIZE;
-    const col = Math.floor((clientX - rect.left) / cellSize);
-    const row = Math.floor((clientY - rect.top) / cellSize);
+    const cs = rect.width / FOUR_PLAYER_BOARD_SIZE;
+    const col = Math.floor((clientX - rect.left) / cs);
+    const row = Math.floor((clientY - rect.top) / cs);
     if (row < 0 || col < 0 || row >= FOUR_PLAYER_BOARD_SIZE || col >= FOUR_PLAYER_BOARD_SIZE) {
       return null;
     }
@@ -143,6 +162,7 @@ function FourPlayerBoard({
 
   const finalizeDrag = useCallback(
     (clientX: number, clientY: number) => {
+      dragPointerIdRef.current = null;
       setDragging((current) => {
         if (!current) return null;
         if (!current.moved) return null;
@@ -156,23 +176,28 @@ function FourPlayerBoard({
             destination.row,
             destination.col,
           );
+        } else {
+          // Snap back — clear selection
+          onCancelSelection();
         }
         return null;
       });
     },
-    [onPieceDrop, squareFromClient],
+    [onPieceDrop, onCancelSelection, squareFromClient],
   );
 
   useEffect(() => {
     if (!dragging) return;
 
     const handlePointerMove = (event: PointerEvent) => {
+      if (dragPointerIdRef.current !== null && event.pointerId !== dragPointerIdRef.current) return;
+      event.preventDefault();
       setDragging((current) => {
         if (!current) return null;
         const moved =
           current.moved ||
-          Math.abs(event.clientX - current.startX) > 6 ||
-          Math.abs(event.clientY - current.startY) > 6;
+          Math.abs(event.clientX - current.startX) > 4 ||
+          Math.abs(event.clientY - current.startY) > 4;
 
         if (
           moved &&
@@ -192,14 +217,17 @@ function FourPlayerBoard({
     };
 
     const handlePointerUp = (event: PointerEvent) => {
+      if (dragPointerIdRef.current !== null && event.pointerId !== dragPointerIdRef.current) return;
       finalizeDrag(event.clientX, event.clientY);
     };
 
     const handlePointerCancel = () => {
+      dragPointerIdRef.current = null;
       setDragging(null);
     };
 
-    window.addEventListener("pointermove", handlePointerMove);
+    // Use capture phase for reliable mobile drag
+    window.addEventListener("pointermove", handlePointerMove, { passive: false });
     window.addEventListener("pointerup", handlePointerUp);
     window.addEventListener("pointercancel", handlePointerCancel);
     return () => {
@@ -212,6 +240,7 @@ function FourPlayerBoard({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      dragPointerIdRef.current = null;
       setDragging(null);
       onCancelSelection();
     };
@@ -224,6 +253,7 @@ function FourPlayerBoard({
     <div
       onContextMenu={(event) => {
         event.preventDefault();
+        dragPointerIdRef.current = null;
         setDragging(null);
         onCancelSelection();
       }}
@@ -236,6 +266,7 @@ function FourPlayerBoard({
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${FOUR_PLAYER_BOARD_SIZE}, minmax(0, 1fr))`,
+          touchAction: "none",
         }}
       >
         {Array.from({ length: FOUR_PLAYER_BOARD_SIZE }).map((_, row) =>
@@ -244,7 +275,7 @@ function FourPlayerBoard({
             const playable = isPlayableSquare(row, col);
             const piece = playable ? state.board[row][col] : null;
             const isSelected = selected === key;
-            const isLegal = legalMoveSet.has(key);
+            const isLegal = activeLegalSet.has(key);
             const isLastFrom = lastMoveFrom === key;
             const isLastTo = lastMoveTo === key;
             const isDark = (row + col) % 2 === 1;
@@ -273,6 +304,12 @@ function FourPlayerBoard({
                   if (!interactive || event.button !== 0) return;
                   if (!canDragFrom(row, col)) return;
                   if (!piece) return;
+
+                  // Capture pointer for reliable mobile/touch drag
+                  try {
+                    (event.target as Element).setPointerCapture(event.pointerId);
+                  } catch { /* ignore if capture fails */ }
+                  dragPointerIdRef.current = event.pointerId;
 
                   setDragging({
                     fromRow: row,
@@ -326,8 +363,10 @@ function FourPlayerBoard({
 
       {dragging?.moved && (
         <div
-          className="pointer-events-none fixed z-40 w-[min(9vw,76px)] h-[min(9vw,76px)]"
+          className="pointer-events-none fixed z-40"
           style={{
+            width: cellSize,
+            height: cellSize,
             left: dragging.x,
             top: dragging.y,
             transform: "translate(-50%, -50%)",
