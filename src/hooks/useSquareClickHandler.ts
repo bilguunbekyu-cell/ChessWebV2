@@ -1,6 +1,26 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Chess, Square } from "chess.js";
 import { OptionSquares } from "./useStockfishGameTypes";
+
+/**
+ * Extract a single-char promotion key ("q", "r", "b", "n") from the piece
+ * string that react-chessboard passes (e.g. "wQ", "bN") or from an already
+ * lowercase char.  Falls back to "q".
+ */
+function extractPromotion(piece?: string): "q" | "r" | "b" | "n" {
+  if (!piece) return "q";
+  // react-chessboard format: "wQ", "bR", etc.
+  const ch = piece.length === 2 ? piece[1].toLowerCase() : piece[0].toLowerCase();
+  if (ch === "q" || ch === "r" || ch === "b" || ch === "n") return ch;
+  return "q";
+}
+
+/** Check whether moving `from → to` is a pawn promotion. */
+function isPromotionMove(game: Chess, from: Square, to: Square): boolean {
+  const piece = game.get(from);
+  if (!piece || piece.type !== "p") return false;
+  return (piece.color === "w" && to[1] === "8") || (piece.color === "b" && to[1] === "1");
+}
 
 export function useSquareClickHandler(
   gameRef: React.MutableRefObject<Chess>,
@@ -19,20 +39,25 @@ export function useSquareClickHandler(
     React.SetStateAction<{ from: Square; to: Square } | null>
   >,
 ) {
+  // ---------- promotion dialog state (click-to-move) ----------
+  const [promotionToSquare, setPromotionToSquare] = useState<Square | null>(null);
+  const [showPromotionDialog, setShowPromotionDialog] = useState(false);
+  const [pendingPromoFrom, setPendingPromoFrom] = useState<Square | null>(null);
+
   const clearSelection = useCallback(() => {
     setMoveFrom(null);
     setOptionSquares({});
   }, [setMoveFrom, setOptionSquares]);
 
   const commitMove = useCallback(
-    (from: Square, to: Square) => {
+    (from: Square, to: Square, promotion: "q" | "r" | "b" | "n" = "q") => {
       const currentGame = gameRef.current;
 
       try {
         const result = currentGame.move({
           from,
           to,
-          promotion: "q",
+          promotion,
         });
         if (!result) return false;
 
@@ -48,6 +73,28 @@ export function useSquareClickHandler(
       }
     },
     [clearPreMove, clearSelection, gameRef, setGame, setLastMove, setMoves],
+  );
+
+  // ---------- promotion piece select handler ----------
+  const onPromotionPieceSelect = useCallback(
+    (piece?: string, _fromSquare?: Square, _toSquare?: Square) => {
+      const from = pendingPromoFrom;
+      const to = promotionToSquare;
+
+      // Reset dialog state first
+      setShowPromotionDialog(false);
+      setPromotionToSquare(null);
+      setPendingPromoFrom(null);
+
+      if (!piece || !from || !to) {
+        // User cancelled (clicked backdrop)
+        return false;
+      }
+
+      const promo = extractPromotion(piece);
+      return commitMove(from, to, promo);
+    },
+    [commitMove, pendingPromoFrom, promotionToSquare],
   );
 
   const onSquareClick = useCallback(
@@ -92,6 +139,19 @@ export function useSquareClickHandler(
         return;
       }
 
+      // Check if this is a promotion move → show the dialog instead of auto-queen
+      const isLegal = currentGame
+        .moves({ square: moveFrom, verbose: true })
+        .some((m) => m.to === square);
+
+      if (isLegal && isPromotionMove(currentGame, moveFrom, square)) {
+        setPendingPromoFrom(moveFrom);
+        setPromotionToSquare(square);
+        setShowPromotionDialog(true);
+        clearSelection();
+        return;
+      }
+
       if (commitMove(moveFrom, square)) {
         return;
       }
@@ -122,12 +182,12 @@ export function useSquareClickHandler(
   );
 
   const onPieceDrop = useCallback(
-    (sourceSquare: Square, targetSquare: Square) => {
+    (sourceSquare: Square, targetSquare: Square, piece?: string) => {
       if (!gameStarted || gameOver) return false;
 
       const currentGame = gameRef.current;
-      const piece = currentGame.get(sourceSquare);
-      if (!piece || piece.color !== playerColor) return false;
+      const srcPiece = currentGame.get(sourceSquare);
+      if (!srcPiece || srcPiece.color !== playerColor) return false;
 
       const turn = currentGame.turn();
       if (turn !== playerColor) {
@@ -140,7 +200,10 @@ export function useSquareClickHandler(
         return false;
       }
 
-      const moved = commitMove(sourceSquare, targetSquare);
+      // For drag-and-drop, react-chessboard already showed the promotion dialog
+      // and passes the chosen piece (e.g. "bQ") as the third argument.
+      const promo = extractPromotion(piece);
+      const moved = commitMove(sourceSquare, targetSquare, promo);
       if (moved) return true;
 
       if (getMoveOptions(sourceSquare)) {
@@ -175,5 +238,9 @@ export function useSquareClickHandler(
     onPieceDrop,
     onCancelSelection: clearSelection,
     isDraggablePiece,
+    // Promotion dialog state for click-to-move
+    promotionToSquare,
+    showPromotionDialog,
+    onPromotionPieceSelect,
   };
 }

@@ -23,7 +23,7 @@ interface QuickMatchGameViewProps {
   optionSquares: Record<string, CSSProperties>;
   preMoveSquares: Record<string, CSSProperties>;
   onSquareClick: (square: Square) => void;
-  onPieceDrop: (sourceSquare: Square, targetSquare: Square) => boolean;
+  onPieceDrop: (sourceSquare: Square, targetSquare: Square, piece?: string) => boolean;
   onCancelSelection: () => void;
   isDraggablePiece: (sourceSquare: Square) => boolean;
   setOpponentTime: (time: number) => void;
@@ -34,6 +34,9 @@ interface QuickMatchGameViewProps {
   onLeave?: () => void;
   opponentName?: string;
   variant?: MatchVariant;
+  promotionToSquare?: Square | null;
+  showPromotionDialog?: boolean;
+  onPromotionPieceSelect?: (piece?: string, fromSquare?: Square, toSquare?: Square) => boolean;
 }
 
 export function QuickMatchGameView({
@@ -61,6 +64,9 @@ export function QuickMatchGameView({
   onLeave,
   opponentName,
   variant = "standard",
+  promotionToSquare,
+  showPromotionDialog,
+  onPromotionPieceSelect,
 }: QuickMatchGameViewProps) {
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -159,6 +165,9 @@ export function QuickMatchGameView({
                 >
               }
               lastMove={lastMove}
+              promotionToSquare={promotionToSquare}
+              showPromotionDialog={showPromotionDialog}
+              onPromotionPieceSelect={onPromotionPieceSelect}
             />
           </div>
 

@@ -38,7 +38,7 @@ interface FriendGameViewProps {
   optionSquares: Record<string, CSSProperties>;
   preMoveSquares: Record<string, CSSProperties>;
   onSquareClick: (square: Square) => void;
-  onPieceDrop: (sourceSquare: Square, targetSquare: Square) => boolean;
+  onPieceDrop: (sourceSquare: Square, targetSquare: Square, piece?: string) => boolean;
   onCancelSelection: () => void;
   isDraggablePiece: (sourceSquare: Square) => boolean;
   setOpponentTime: (time: number) => void;
@@ -48,6 +48,9 @@ interface FriendGameViewProps {
   onTryAgain: () => void;
   onNewGame: () => void;
   onLeave?: () => void;
+  promotionToSquare?: Square | null;
+  showPromotionDialog?: boolean;
+  onPromotionPieceSelect?: (piece?: string, fromSquare?: Square, toSquare?: Square) => boolean;
 }
 
 export function FriendGameView({
@@ -75,6 +78,9 @@ export function FriendGameView({
   onTryAgain,
   onNewGame,
   onLeave,
+  promotionToSquare,
+  showPromotionDialog,
+  onPromotionPieceSelect,
 }: FriendGameViewProps) {
   const { user } = useAuthStore();
   const playerAvatarUrl = resolveAvatarUrl(user?.avatar);
@@ -171,6 +177,9 @@ export function FriendGameView({
                 >
               }
               lastMove={lastMove}
+              promotionToSquare={promotionToSquare}
+              showPromotionDialog={showPromotionDialog}
+              onPromotionPieceSelect={onPromotionPieceSelect}
             />
           </div>
 

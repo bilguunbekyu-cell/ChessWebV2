@@ -24,7 +24,7 @@ interface BotGameViewProps {
   preMoveSquares: Record<string, CSSProperties>;
   lastMove?: { from: string; to: string } | null;
   onSquareClick: (square: Square) => void;
-  onPieceDrop: (sourceSquare: Square, targetSquare: Square) => boolean;
+  onPieceDrop: (sourceSquare: Square, targetSquare: Square, piece?: string) => boolean;
   onCancelSelection: () => void;
   isDraggablePiece: (sourceSquare: Square) => boolean;
   setOpponentTime: (time: number) => void;
@@ -33,6 +33,9 @@ interface BotGameViewProps {
   onResign: () => void;
   onRematch: () => void;
   onNewGame: () => void;
+  promotionToSquare?: Square | null;
+  showPromotionDialog?: boolean;
+  onPromotionPieceSelect?: (piece?: string, fromSquare?: Square, toSquare?: Square) => boolean;
 }
 
 export function BotGameView({
@@ -61,6 +64,9 @@ export function BotGameView({
   onResign,
   onRematch,
   onNewGame,
+  promotionToSquare,
+  showPromotionDialog,
+  onPromotionPieceSelect,
 }: BotGameViewProps) {
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -127,6 +133,9 @@ export function BotGameView({
               isDraggablePiece={isDraggablePiece}
               customSquareStyles={{ ...optionSquares, ...preMoveSquares }}
               lastMove={lastMove}
+              promotionToSquare={promotionToSquare}
+              showPromotionDialog={showPromotionDialog}
+              onPromotionPieceSelect={onPromotionPieceSelect}
             />
           </div>
 

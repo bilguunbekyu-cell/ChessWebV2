@@ -366,6 +366,41 @@ export function useFriendOnlineGame() {
     setOptionSquares({});
   }, []);
 
+  // ---------- promotion dialog state (click-to-move) ----------
+  const [promotionToSquare, setPromotionToSquare] = useState<Square | null>(null);
+  const [showPromotionDialog, setShowPromotionDialog] = useState(false);
+  const [pendingPromoFrom, setPendingPromoFrom] = useState<Square | null>(null);
+
+  /** Extract promotion char from react-chessboard piece string ("wQ" → "q") */
+  const extractPromo = (piece?: string): string => {
+    if (!piece) return "q";
+    const ch = piece.length === 2 ? piece[1].toLowerCase() : piece[0].toLowerCase();
+    return (ch === "q" || ch === "r" || ch === "b" || ch === "n") ? ch : "q";
+  };
+
+  const onPromotionPieceSelect = useCallback(
+    (piece?: string, _fromSquare?: Square, _toSquare?: Square) => {
+      const from = pendingPromoFrom;
+      const to = promotionToSquare;
+
+      setShowPromotionDialog(false);
+      setPromotionToSquare(null);
+      setPendingPromoFrom(null);
+
+      if (!piece || !from || !to || !socket || !gameIdRef.current) return false;
+
+      socket.emit("makeMove", {
+        gameId: gameIdRef.current,
+        from,
+        to,
+        promotion: extractPromo(piece),
+      });
+      clearSelection();
+      return true;
+    },
+    [clearSelection, pendingPromoFrom, promotionToSquare, socket],
+  );
+
   const onSquareClick = useCallback(
     (square: Square) => {
       if (!socket) return;
@@ -389,6 +424,20 @@ export function useFriendOnlineGame() {
       }
 
       if (optionSquares[square]) {
+        // Check for promotion
+        const srcPiece = currentGame.get(moveFrom);
+        const isPromo = srcPiece?.type === "p" &&
+          ((srcPiece.color === "w" && square[1] === "8") ||
+           (srcPiece.color === "b" && square[1] === "1"));
+
+        if (isPromo) {
+          setPendingPromoFrom(moveFrom);
+          setPromotionToSquare(square);
+          setShowPromotionDialog(true);
+          clearSelection();
+          return;
+        }
+
         socket.emit("makeMove", {
           gameId: gameIdRef.current,
           from: moveFrom,
@@ -422,7 +471,7 @@ export function useFriendOnlineGame() {
   );
 
   const onPieceDrop = useCallback(
-    (sourceSquare: Square, targetSquare: Square) => {
+    (sourceSquare: Square, targetSquare: Square, piece?: string) => {
       if (!socket) return false;
       if (!gameStarted || gameOver) return false;
       if (!isPlayerTurn) return false;
@@ -449,7 +498,7 @@ export function useFriendOnlineGame() {
         gameId: gameIdRef.current,
         from: sourceSquare,
         to: targetSquare,
-        promotion: "q",
+        promotion: extractPromo(piece),
       });
       clearSelection();
       return true;
@@ -526,6 +575,9 @@ export function useFriendOnlineGame() {
     onPieceDrop,
     onCancelSelection: clearSelection,
     isDraggablePiece,
+    promotionToSquare,
+    showPromotionDialog,
+    onPromotionPieceSelect,
     resign,
     timeOut,
     leaveGame,

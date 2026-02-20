@@ -101,6 +101,9 @@ export default function QuickMatch() {
     rematch,
     leaveGame,
     matchVariant,
+    promotionToSquare,
+    showPromotionDialog,
+    onPromotionPieceSelect,
   } = useOnlineQuickMatch();
 
   const [timeControl, setTimeControl] = useState(() => {
@@ -229,6 +232,9 @@ export default function QuickMatch() {
         onCancelSelection={onCancelSelection}
         isDraggablePiece={isDraggablePiece}
         opponentName={opponentName}
+        promotionToSquare={promotionToSquare}
+        showPromotionDialog={showPromotionDialog}
+        onPromotionPieceSelect={onPromotionPieceSelect}
         setOpponentTime={setOpponentTime}
         setPlayerTime={setPlayerTime}
         onTimeOut={timeOut}

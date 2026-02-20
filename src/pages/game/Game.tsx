@@ -27,6 +27,9 @@ export default function Game() {
     onPieceDrop,
     onCancelSelection,
     isDraggablePiece,
+    promotionToSquare,
+    showPromotionDialog,
+    onPromotionPieceSelect,
     handleStartGame,
     handleTimeOut,
   } = useStockfishGame();
@@ -149,6 +152,9 @@ export default function Game() {
                 onCancelSelection={onCancelSelection}
                 isDraggablePiece={isDraggablePiece}
                 customSquareStyles={{ ...optionSquares, ...preMoveSquares }}
+                promotionToSquare={promotionToSquare}
+                showPromotionDialog={showPromotionDialog}
+                onPromotionPieceSelect={onPromotionPieceSelect}
               />
             </div>
           </div>
