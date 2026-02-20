@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { Chessboard } from "react-chessboard";
-import { Clock, Timer } from "lucide-react";
+import { Clock, Timer, Shuffle } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { BOARD_FRAME, TIME_OPTIONS } from "./types";
+
+type MatchVariant = "standard" | "chess960";
 
 interface QuickMatchSetupProps {
   timeControl: { initial: number; increment: number };
   onTimeControlChange: (value: { initial: number; increment: number }) => void;
+  variant: MatchVariant;
+  onVariantChange: (variant: MatchVariant) => void;
   onStart: () => void;
   isSearching: boolean;
   isConnected: boolean;
@@ -16,6 +20,8 @@ interface QuickMatchSetupProps {
 export function QuickMatchSetup({
   timeControl,
   onTimeControlChange,
+  variant,
+  onVariantChange,
   onStart,
   isSearching,
   isConnected,
@@ -91,8 +97,9 @@ export function QuickMatchSetup({
       opt.initial === timeControl.initial &&
       opt.increment === timeControl.increment,
   );
+  const variantLabel = variant === "chess960" ? "Chess960" : "";
   const searchingGameText = selectedTimeOption
-    ? `Searching ${selectedTimeOption.label} ${selectedTimeOption.category} Game`
+    ? `Searching ${selectedTimeOption.label} ${selectedTimeOption.category}${variantLabel ? " " + variantLabel : ""} Game`
     : "Searching Game";
   const categoryOrder = ["Bullet", "Blitz", "Rapid", "Classical"];
 
@@ -212,7 +219,7 @@ export function QuickMatchSetup({
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-teal-500" />
                     <h2 className="font-bold text-base text-gray-900 dark:text-white">
-                      Quick Match
+                      Quick Match{variant === "chess960" ? " — Chess960" : ""}
                     </h2>
                   </div>
                   <div className="flex items-center gap-2">
@@ -275,6 +282,44 @@ export function QuickMatchSetup({
                       );
                     })}
                   </div>
+                </div>
+
+                {/* Variant Selector */}
+                <div className="rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 p-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
+                    <Shuffle className="w-4 h-4 text-teal-500" />
+                    <span>Variant</span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onVariantChange("standard")}
+                      className={`py-2 px-3 rounded-lg text-center text-sm font-semibold transition-all ${
+                        variant === "standard"
+                          ? "bg-teal-500 text-white ring-2 ring-teal-500"
+                          : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 ring-1 ring-gray-200 dark:ring-slate-700 hover:ring-gray-300 dark:hover:ring-slate-600"
+                      }`}
+                    >
+                      Standard
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onVariantChange("chess960")}
+                      className={`py-2 px-3 rounded-lg text-center text-sm font-semibold transition-all ${
+                        variant === "chess960"
+                          ? "bg-teal-500 text-white ring-2 ring-teal-500"
+                          : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 ring-1 ring-gray-200 dark:ring-slate-700 hover:ring-gray-300 dark:hover:ring-slate-600"
+                      }`}
+                    >
+                      Chess960
+                    </button>
+                  </div>
+                  {variant === "chess960" && (
+                    <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
+                      Fischer Random — pieces are shuffled on the back rank.
+                      Castling lands king on g1/c1 and rook on f1/d1 as normal.
+                    </p>
+                  )}
                 </div>
 
               </div>

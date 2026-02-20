@@ -8,6 +8,7 @@ interface GameOverModalProps {
   onTryAgain: () => void;
   onNewGame: () => void;
   savedGameId: string | null;
+  analyzeBasePath?: string;
 }
 
 export function GameOverModal({
@@ -16,6 +17,7 @@ export function GameOverModal({
   onTryAgain,
   onNewGame,
   savedGameId,
+  analyzeBasePath = "/analyze",
 }: GameOverModalProps) {
   const navigate = useNavigate();
 
@@ -23,7 +25,7 @@ export function GameOverModal({
 
   const handleAnalyze = () => {
     if (savedGameId) {
-      navigate(`/analyze/${savedGameId}`);
+      navigate(`${analyzeBasePath}/${savedGameId}`);
     }
   };
 

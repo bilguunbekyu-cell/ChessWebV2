@@ -19,8 +19,10 @@ const socketBaseUrl =
   import.meta.env.VITE_API_URL ||
   "http://localhost:3001";
 const SOCKET_URL = socketBaseUrl.replace(/\/api\/?$/, "");
+const BOARD_FILES = ["a", "b", "c", "d", "e", "f", "g", "h"] as const;
 
 type PlayerColor = "w" | "b";
+type MatchVariant = "standard" | "chess960";
 type GameOverReason =
   | "checkmate"
   | "draw"
@@ -34,6 +36,7 @@ interface MatchFoundPayload {
   fen: string;
   opponentName?: string;
   timeControl?: { initial: number; increment: number };
+  variant?: MatchVariant;
 }
 
 interface MoveAppliedPayload {
@@ -41,6 +44,7 @@ interface MoveAppliedPayload {
   move: { from: Square; to: Square; san: string };
   fen: string;
   turn: PlayerColor;
+  isChess960Castle?: boolean;
   isCheckmate?: boolean;
   isDraw?: boolean;
   isStalemate?: boolean;
@@ -50,6 +54,11 @@ interface GameOverPayload {
   gameId: string;
   reason: GameOverReason;
   winner: PlayerColor | null;
+}
+
+function normalizeMatchVariant(value: unknown): MatchVariant {
+  if (typeof value !== "string") return "standard";
+  return value.trim().toLowerCase() === "chess960" ? "chess960" : "standard";
 }
 
 export function useOnlineQuickMatch() {
@@ -73,6 +82,7 @@ export function useOnlineQuickMatch() {
   const [isSearching, setIsSearching] = useState(false);
   const [queueStatus, setQueueStatus] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [matchVariant, setMatchVariant] = useState<MatchVariant>("standard");
   const [moveFrom, setMoveFrom] = useState<Square | null>(null);
   const [optionSquares, setOptionSquares] = useState<OptionSquares>({});
   const [playerTime, setPlayerTime] = useState(
@@ -176,6 +186,7 @@ export function useOnlineQuickMatch() {
       const nextGame = new Chess(payload.fen);
       gameRef.current = nextGame;
       setGame(nextGame);
+      setMatchVariant(normalizeMatchVariant(payload.variant));
       setMoves([]);
       setLastMove(null);
       setGameId(payload.gameId);
@@ -208,6 +219,18 @@ export function useOnlineQuickMatch() {
 
     socket.on("moveApplied", (payload: MoveAppliedPayload) => {
       if (payload.gameId !== gameIdRef.current) return;
+
+      if (payload.isChess960Castle) {
+        const nextGame = new Chess(payload.fen);
+        gameRef.current = nextGame;
+        setGame(nextGame);
+        setMoves((prev) => [...prev, payload.move.san]);
+        setLastMove({ from: payload.move.from, to: payload.move.to });
+        setMoveFrom(null);
+        setOptionSquares({});
+        return;
+      }
+
       const currentGame = gameRef.current;
       const applied = currentGame.move({
         from: payload.move.from,
@@ -218,7 +241,7 @@ export function useOnlineQuickMatch() {
       if (applied) {
         gameRef.current = currentGame;
         setGame(new Chess(currentGame.fen()));
-        setMoves(currentGame.history());
+        setMoves((prev) => [...prev, payload.move.san || applied.san]);
       } else {
         const nextGame = new Chess(payload.fen);
         gameRef.current = nextGame;
@@ -330,7 +353,7 @@ export function useOnlineQuickMatch() {
     });
 
     saveGameHistory({
-      event: "Live Chess",
+      event: matchVariant === "chess960" ? "Live Chess960" : "Live Chess",
       site: "NeonGambit",
       date: formatDate(startDate),
       round: "-",
@@ -367,18 +390,25 @@ export function useOnlineQuickMatch() {
     opponentName,
     saveGameHistory,
     user?.rating,
+    matchVariant,
   ]);
 
   const startMatch = useCallback(
-    (timeControl: { initial: number; increment: number }, name?: string) => {
+    (
+      timeControl: { initial: number; increment: number },
+      name?: string,
+      variant: MatchVariant = "standard",
+    ) => {
       if (!socketRef.current) return;
       if (!socketRef.current.connected) {
         setIsSearching(false);
         setQueueStatus("Matchmaking server is offline.");
         return;
       }
+      const normalizedVariant = normalizeMatchVariant(variant);
       playerNameRef.current = name || "Player";
       resetGameState();
+      setMatchVariant(normalizedVariant);
       setIsSearching(true);
       setQueueStatus("Searching for opponent...");
       setGameSettings({
@@ -392,6 +422,7 @@ export function useOnlineQuickMatch() {
       socketRef.current.emit("findMatch", {
         name: playerNameRef.current,
         timeControl,
+        variant: normalizedVariant,
       });
     },
     [resetGameState],
@@ -423,6 +454,41 @@ export function useOnlineQuickMatch() {
     resetGameState();
   }, [gameId, resetGameState]);
 
+  const addChess960CastlingTargets = useCallback(
+    (currentGame: Chess, kingSquare: Square) => {
+      if (matchVariant !== "chess960") return;
+
+      const kingPiece = currentGame.get(kingSquare);
+      if (!kingPiece || kingPiece.color !== playerColor || kingPiece.type !== "k") {
+        return;
+      }
+
+      const rank = kingSquare[1];
+      const extraSquares: OptionSquares = {};
+
+      BOARD_FILES.forEach((file) => {
+        const candidateSquare = `${file}${rank}` as Square;
+        if (candidateSquare === kingSquare) return;
+        const candidatePiece = currentGame.get(candidateSquare);
+        if (
+          candidatePiece &&
+          candidatePiece.color === playerColor &&
+          candidatePiece.type === "r"
+        ) {
+          extraSquares[candidateSquare] = {
+            background:
+              "radial-gradient(circle, rgba(20, 184, 166, 0.35) 45%, transparent 47%)",
+            borderRadius: "50%",
+          };
+        }
+      });
+
+      if (Object.keys(extraSquares).length === 0) return;
+      setOptionSquares((prev) => ({ ...prev, ...extraSquares }));
+    },
+    [matchVariant, playerColor],
+  );
+
   const onSquareClick = useCallback(
     (square: Square) => {
       if (!gameStarted || gameOver) return;
@@ -435,6 +501,7 @@ export function useOnlineQuickMatch() {
         if (!piece || piece.color !== playerColor) return;
         setMoveFrom(square);
         getMoveOptions(square);
+        addChess960CastlingTargets(currentGame, square);
         return;
       }
 
@@ -460,6 +527,7 @@ export function useOnlineQuickMatch() {
       if (piece && piece.color === playerColor) {
         setMoveFrom(square);
         getMoveOptions(square);
+        addChess960CastlingTargets(currentGame, square);
         return;
       }
 
@@ -470,6 +538,7 @@ export function useOnlineQuickMatch() {
       gameId,
       gameOver,
       gameStarted,
+      addChess960CastlingTargets,
       getMoveOptions,
       isPlayerTurn,
       moveFrom,
@@ -479,8 +548,8 @@ export function useOnlineQuickMatch() {
   );
 
   const rematch = useCallback(() => {
-    startMatch(gameSettings.timeControl, playerNameRef.current);
-  }, [gameSettings.timeControl, startMatch]);
+    startMatch(gameSettings.timeControl, playerNameRef.current, matchVariant);
+  }, [gameSettings.timeControl, matchVariant, startMatch]);
 
   return {
     // Game state
@@ -507,6 +576,7 @@ export function useOnlineQuickMatch() {
     isSearching,
     queueStatus,
     isConnected,
+    matchVariant,
 
     // Handlers
     onSquareClick,

@@ -6,6 +6,8 @@ import type { GameSettings } from "../../components/game";
 import { BOARD_FRAME } from "./types";
 import type { CSSProperties } from "react";
 
+type MatchVariant = "standard" | "chess960";
+
 interface QuickMatchGameViewProps {
   game: { fen: () => string };
   lastMove?: { from: string; to: string } | null;
@@ -27,6 +29,7 @@ interface QuickMatchGameViewProps {
   onRematch: () => void;
   onLeave?: () => void;
   opponentName?: string;
+  variant?: MatchVariant;
 }
 
 export function QuickMatchGameView({
@@ -50,6 +53,7 @@ export function QuickMatchGameView({
   onRematch,
   onLeave,
   opponentName,
+  variant = "standard",
 }: QuickMatchGameViewProps) {
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -94,6 +98,7 @@ export function QuickMatchGameView({
           onTryAgain={onRematch}
           onNewGame={onRematch}
           savedGameId={savedGameId}
+          analyzeBasePath={variant === "chess960" ? "/analyze960" : "/analyze"}
         />
 
         {/* Main Board Area */}
@@ -181,7 +186,7 @@ export function QuickMatchGameView({
             {/* Header */}
             <div className="flex items-center justify-center mb-3 pb-3 border-b border-gray-200/60 dark:border-white/10">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                Quick Match
+                Quick Match{variant === "chess960" ? " — Chess960" : ""}
               </h2>
             </div>
 
@@ -202,7 +207,7 @@ export function QuickMatchGameView({
                           className="flex items-center text-xs font-mono"
                         >
                           <span className="w-8 text-gray-400 dark:text-gray-500">
-                            {moves.length - displayMoves.length + i + 1}.
+                            {Math.floor((moves.length - displayMoves.length) / 2) + i + 1}.
                           </span>
                           <span className="flex-1 px-2 text-gray-800 dark:text-gray-200">
                             {displayMoves[i * 2]}

@@ -5,6 +5,13 @@ import { useOnlineQuickMatch } from "../../hooks/useOnlineQuickMatch";
 import { QuickMatchSetup } from "./QuickMatchSetup";
 import { QuickMatchGameView } from "./QuickMatchGameView";
 
+type MatchVariant = "standard" | "chess960";
+
+function normalizeVariant(value: unknown): MatchVariant {
+  if (typeof value !== "string") return "standard";
+  return value.trim().toLowerCase() === "chess960" ? "chess960" : "standard";
+}
+
 function getTimeControlFromState(
   state: unknown,
 ): { initial: number; increment: number } | null {
@@ -48,6 +55,18 @@ function getAutoStartFromSearch(search: string): boolean {
   return value === "1" || value === "true";
 }
 
+function getVariantFromState(state: unknown): MatchVariant | null {
+  if (!state || typeof state !== "object") return null;
+  if (!("variant" in state)) return null;
+  return normalizeVariant((state as { variant?: unknown }).variant);
+}
+
+function getVariantFromSearch(search: string): MatchVariant | null {
+  const value = new URLSearchParams(search).get("variant");
+  if (!value) return null;
+  return normalizeVariant(value);
+}
+
 export default function QuickMatch() {
   const { user } = useAuthStore();
   const location = useLocation();
@@ -78,6 +97,7 @@ export default function QuickMatch() {
     timeOut,
     rematch,
     leaveGame,
+    matchVariant,
   } = useOnlineQuickMatch();
 
   const [timeControl, setTimeControl] = useState(() => {
@@ -89,6 +109,13 @@ export default function QuickMatch() {
       }
     );
   });
+  const [variant, setVariant] = useState<MatchVariant>(() => {
+    return (
+      getVariantFromState(location.state) ||
+      getVariantFromSearch(location.search) ||
+      "standard"
+    );
+  });
 
   useEffect(() => {
     const selectedTimeControl =
@@ -96,6 +123,14 @@ export default function QuickMatch() {
       getTimeControlFromSearch(location.search);
     if (selectedTimeControl) {
       setTimeControl(selectedTimeControl);
+    }
+  }, [location.state, location.search]);
+
+  useEffect(() => {
+    const selectedVariant =
+      getVariantFromState(location.state) || getVariantFromSearch(location.search);
+    if (selectedVariant) {
+      setVariant(selectedVariant);
     }
   }, [location.state, location.search]);
 
@@ -119,7 +154,7 @@ export default function QuickMatch() {
     if (!isConnected) return;
 
     autoStartHandledRef.current = true;
-    startMatch(timeControl, user?.fullName || "Player");
+    startMatch(timeControl, user?.fullName || "Player", variant);
   }, [
     gameStarted,
     isConnected,
@@ -127,6 +162,7 @@ export default function QuickMatch() {
     pendingAutoStart,
     startMatch,
     timeControl,
+    variant,
     user?.fullName,
   ]);
 
@@ -147,18 +183,26 @@ export default function QuickMatch() {
   };
 
   const handleStartMatch = () => {
+    const params = new URLSearchParams({
+      initial: String(timeControl.initial),
+      increment: String(timeControl.increment),
+    });
+    if (variant !== "standard") {
+      params.set("variant", variant);
+    }
     navigate(
-      `/play/quick?initial=${timeControl.initial}&increment=${timeControl.increment}`,
+      `/play/quick?${params.toString()}`,
       {
         replace: true,
         state: {
           initial: timeControl.initial,
           increment: timeControl.increment,
+          variant,
         },
       },
     );
     setPendingAutoStart(false);
-    startMatch(timeControl, user?.fullName || "Player");
+    startMatch(timeControl, user?.fullName || "Player", variant);
   };
 
   // If game started, show the game board
@@ -185,6 +229,7 @@ export default function QuickMatch() {
         onResign={resign}
         onRematch={rematch}
         onLeave={leaveGame}
+        variant={matchVariant}
       />
     );
   }
@@ -194,6 +239,8 @@ export default function QuickMatch() {
     <QuickMatchSetup
       timeControl={timeControl}
       onTimeControlChange={setTimeControl}
+      variant={variant}
+      onVariantChange={setVariant}
       onStart={handleStartMatch}
       isSearching={isSearching || pendingAutoStart}
       isConnected={isConnected}

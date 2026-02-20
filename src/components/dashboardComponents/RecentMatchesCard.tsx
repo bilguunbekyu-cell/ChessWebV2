@@ -13,6 +13,7 @@ interface RecentMatch {
   timeControl: string;
   date: string;
   ratingChange: number;
+  analyzePath: string;
 }
 
 function formatTimeAgo(dateString: string): string {
@@ -53,6 +54,9 @@ function transformGameHistory(game: GameHistory): RecentMatch {
     timeControl: game.timeControl || "10+0",
     date: formatTimeAgo(game.createdAt),
     ratingChange,
+    analyzePath: /960|chess960/i.test(String(game.event || ""))
+      ? `/analyze960/${game._id}`
+      : `/analyze/${game._id}`,
   };
 }
 
@@ -114,7 +118,7 @@ export function RecentMatchesCard() {
               initial={{ opacity: 0, x: 15 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.35, delay: index * 0.1 }}
-              onClick={() => navigate(`/analyze/${match.id}`)}
+              onClick={() => navigate(match.analyzePath)}
               className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
             >
               <div className="flex items-center space-x-3">

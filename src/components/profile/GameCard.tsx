@@ -14,6 +14,10 @@ interface GameCardProps {
   analyzeBaseUrl?: string; // Optional custom base URL for analyze, defaults to "/analyze"
 }
 
+function isChess960Game(game: GameHistory): boolean {
+  return /960|chess960/i.test(String(game.event || ""));
+}
+
 function formatDuration(ms?: number): string {
   if (!ms) return "-";
   const seconds = Math.floor(ms / 1000);
@@ -89,9 +93,13 @@ export function GameCard({
   const handleAnalyze = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      navigate(`${analyzeBaseUrl}/${game._id}`);
+      const resolvedAnalyzeBase =
+        analyzeBaseUrl === "/analyze" && isChess960Game(game)
+          ? "/analyze960"
+          : analyzeBaseUrl;
+      navigate(`${resolvedAnalyzeBase}/${game._id}`);
     },
-    [navigate, game._id, analyzeBaseUrl],
+    [navigate, game, analyzeBaseUrl],
   );
 
   const formattedMoves = game.moves.reduce((acc: string[], move, idx) => {

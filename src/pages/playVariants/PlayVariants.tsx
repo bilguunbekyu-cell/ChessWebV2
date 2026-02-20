@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Chessboard } from "react-chessboard";
 import { Clock, Shuffle } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
@@ -36,6 +37,12 @@ const VARIANTS: VariantOption[] = [
     description: "Explosions on capture.",
     icon: "💥",
   },
+  {
+    key: "fourPlayer",
+    label: "4-Player Chess",
+    description: "Online matchmaking on a 14x14 cross board.",
+    icon: "🧩",
+  },
 ];
 
 const TIME_OPTIONS = [
@@ -47,13 +54,100 @@ const TIME_OPTIONS = [
   { label: "15+10", initial: 900, increment: 10 },
 ];
 
+function pickRandomSquare(indexes: number[]): number {
+  const random = Math.floor(Math.random() * indexes.length);
+  return indexes[random];
+}
+
+function createChess960PreviewFen(): string {
+  const backRank = Array(8).fill("");
+  const evenSquares = [0, 2, 4, 6];
+  const oddSquares = [1, 3, 5, 7];
+
+  const darkBishopSquare = pickRandomSquare(evenSquares);
+  const lightBishopSquare = pickRandomSquare(oddSquares);
+  backRank[darkBishopSquare] = "b";
+  backRank[lightBishopSquare] = "b";
+
+  const emptySquares: number[] = [];
+  for (let i = 0; i < 8; i += 1) {
+    if (!backRank[i]) emptySquares.push(i);
+  }
+
+  const queenSquare = pickRandomSquare(emptySquares);
+  backRank[queenSquare] = "q";
+
+  const remainingAfterQueen = emptySquares.filter((idx) => idx !== queenSquare);
+  const knightOneSquare = pickRandomSquare(remainingAfterQueen);
+  backRank[knightOneSquare] = "n";
+
+  const remainingAfterKnightOne = remainingAfterQueen.filter(
+    (idx) => idx !== knightOneSquare,
+  );
+  const knightTwoSquare = pickRandomSquare(remainingAfterKnightOne);
+  backRank[knightTwoSquare] = "n";
+
+  const finalSquares = remainingAfterKnightOne
+    .filter((idx) => idx !== knightTwoSquare)
+    .sort((a, b) => a - b);
+  backRank[finalSquares[0]] = "r";
+  backRank[finalSquares[1]] = "k";
+  backRank[finalSquares[2]] = "r";
+
+  const rank = backRank.join("");
+  return `${rank}/pppppppp/8/8/8/8/PPPPPPPP/${rank.toUpperCase()} w - - 0 1`;
+}
+
+function FourPlayerPreview({ size }: { size: number }) {
+  const cells = [];
+  for (let row = 0; row < 14; row += 1) {
+    for (let col = 0; col < 14; col += 1) {
+      const topCut = row < 3 && col < 3;
+      const topRightCut = row < 3 && col > 10;
+      const bottomLeftCut = row > 10 && col < 3;
+      const bottomRightCut = row > 10 && col > 10;
+      const playable = !(topCut || topRightCut || bottomLeftCut || bottomRightCut);
+      cells.push(
+        <div
+          key={`${row}-${col}`}
+          className={playable ? ((row + col) % 2 === 0 ? "bg-[#eeeed2]" : "bg-[#769656]") : "bg-transparent"}
+        />,
+      );
+    }
+  }
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden shadow-2xl border border-gray-200/60 dark:border-white/10 bg-gray-200/20 dark:bg-black/20 relative"
+      style={{ width: size, height: size }}
+    >
+      <div
+        className="absolute inset-0"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(14, minmax(0, 1fr))",
+        }}
+      >
+        {cells}
+      </div>
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <span className="px-3 py-1.5 rounded-full bg-black/55 text-white text-xs font-semibold uppercase tracking-wide">
+          4-Player Board
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function PlayVariants() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [selectedVariant, setSelectedVariant] = useState(VARIANTS[0]);
   const [timeControl, setTimeControl] = useState({
     initial: 300,
     increment: 0,
   });
+  const [previewFen, setPreviewFen] = useState("start");
 
   // Responsive board width
   const [boardWidth, setBoardWidth] = useState(620);
@@ -88,8 +182,50 @@ export default function PlayVariants() {
     };
   }, []);
 
+  useEffect(() => {
+    if (selectedVariant.key === "chess960") {
+      setPreviewFen(createChess960PreviewFen());
+      return;
+    }
+    setPreviewFen("start");
+  }, [selectedVariant.key]);
+
   const handleStart = () => {
-    // Placeholder for starting a variant game
+    if (selectedVariant.key === "fourPlayer") {
+      const params = new URLSearchParams({
+        initial: String(timeControl.initial),
+        increment: String(timeControl.increment),
+        autostart: "1",
+      });
+      navigate(`/play/four-player?${params.toString()}`, {
+        state: {
+          initial: timeControl.initial,
+          increment: timeControl.increment,
+          autoStart: true,
+        },
+      });
+      return;
+    }
+
+    const queueVariant =
+      selectedVariant.key === "chess960" ? "chess960" : "standard";
+    const params = new URLSearchParams({
+      initial: String(timeControl.initial),
+      increment: String(timeControl.increment),
+      autostart: "1",
+    });
+    if (queueVariant !== "standard") {
+      params.set("variant", queueVariant);
+    }
+
+    navigate(`/play/quick?${params.toString()}`, {
+      state: {
+        initial: timeControl.initial,
+        increment: timeControl.increment,
+        variant: queueVariant,
+        autoStart: true,
+      },
+    });
   };
 
   return (
@@ -126,18 +262,22 @@ export default function PlayVariants() {
           </div>
 
           {/* Chess Board Preview */}
-          <div
-            className="rounded-2xl overflow-hidden shadow-2xl border border-gray-200/60 dark:border-white/10"
-            style={{ width: boardWidth, height: boardWidth }}
-          >
-            <Chessboard
-              boardWidth={boardWidth}
-              position="start"
-              arePiecesDraggable={false}
-              customDarkSquareStyle={{ backgroundColor: "#779556" }}
-              customLightSquareStyle={{ backgroundColor: "#ebecd0" }}
-            />
-          </div>
+          {selectedVariant.key === "fourPlayer" ? (
+            <FourPlayerPreview size={boardWidth} />
+          ) : (
+            <div
+              className="rounded-2xl overflow-hidden shadow-2xl border border-gray-200/60 dark:border-white/10"
+              style={{ width: boardWidth, height: boardWidth }}
+            >
+              <Chessboard
+                boardWidth={boardWidth}
+                position={previewFen}
+                arePiecesDraggable={false}
+                customDarkSquareStyle={{ backgroundColor: "#779556" }}
+                customLightSquareStyle={{ backgroundColor: "#ebecd0" }}
+              />
+            </div>
+          )}
 
           {/* Bottom Player Info Bar */}
           <div

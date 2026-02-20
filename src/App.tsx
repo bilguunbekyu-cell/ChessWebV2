@@ -13,6 +13,7 @@ import PlayWithBot, { BotGamePage } from "./pages/playWithBot";
 import QuickMatch from "./pages/quickMatch";
 import PlayWithFriend from "./pages/playWithFriend";
 import PlayVariants from "./pages/playVariants";
+import PlayFourPlayer from "./pages/playFourPlayer";
 import PlayPractice from "./pages/playPractice";
 import Puzzles from "./pages/puzzles";
 import PuzzleTrainer from "./pages/puzzleTrainer";
@@ -25,6 +26,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import Analyze from "./pages/analyze";
+import Analyze960 from "./pages/analyze960";
 import AdminDashboard from "./pages/adminDashboard";
 import AdminUsers from "./pages/adminUsers";
 import AdminUserProfile from "./pages/AdminUserProfile";
@@ -140,6 +142,7 @@ function Layout({ children }: { children: React.ReactNode }) {
     location.pathname === "/play/quick" ||
     location.pathname === "/play/friend" ||
     location.pathname === "/play/variants" ||
+    location.pathname === "/play/four-player" ||
     location.pathname === "/play/practice";
 
   // Pages that have their own sidebar or are auth pages
@@ -275,6 +278,14 @@ function App() {
             }
           />
           <Route
+            path="/play/four-player"
+            element={
+              <ProtectedRoute>
+                <PlayFourPlayer />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/play/practice"
             element={
               <ProtectedRoute>
@@ -359,6 +370,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Analyze />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analyze960/:gameId"
+            element={
+              <ProtectedRoute>
+                <Analyze960 />
               </ProtectedRoute>
             }
           />
