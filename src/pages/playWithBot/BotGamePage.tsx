@@ -66,6 +66,9 @@ export default function BotGamePage() {
     setPlayerTime,
     setOpponentTime,
     onSquareClick,
+    onPieceDrop,
+    onCancelSelection,
+    isDraggablePiece,
     handleStartGame,
     handleNewGame,
     handleResign,
@@ -263,6 +266,9 @@ export default function BotGamePage() {
                     boardWidth={boardWidth}
                     boardOrientation={gameSettings.playAs}
                     onSquareClick={onSquareClick}
+                    onPieceDrop={onPieceDrop}
+                    onCancelSelection={onCancelSelection}
+                    isDraggablePiece={isDraggablePiece}
                     customSquareStyles={{ ...optionSquares, ...preMoveSquares }}
                     lastMove={lastMove}
                   />

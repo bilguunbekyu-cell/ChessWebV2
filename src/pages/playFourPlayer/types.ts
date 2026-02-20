@@ -18,12 +18,28 @@ export interface Square {
   col: number;
 }
 
+export interface CastlingState {
+  k: boolean;
+  q: boolean;
+}
+
+export type CastlingRights = Record<FourPlayerColor, CastlingState>;
+
+export interface EnPassantState {
+  target: Square;
+  pawn: Square;
+  color: FourPlayerColor;
+  availableFor: FourPlayerColor;
+}
+
 export interface FourPlayerMove {
   from: Square;
   to: Square;
   piece: FourPlayerPiece;
   captured?: FourPlayerPiece | null;
   promoted?: FourPlayerPieceType;
+  castlingSide?: "k" | "q";
+  enPassant?: boolean;
   eliminated?: FourPlayerColor | null;
 }
 
@@ -34,5 +50,7 @@ export interface FourPlayerState {
   turn: FourPlayerColor;
   winner: FourPlayerColor | null;
   eliminated: FourPlayerColor[];
+  castlingRights: CastlingRights;
+  enPassant: EnPassantState | null;
   moves: FourPlayerMove[];
 }

@@ -361,6 +361,11 @@ export function useFriendOnlineGame() {
     user?.rating,
   ]);
 
+  const clearSelection = useCallback(() => {
+    setMoveFrom(null);
+    setOptionSquares({});
+  }, []);
+
   const onSquareClick = useCallback(
     (square: Square) => {
       if (!socket) return;
@@ -379,8 +384,7 @@ export function useFriendOnlineGame() {
       }
 
       if (square === moveFrom) {
-        setMoveFrom(null);
-        setOptionSquares({});
+        clearSelection();
         return;
       }
 
@@ -391,8 +395,7 @@ export function useFriendOnlineGame() {
           to: square,
           promotion: "q",
         });
-        setMoveFrom(null);
-        setOptionSquares({});
+        clearSelection();
         return;
       }
 
@@ -403,10 +406,10 @@ export function useFriendOnlineGame() {
         return;
       }
 
-      setMoveFrom(null);
-      setOptionSquares({});
+      clearSelection();
     },
     [
+      clearSelection,
       socket,
       gameStarted,
       gameOver,
@@ -416,6 +419,59 @@ export function useFriendOnlineGame() {
       playerColor,
       getMoveOptions,
     ],
+  );
+
+  const onPieceDrop = useCallback(
+    (sourceSquare: Square, targetSquare: Square) => {
+      if (!socket) return false;
+      if (!gameStarted || gameOver) return false;
+      if (!isPlayerTurn) return false;
+      if (!gameIdRef.current) return false;
+
+      const currentGame = gameRef.current;
+      const sourcePiece = currentGame.get(sourceSquare);
+      if (!sourcePiece || sourcePiece.color !== playerColor) return false;
+
+      const isLegalMove = currentGame
+        .moves({ square: sourceSquare, verbose: true })
+        .some((move) => move.to === targetSquare);
+
+      if (!isLegalMove) {
+        if (getMoveOptions(sourceSquare)) {
+          setMoveFrom(sourceSquare);
+        } else {
+          clearSelection();
+        }
+        return false;
+      }
+
+      socket.emit("makeMove", {
+        gameId: gameIdRef.current,
+        from: sourceSquare,
+        to: targetSquare,
+        promotion: "q",
+      });
+      clearSelection();
+      return true;
+    },
+    [
+      clearSelection,
+      gameOver,
+      gameStarted,
+      getMoveOptions,
+      isPlayerTurn,
+      playerColor,
+      socket,
+    ],
+  );
+
+  const isDraggablePiece = useCallback(
+    (sourceSquare: Square) => {
+      if (!gameStarted || gameOver || !isPlayerTurn) return false;
+      const piece = gameRef.current.get(sourceSquare);
+      return !!piece && piece.color === playerColor;
+    },
+    [gameOver, gameStarted, isPlayerTurn, playerColor],
   );
 
   const resign = useCallback(() => {
@@ -467,6 +523,9 @@ export function useFriendOnlineGame() {
     setOpponentTime,
     isConnected,
     onSquareClick,
+    onPieceDrop,
+    onCancelSelection: clearSelection,
+    isDraggablePiece,
     resign,
     timeOut,
     leaveGame,

@@ -19,6 +19,37 @@ export function useSquareClickHandler(
     React.SetStateAction<{ from: Square; to: Square } | null>
   >,
 ) {
+  const clearSelection = useCallback(() => {
+    setMoveFrom(null);
+    setOptionSquares({});
+  }, [setMoveFrom, setOptionSquares]);
+
+  const commitMove = useCallback(
+    (from: Square, to: Square) => {
+      const currentGame = gameRef.current;
+
+      try {
+        const result = currentGame.move({
+          from,
+          to,
+          promotion: "q",
+        });
+        if (!result) return false;
+
+        gameRef.current = currentGame;
+        setGame(new Chess(currentGame.fen()));
+        setMoves(currentGame.history());
+        clearPreMove();
+        setLastMove?.({ from, to });
+        clearSelection();
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [clearPreMove, clearSelection, gameRef, setGame, setLastMove, setMoves],
+  );
+
   const onSquareClick = useCallback(
     (square: Square) => {
       if (!gameStarted || gameOver) return;
@@ -42,8 +73,7 @@ export function useSquareClickHandler(
         if (legal) {
           setPreMove(moveFrom, square, legal.promotion as any);
         }
-        setMoveFrom(null);
-        setOptionSquares({});
+        clearSelection();
         return;
       }
 
@@ -58,37 +88,26 @@ export function useSquareClickHandler(
       }
 
       if (moveFrom === square) {
-        setMoveFrom(null);
-        setOptionSquares({});
+        clearSelection();
         return;
       }
 
-      try {
-        const result = currentGame.move({
-          from: moveFrom,
-          to: square,
-          promotion: "q",
-        });
-        if (result) {
-          gameRef.current = currentGame;
-          setGame(new Chess(currentGame.fen()));
-          setMoves(currentGame.history());
-          clearPreMove();
-          setLastMove?.({ from: moveFrom, to: square });
-        }
-      } catch {
-        const piece = currentGame.get(square);
-        if (piece && piece.color === playerColor) {
-          getMoveOptions(square);
-          setMoveFrom(square);
-          return;
-        }
+      if (commitMove(moveFrom, square)) {
+        return;
       }
 
-      setMoveFrom(null);
-      setOptionSquares({});
+      const piece = currentGame.get(square);
+      if (piece && piece.color === playerColor) {
+        getMoveOptions(square);
+        setMoveFrom(square);
+        return;
+      }
+
+      clearSelection();
     },
     [
+      clearSelection,
+      commitMove,
       gameRef,
       gameStarted,
       gameOver,
@@ -96,14 +115,65 @@ export function useSquareClickHandler(
       moveFrom,
       setMoveFrom,
       setOptionSquares,
-      setGame,
-      setMoves,
       getMoveOptions,
       setPreMove,
-      clearPreMove,
       setLastMove,
     ],
   );
 
-  return onSquareClick;
+  const onPieceDrop = useCallback(
+    (sourceSquare: Square, targetSquare: Square) => {
+      if (!gameStarted || gameOver) return false;
+
+      const currentGame = gameRef.current;
+      const piece = currentGame.get(sourceSquare);
+      if (!piece || piece.color !== playerColor) return false;
+
+      const turn = currentGame.turn();
+      if (turn !== playerColor) {
+        const premove = currentGame
+          .moves({ square: sourceSquare, verbose: true })
+          .find((move) => move.to === targetSquare);
+        if (!premove) return false;
+        setPreMove(sourceSquare, targetSquare, premove.promotion as any);
+        clearSelection();
+        return false;
+      }
+
+      const moved = commitMove(sourceSquare, targetSquare);
+      if (moved) return true;
+
+      if (getMoveOptions(sourceSquare)) {
+        setMoveFrom(sourceSquare);
+      }
+      return false;
+    },
+    [
+      clearSelection,
+      commitMove,
+      gameOver,
+      gameRef,
+      gameStarted,
+      getMoveOptions,
+      playerColor,
+      setMoveFrom,
+      setPreMove,
+    ],
+  );
+
+  const isDraggablePiece = useCallback(
+    (sourceSquare: Square) => {
+      if (!gameStarted || gameOver) return false;
+      const piece = gameRef.current.get(sourceSquare);
+      return !!piece && piece.color === playerColor;
+    },
+    [gameOver, gameRef, gameStarted, playerColor],
+  );
+
+  return {
+    onSquareClick,
+    onPieceDrop,
+    onCancelSelection: clearSelection,
+    isDraggablePiece,
+  };
 }

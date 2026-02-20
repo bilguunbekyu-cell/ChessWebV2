@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Clock, Timer, Users } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
-import { BOARD_FRAME, TIME_OPTIONS } from "../quickMatch/types";
+import { TIME_OPTIONS } from "../quickMatch/types";
 import {
   createInitialFourPlayerState,
   formatMoveText,
@@ -11,7 +11,12 @@ import {
 } from "./engine";
 import { PieceIcon } from "./PieceIcon";
 import { useOnlineFourPlayerMatch } from "./useOnlineFourPlayerMatch";
-import { FourPlayerColor, FourPlayerPlayers, FourPlayerState } from "./types";
+import {
+  FourPlayerColor,
+  FourPlayerPiece,
+  FourPlayerPlayers,
+  FourPlayerState,
+} from "./types";
 
 interface TimeControl {
   initial: number;
@@ -76,6 +81,9 @@ function FourPlayerBoard({
   lastMoveFrom,
   lastMoveTo,
   onSquareClick,
+  onPieceDrop,
+  onCancelSelection,
+  canDragFrom,
   boardWidth,
   interactive,
 }: {
@@ -85,16 +93,146 @@ function FourPlayerBoard({
   lastMoveFrom: string | null;
   lastMoveTo: string | null;
   onSquareClick: (row: number, col: number) => void;
+  onPieceDrop: (
+    fromRow: number,
+    fromCol: number,
+    toRow: number,
+    toCol: number,
+  ) => boolean;
+  onCancelSelection: () => void;
+  canDragFrom: (row: number, col: number) => boolean;
   boardWidth: number;
   interactive: boolean;
 }) {
+  const gridRef = useRef<HTMLDivElement>(null);
+  const suppressClickRef = useRef(false);
+  const [dragging, setDragging] = useState<{
+    fromRow: number;
+    fromCol: number;
+    piece: FourPlayerPiece;
+    x: number;
+    y: number;
+    startX: number;
+    startY: number;
+    moved: boolean;
+  } | null>(null);
+
+  const squareFromClient = useCallback((clientX: number, clientY: number) => {
+    const grid = gridRef.current;
+    if (!grid) return null;
+
+    const rect = grid.getBoundingClientRect();
+    if (
+      clientX < rect.left ||
+      clientX > rect.right ||
+      clientY < rect.top ||
+      clientY > rect.bottom
+    ) {
+      return null;
+    }
+
+    const cellSize = rect.width / FOUR_PLAYER_BOARD_SIZE;
+    const col = Math.floor((clientX - rect.left) / cellSize);
+    const row = Math.floor((clientY - rect.top) / cellSize);
+    if (row < 0 || col < 0 || row >= FOUR_PLAYER_BOARD_SIZE || col >= FOUR_PLAYER_BOARD_SIZE) {
+      return null;
+    }
+    if (!isPlayableSquare(row, col)) return null;
+    return { row, col };
+  }, []);
+
+  const finalizeDrag = useCallback(
+    (clientX: number, clientY: number) => {
+      setDragging((current) => {
+        if (!current) return null;
+        if (!current.moved) return null;
+
+        const destination = squareFromClient(clientX, clientY);
+        if (destination) {
+          suppressClickRef.current = true;
+          onPieceDrop(
+            current.fromRow,
+            current.fromCol,
+            destination.row,
+            destination.col,
+          );
+        }
+        return null;
+      });
+    },
+    [onPieceDrop, squareFromClient],
+  );
+
+  useEffect(() => {
+    if (!dragging) return;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      setDragging((current) => {
+        if (!current) return null;
+        const moved =
+          current.moved ||
+          Math.abs(event.clientX - current.startX) > 6 ||
+          Math.abs(event.clientY - current.startY) > 6;
+
+        if (
+          moved &&
+          !current.moved &&
+          selected !== `${current.fromRow},${current.fromCol}`
+        ) {
+          onSquareClick(current.fromRow, current.fromCol);
+        }
+
+        return {
+          ...current,
+          x: event.clientX,
+          y: event.clientY,
+          moved,
+        };
+      });
+    };
+
+    const handlePointerUp = (event: PointerEvent) => {
+      finalizeDrag(event.clientX, event.clientY);
+    };
+
+    const handlePointerCancel = () => {
+      setDragging(null);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerCancel);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerCancel);
+    };
+  }, [dragging, finalizeDrag, onSquareClick, selected]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setDragging(null);
+      onCancelSelection();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onCancelSelection]);
+
   return (
     <div
+      onContextMenu={(event) => {
+        event.preventDefault();
+        setDragging(null);
+        onCancelSelection();
+      }}
       className="rounded-2xl overflow-hidden border border-gray-200/70 dark:border-white/10 shadow-xl bg-gray-200/20 dark:bg-black/20"
-      style={{ width: boardWidth + BOARD_FRAME, height: boardWidth + BOARD_FRAME }}
+      style={{ width: boardWidth, height: boardWidth }}
     >
       <div
-        className="m-2 rounded-xl overflow-hidden"
+        ref={gridRef}
+        className="m-1 rounded-xl overflow-hidden"
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${FOUR_PLAYER_BOARD_SIZE}, minmax(0, 1fr))`,
@@ -124,10 +262,32 @@ function FourPlayerBoard({
               <button
                 type="button"
                 key={key}
-                onClick={() => onSquareClick(row, col)}
+                onClick={() => {
+                  if (suppressClickRef.current) {
+                    suppressClickRef.current = false;
+                    return;
+                  }
+                  onSquareClick(row, col);
+                }}
+                onPointerDown={(event) => {
+                  if (!interactive || event.button !== 0) return;
+                  if (!canDragFrom(row, col)) return;
+                  if (!piece) return;
+
+                  setDragging({
+                    fromRow: row,
+                    fromCol: col,
+                    piece,
+                    x: event.clientX,
+                    y: event.clientY,
+                    startX: event.clientX,
+                    startY: event.clientY,
+                    moved: false,
+                  });
+                }}
                 disabled={!interactive}
-                className={`relative aspect-square flex items-center justify-center transition-colors ${
-                  isDark ? "bg-[#769656]" : "bg-[#eeeed2]"
+                className={`relative aspect-square flex items-center justify-center transition-colors touch-none ${
+                  isDark ? "bg-[#a6a7ab]" : "bg-[#d6d7d9]"
                 } ${
                   isLastFrom
                     ? "ring-2 ring-yellow-300/70 ring-inset"
@@ -149,7 +309,13 @@ function FourPlayerBoard({
                   <PieceIcon
                     type={piece.type}
                     color={piece.color}
-                    className="w-[86%] h-[86%] drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)]"
+                    className={`w-[95%] h-[95%] drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)] ${
+                      dragging?.moved &&
+                      dragging.fromRow === row &&
+                      dragging.fromCol === col
+                        ? "opacity-0"
+                        : ""
+                    }`}
                   />
                 )}
               </button>
@@ -157,6 +323,23 @@ function FourPlayerBoard({
           }),
         )}
       </div>
+
+      {dragging?.moved && (
+        <div
+          className="pointer-events-none fixed z-40 w-[min(9vw,76px)] h-[min(9vw,76px)]"
+          style={{
+            left: dragging.x,
+            top: dragging.y,
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <PieceIcon
+            type={dragging.piece.type}
+            color={dragging.piece.color}
+            className="w-full h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)]"
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -218,6 +401,9 @@ export default function FourPlayerChess() {
     cancelMatch,
     leaveGame,
     onSquareClick,
+    onPieceDrop,
+    onCancelSelection,
+    canDragFrom,
     rematch,
     resetLocalState,
   } = useOnlineFourPlayerMatch();
@@ -284,16 +470,19 @@ export default function FourPlayerChess() {
     user?.fullName,
   ]);
 
-  const [boardWidth, setBoardWidth] = useState(650);
-  const boardAreaRef = useRef<HTMLDivElement>(null);
+  const [boardWidth, setBoardWidth] = useState(760);
+  const setupBoardAreaRef = useRef<HTMLDivElement>(null);
+  const gameBoardAreaRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const container = boardAreaRef.current;
+    const container = gameStarted
+      ? gameBoardAreaRef.current
+      : setupBoardAreaRef.current;
     if (!container) return;
 
     const update = () => {
       const rect = container.getBoundingClientRect();
-      const size = Math.floor(Math.min(rect.width - 18, rect.height - 18));
-      setBoardWidth(Math.max(260, Math.min(size, 780)));
+      const size = Math.floor(Math.min(rect.width - 8, rect.height - 8));
+      setBoardWidth(Math.max(260, Math.min(size, 1120)));
     };
     update();
     const observer = new ResizeObserver(() => update());
@@ -303,7 +492,7 @@ export default function FourPlayerChess() {
       observer.disconnect();
       window.removeEventListener("resize", update);
     };
-  }, []);
+  }, [gameStarted]);
 
   const previewState = useMemo(() => createInitialFourPlayerState(), []);
   const selectedKey = selected ? `${selected.row},${selected.col}` : null;
@@ -348,8 +537,11 @@ export default function FourPlayerChess() {
   if (!gameStarted) {
     return (
       <div className="relative h-screen w-full bg-slate-100 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 overflow-hidden">
-        <div className="h-full grid grid-cols-1 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] gap-2 p-2">
-          <div ref={boardAreaRef} className="min-w-0 min-h-0 flex items-center justify-center">
+        <div className="h-full grid grid-cols-1 xl:grid-cols-[minmax(0,1.38fr)_minmax(320px,0.62fr)] gap-2 p-2">
+          <div
+            ref={setupBoardAreaRef}
+            className="min-w-0 min-h-0 flex items-center justify-center p-1"
+          >
             <FourPlayerBoard
               state={previewState}
               selected={null}
@@ -357,6 +549,9 @@ export default function FourPlayerChess() {
               lastMoveFrom={null}
               lastMoveTo={null}
               onSquareClick={() => {}}
+              onPieceDrop={() => false}
+              onCancelSelection={() => {}}
+              canDragFrom={() => false}
               boardWidth={boardWidth}
               interactive={false}
             />
@@ -494,8 +689,8 @@ export default function FourPlayerChess() {
         </div>
       )}
 
-      <div className="h-full grid grid-cols-1 xl:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)] gap-2 p-2">
-        <div ref={boardAreaRef} className="min-w-0 rounded-3xl border border-gray-200/70 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 shadow-xl backdrop-blur-lg p-3 flex flex-col min-h-0">
+      <div className="h-full grid grid-cols-1 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.55fr)] gap-2 p-2">
+        <div className="min-w-0 rounded-3xl border border-gray-200/70 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 shadow-xl backdrop-blur-lg p-2 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-2">
             <button
               type="button"
@@ -527,7 +722,10 @@ export default function FourPlayerChess() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 flex items-center justify-center">
+          <div
+            ref={gameBoardAreaRef}
+            className="flex-1 min-h-0 flex items-center justify-center px-1 pb-1"
+          >
             <FourPlayerBoard
               state={gameState}
               selected={selectedKey}
@@ -535,6 +733,9 @@ export default function FourPlayerChess() {
               lastMoveFrom={lastMoveFrom}
               lastMoveTo={lastMoveTo}
               onSquareClick={onSquareClick}
+              onPieceDrop={onPieceDrop}
+              onCancelSelection={onCancelSelection}
+              canDragFrom={canDragFrom}
               boardWidth={boardWidth}
               interactive
             />

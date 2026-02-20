@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Square } from "chess.js";
 import { useAuthStore } from "../../store/authStore";
 import { GameOverModal, PlayerInfo, GameBoard } from "../../components/game";
 import type { GameSettings } from "../../components/game";
@@ -21,7 +22,10 @@ interface QuickMatchGameViewProps {
   showGameOverModal: boolean;
   optionSquares: Record<string, CSSProperties>;
   preMoveSquares: Record<string, CSSProperties>;
-  onSquareClick: (square: string) => void;
+  onSquareClick: (square: Square) => void;
+  onPieceDrop: (sourceSquare: Square, targetSquare: Square) => boolean;
+  onCancelSelection: () => void;
+  isDraggablePiece: (sourceSquare: Square) => boolean;
   setOpponentTime: (time: number) => void;
   setPlayerTime: (time: number) => void;
   onTimeOut: (isPlayer: boolean) => void;
@@ -46,6 +50,9 @@ export function QuickMatchGameView({
   optionSquares,
   preMoveSquares,
   onSquareClick,
+  onPieceDrop,
+  onCancelSelection,
+  isDraggablePiece,
   setOpponentTime,
   setPlayerTime,
   onTimeOut,
@@ -142,6 +149,9 @@ export function QuickMatchGameView({
               boardWidth={boardWidth}
               boardOrientation={gameSettings.playAs}
               onSquareClick={onSquareClick}
+              onPieceDrop={onPieceDrop}
+              onCancelSelection={onCancelSelection}
+              isDraggablePiece={isDraggablePiece}
               customSquareStyles={
                 { ...optionSquares, ...preMoveSquares } as Record<
                   string,

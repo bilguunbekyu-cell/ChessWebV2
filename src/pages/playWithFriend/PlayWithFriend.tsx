@@ -29,6 +29,9 @@ export default function PlayWithFriend() {
     setPlayerTime,
     setOpponentTime,
     onSquareClick,
+    onPieceDrop,
+    onCancelSelection,
+    isDraggablePiece,
     resign,
     timeOut,
     leaveGame,
@@ -127,6 +130,9 @@ export default function PlayWithFriend() {
         optionSquares={optionSquares}
         preMoveSquares={preMoveSquares}
         onSquareClick={onSquareClick}
+        onPieceDrop={onPieceDrop}
+        onCancelSelection={onCancelSelection}
+        isDraggablePiece={isDraggablePiece}
         setOpponentTime={setOpponentTime}
         setPlayerTime={setPlayerTime}
         onTimeOut={timeOut}

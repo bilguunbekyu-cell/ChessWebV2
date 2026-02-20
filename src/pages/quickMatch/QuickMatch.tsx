@@ -87,6 +87,9 @@ export default function QuickMatch() {
     setPlayerTime,
     setOpponentTime,
     onSquareClick,
+    onPieceDrop,
+    onCancelSelection,
+    isDraggablePiece,
     opponentName,
     isSearching,
     queueStatus,
@@ -222,6 +225,9 @@ export default function QuickMatch() {
         optionSquares={optionSquares}
         preMoveSquares={preMoveSquares}
         onSquareClick={onSquareClick}
+        onPieceDrop={onPieceDrop}
+        onCancelSelection={onCancelSelection}
+        isDraggablePiece={isDraggablePiece}
         opponentName={opponentName}
         setOpponentTime={setOpponentTime}
         setPlayerTime={setPlayerTime}

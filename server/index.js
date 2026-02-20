@@ -1232,7 +1232,7 @@ io.on("connection", (socket) => {
       lastMove: result.move,
       moverColor,
     });
-    maybeFinishFourPlayerGame(game, "king_capture");
+    maybeFinishFourPlayerGame(game, "elimination");
   });
 
   socket.on("fourPlayerLeaveGame", ({ gameId } = {}) => {

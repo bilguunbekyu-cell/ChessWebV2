@@ -237,6 +237,51 @@ export function useOnlineFourPlayerMatch() {
     resetLocalState();
   }, [resetLocalState]);
 
+  const canDragFrom = useCallback(
+    (row: number, col: number) => {
+      if (!gameStarted || gameState.winner) return false;
+      if (!isPlayableSquare(row, col)) return false;
+      if (gameState.turn !== playerColor) return false;
+      const piece = gameState.board[row][col];
+      return !!piece && piece.color === playerColor;
+    },
+    [gameStarted, gameState, playerColor],
+  );
+
+  const tryMove = useCallback(
+    (from: Square, to: Square) => {
+      if (!gameStarted || gameState.winner) return false;
+      if (!isPlayableSquare(from.row, from.col) || !isPlayableSquare(to.row, to.col)) {
+        return false;
+      }
+      if (gameState.turn !== playerColor) return false;
+
+      const piece = gameState.board[from.row][from.col];
+      if (!piece || piece.color !== playerColor) return false;
+
+      const legalTargets = getLegalMoves(gameState, from);
+      const isLegal = legalTargets.some(
+        (target) => target.row === to.row && target.col === to.col,
+      );
+      if (!isLegal) return false;
+
+      const localResult = applyMove(gameState, from, to);
+      const nextMove = localResult.moves[localResult.moves.length - 1] || null;
+      if (nextMove) {
+        setLastMove(nextMove);
+      }
+
+      socketRef.current?.emit("fourPlayerMove", {
+        gameId: gameIdRef.current,
+        from,
+        to,
+      });
+      setSelected(null);
+      return true;
+    },
+    [gameStarted, gameState, playerColor],
+  );
+
   const onSquareClick = useCallback(
     (row: number, col: number) => {
       if (!gameStarted || gameState.winner) return;
@@ -245,20 +290,12 @@ export function useOnlineFourPlayerMatch() {
 
       const piece = gameState.board[row][col];
       if (selected) {
-        const key = `${row},${col}`;
-        if (legalMoveSet.has(key)) {
-          const localResult = applyMove(gameState, selected, { row, col });
-          const nextMove = localResult.moves[localResult.moves.length - 1] || null;
-          if (nextMove) {
-            setLastMove(nextMove);
-          }
-
-          socketRef.current?.emit("fourPlayerMove", {
-            gameId: gameIdRef.current,
-            from: selected,
-            to: { row, col },
-          });
+        if (selected.row === row && selected.col === col) {
           setSelected(null);
+          return;
+        }
+
+        if (tryMove(selected, { row, col })) {
           return;
         }
       }
@@ -270,8 +307,27 @@ export function useOnlineFourPlayerMatch() {
 
       setSelected(null);
     },
-    [gameStarted, gameState, legalMoveSet, playerColor, selected],
+    [gameStarted, gameState, playerColor, selected, tryMove],
   );
+
+  const onPieceDrop = useCallback(
+    (fromRow: number, fromCol: number, toRow: number, toCol: number) => {
+      if (!canDragFrom(fromRow, fromCol)) return false;
+
+      const from = { row: fromRow, col: fromCol };
+      const to = { row: toRow, col: toCol };
+      const moved = tryMove(from, to);
+      if (!moved) {
+        setSelected(from);
+      }
+      return moved;
+    },
+    [canDragFrom, tryMove],
+  );
+
+  const onCancelSelection = useCallback(() => {
+    setSelected(null);
+  }, []);
 
   const rematch = useCallback(() => {
     startMatch(timeControl, playerNameRef.current);
@@ -298,6 +354,9 @@ export function useOnlineFourPlayerMatch() {
     cancelMatch,
     leaveGame,
     onSquareClick,
+    onPieceDrop,
+    onCancelSelection,
+    canDragFrom,
     rematch,
     resetLocalState,
   };

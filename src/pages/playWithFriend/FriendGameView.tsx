@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Square } from "chess.js";
 import { useAuthStore } from "../../store/authStore";
 import { GameOverModal, PlayerInfo, GameBoard } from "../../components/game";
 import type { GameSettings } from "../../components/game";
@@ -36,7 +37,10 @@ interface FriendGameViewProps {
   showGameOverModal: boolean;
   optionSquares: Record<string, CSSProperties>;
   preMoveSquares: Record<string, CSSProperties>;
-  onSquareClick: (square: string) => void;
+  onSquareClick: (square: Square) => void;
+  onPieceDrop: (sourceSquare: Square, targetSquare: Square) => boolean;
+  onCancelSelection: () => void;
+  isDraggablePiece: (sourceSquare: Square) => boolean;
   setOpponentTime: (time: number) => void;
   setPlayerTime: (time: number) => void;
   onTimeOut: (isPlayer: boolean) => void;
@@ -61,6 +65,9 @@ export function FriendGameView({
   optionSquares,
   preMoveSquares,
   onSquareClick,
+  onPieceDrop,
+  onCancelSelection,
+  isDraggablePiece,
   setOpponentTime,
   setPlayerTime,
   onTimeOut,
@@ -154,6 +161,9 @@ export function FriendGameView({
               boardWidth={boardWidth}
               boardOrientation={gameSettings.playAs}
               onSquareClick={onSquareClick}
+              onPieceDrop={onPieceDrop}
+              onCancelSelection={onCancelSelection}
+              isDraggablePiece={isDraggablePiece}
               customSquareStyles={
                 { ...optionSquares, ...preMoveSquares } as unknown as Record<
                   string,

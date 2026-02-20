@@ -24,6 +24,9 @@ export default function Game() {
     setPlayerTime,
     setOpponentTime,
     onSquareClick,
+    onPieceDrop,
+    onCancelSelection,
+    isDraggablePiece,
     handleStartGame,
     handleTimeOut,
   } = useStockfishGame();
@@ -142,6 +145,9 @@ export default function Game() {
                 boardWidth={boardWidth}
                 boardOrientation={gameSettings.playAs}
                 onSquareClick={onSquareClick}
+                onPieceDrop={onPieceDrop}
+                onCancelSelection={onCancelSelection}
+                isDraggablePiece={isDraggablePiece}
                 customSquareStyles={{ ...optionSquares, ...preMoveSquares }}
               />
             </div>

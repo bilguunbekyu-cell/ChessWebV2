@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef } from "react";
+import { Square } from "chess.js";
 import { useAuthStore } from "../../store/authStore";
 import { GameOverModal, PlayerInfo, GameBoard } from "../../components/game";
 import type { GameSettings } from "../../components/game";
@@ -22,7 +23,10 @@ interface BotGameViewProps {
   optionSquares: Record<string, CSSProperties>;
   preMoveSquares: Record<string, CSSProperties>;
   lastMove?: { from: string; to: string } | null;
-  onSquareClick: (square: string) => void;
+  onSquareClick: (square: Square) => void;
+  onPieceDrop: (sourceSquare: Square, targetSquare: Square) => boolean;
+  onCancelSelection: () => void;
+  isDraggablePiece: (sourceSquare: Square) => boolean;
   setOpponentTime: (time: number) => void;
   setPlayerTime: (time: number) => void;
   onTimeOut: (isPlayer: boolean) => void;
@@ -48,6 +52,9 @@ export function BotGameView({
   preMoveSquares,
   lastMove,
   onSquareClick,
+  onPieceDrop,
+  onCancelSelection,
+  isDraggablePiece,
   setOpponentTime,
   setPlayerTime,
   onTimeOut,
@@ -115,6 +122,9 @@ export function BotGameView({
               boardWidth={boardWidth}
               boardOrientation={gameSettings.playAs}
               onSquareClick={onSquareClick}
+              onPieceDrop={onPieceDrop}
+              onCancelSelection={onCancelSelection}
+              isDraggablePiece={isDraggablePiece}
               customSquareStyles={{ ...optionSquares, ...preMoveSquares }}
               lastMove={lastMove}
             />

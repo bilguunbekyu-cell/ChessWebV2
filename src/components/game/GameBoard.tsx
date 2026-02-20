@@ -1,5 +1,6 @@
 import { Chessboard } from "react-chessboard";
 import { Square } from "chess.js";
+import { useEffect } from "react";
 import type { CSSProperties } from "react";
 
 interface GameBoardProps {
@@ -7,6 +8,9 @@ interface GameBoardProps {
   boardWidth: number;
   boardOrientation: "white" | "black";
   onSquareClick: (square: Square) => void;
+  onPieceDrop?: (sourceSquare: Square, targetSquare: Square) => boolean;
+  onCancelSelection?: () => void;
+  isDraggablePiece?: (sourceSquare: Square) => boolean;
   customSquareStyles: Record<string, CSSProperties>;
   lastMove?: { from: string; to: string } | null;
 }
@@ -16,9 +20,25 @@ export function GameBoard({
   boardWidth,
   boardOrientation,
   onSquareClick,
+  onPieceDrop,
+  onCancelSelection,
+  isDraggablePiece,
   customSquareStyles,
   lastMove,
 }: GameBoardProps) {
+  useEffect(() => {
+    if (!onCancelSelection) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onCancelSelection();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onCancelSelection]);
+
   const lastMoveStyles = lastMove
     ? {
         [lastMove.from]: {
@@ -35,10 +55,20 @@ export function GameBoard({
       <Chessboard
         id="PlayVsStockfish"
         animationDuration={200}
-        arePiecesDraggable={false}
+        arePiecesDraggable={!!onPieceDrop}
         boardWidth={boardWidth}
         position={fen}
         onSquareClick={onSquareClick}
+        onSquareRightClick={() => onCancelSelection?.()}
+        onPieceDrop={(sourceSquare, targetSquare) => {
+          if (!onPieceDrop) return false;
+          return onPieceDrop(sourceSquare as Square, targetSquare as Square);
+        }}
+        isDraggablePiece={({ sourceSquare }) => {
+          if (!onPieceDrop) return false;
+          if (!isDraggablePiece) return true;
+          return isDraggablePiece(sourceSquare as Square);
+        }}
         boardOrientation={boardOrientation}
         customBoardStyle={{
           borderRadius: "8px",

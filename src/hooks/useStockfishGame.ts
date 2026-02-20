@@ -151,7 +151,12 @@ export function useStockfishGame() {
   );
 
   // Square click handler
-  const onSquareClick = useSquareClickHandler(
+  const {
+    onSquareClick,
+    onPieceDrop,
+    onCancelSelection,
+    isDraggablePiece,
+  } = useSquareClickHandler(
     gameRef,
     gameStarted,
     gameOver,
@@ -217,6 +222,9 @@ export function useStockfishGame() {
 
     // Handlers
     onSquareClick,
+    onPieceDrop,
+    onCancelSelection,
+    isDraggablePiece,
     handleStartGame,
     handleNewGame,
     handleResign,

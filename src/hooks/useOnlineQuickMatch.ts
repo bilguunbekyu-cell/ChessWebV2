@@ -489,6 +489,28 @@ export function useOnlineQuickMatch() {
     [matchVariant, playerColor],
   );
 
+  const isChess960CastlingDrop = useCallback(
+    (currentGame: Chess, sourceSquare: Square, targetSquare: Square) => {
+      if (matchVariant !== "chess960") return false;
+
+      const kingPiece = currentGame.get(sourceSquare);
+      if (!kingPiece || kingPiece.color !== playerColor || kingPiece.type !== "k") {
+        return false;
+      }
+
+      if (sourceSquare[1] !== targetSquare[1]) return false;
+
+      const targetPiece = currentGame.get(targetSquare);
+      return !!targetPiece && targetPiece.color === playerColor && targetPiece.type === "r";
+    },
+    [matchVariant, playerColor],
+  );
+
+  const clearSelection = useCallback(() => {
+    setMoveFrom(null);
+    setOptionSquares({});
+  }, []);
+
   const onSquareClick = useCallback(
     (square: Square) => {
       if (!gameStarted || gameOver) return;
@@ -506,8 +528,7 @@ export function useOnlineQuickMatch() {
       }
 
       if (square === moveFrom) {
-        setMoveFrom(null);
-        setOptionSquares({});
+        clearSelection();
         return;
       }
 
@@ -518,8 +539,7 @@ export function useOnlineQuickMatch() {
           to: square,
           promotion: "q",
         });
-        setMoveFrom(null);
-        setOptionSquares({});
+        clearSelection();
         return;
       }
 
@@ -531,10 +551,10 @@ export function useOnlineQuickMatch() {
         return;
       }
 
-      setMoveFrom(null);
-      setOptionSquares({});
+      clearSelection();
     },
     [
+      clearSelection,
       gameId,
       gameOver,
       gameStarted,
@@ -545,6 +565,65 @@ export function useOnlineQuickMatch() {
       optionSquares,
       playerColor,
     ],
+  );
+
+  const onPieceDrop = useCallback(
+    (sourceSquare: Square, targetSquare: Square) => {
+      if (!gameStarted || gameOver) return false;
+      if (!isPlayerTurn) return false;
+      if (!gameIdRef.current) return false;
+
+      const currentGame = gameRef.current;
+      const sourcePiece = currentGame.get(sourceSquare);
+      if (!sourcePiece || sourcePiece.color !== playerColor) return false;
+
+      const isLegalStandardMove = currentGame
+        .moves({ square: sourceSquare, verbose: true })
+        .some((move) => move.to === targetSquare);
+      const isLegalChess960Castle = isChess960CastlingDrop(
+        currentGame,
+        sourceSquare,
+        targetSquare,
+      );
+
+      if (!isLegalStandardMove && !isLegalChess960Castle) {
+        if (getMoveOptions(sourceSquare)) {
+          setMoveFrom(sourceSquare);
+          addChess960CastlingTargets(currentGame, sourceSquare);
+        } else {
+          clearSelection();
+        }
+        return false;
+      }
+
+      socketRef.current?.emit("makeMove", {
+        gameId: gameIdRef.current,
+        from: sourceSquare,
+        to: targetSquare,
+        promotion: "q",
+      });
+      clearSelection();
+      return true;
+    },
+    [
+      addChess960CastlingTargets,
+      clearSelection,
+      gameOver,
+      gameStarted,
+      getMoveOptions,
+      isChess960CastlingDrop,
+      isPlayerTurn,
+      playerColor,
+    ],
+  );
+
+  const isDraggablePiece = useCallback(
+    (sourceSquare: Square) => {
+      if (!gameStarted || gameOver || !isPlayerTurn) return false;
+      const piece = gameRef.current.get(sourceSquare);
+      return !!piece && piece.color === playerColor;
+    },
+    [gameOver, gameStarted, isPlayerTurn, playerColor],
   );
 
   const rematch = useCallback(() => {
@@ -580,6 +659,9 @@ export function useOnlineQuickMatch() {
 
     // Handlers
     onSquareClick,
+    onPieceDrop,
+    onCancelSelection: clearSelection,
+    isDraggablePiece,
     startMatch,
     cancelMatch,
     resign,

@@ -1,4 +1,6 @@
 import {
+  CastlingRights,
+  EnPassantState,
   FourPlayerBoard,
   FourPlayerColor,
   FourPlayerMove,
@@ -35,8 +37,73 @@ const KING_OFFSETS = [
   { dr: 1, dc: 1 },
 ];
 
+type CastlingMeta = {
+  axis: "row" | "col";
+  kingStart: Square;
+  rookKStart: Square;
+  rookQStart: Square;
+};
+
+type MoveCandidate = {
+  to: Square;
+  castlingSide?: "k" | "q";
+  enPassant?: boolean;
+  promoted?: FourPlayerPieceType;
+};
+
+const CASTLING_META: Record<FourPlayerColor, CastlingMeta> = {
+  red: {
+    axis: "col",
+    kingStart: { row: 13, col: 7 },
+    rookKStart: { row: 13, col: 10 },
+    rookQStart: { row: 13, col: 3 },
+  },
+  yellow: {
+    axis: "col",
+    kingStart: { row: 0, col: 7 },
+    rookKStart: { row: 0, col: 10 },
+    rookQStart: { row: 0, col: 3 },
+  },
+  blue: {
+    axis: "row",
+    kingStart: { row: 7, col: 0 },
+    rookKStart: { row: 10, col: 0 },
+    rookQStart: { row: 3, col: 0 },
+  },
+  green: {
+    axis: "row",
+    kingStart: { row: 7, col: 13 },
+    rookKStart: { row: 10, col: 13 },
+    rookQStart: { row: 3, col: 13 },
+  },
+};
+
 function inBounds(row: number, col: number): boolean {
   return row >= 0 && row < FOUR_PLAYER_BOARD_SIZE && col >= 0 && col < FOUR_PLAYER_BOARD_SIZE;
+}
+
+function squareEquals(a: Square, b: Square): boolean {
+  return a.row === b.row && a.col === b.col;
+}
+
+function shiftSquare(
+  square: Square,
+  axis: "row" | "col",
+  delta: number,
+): Square {
+  return axis === "row"
+    ? { row: square.row + delta, col: square.col }
+    : { row: square.row, col: square.col + delta };
+}
+
+function coordByAxis(square: Square, axis: "row" | "col"): number {
+  return axis === "row" ? square.row : square.col;
+}
+
+function emptyBoard(): FourPlayerBoard {
+  return Array.from({ length: FOUR_PLAYER_BOARD_SIZE }, () =>
+    Array.from({ length: FOUR_PLAYER_BOARD_SIZE }, () => null),
+  );
 }
 
 export function isPlayableSquare(row: number, col: number): boolean {
@@ -52,12 +119,6 @@ export function isPlayableSquare(row: number, col: number): boolean {
     col >= FOUR_PLAYER_BOARD_SIZE - CORNER_CUT_SIZE;
 
   return !(topLeftCut || topRightCut || bottomLeftCut || bottomRightCut);
-}
-
-function emptyBoard(): FourPlayerBoard {
-  return Array.from({ length: FOUR_PLAYER_BOARD_SIZE }, () =>
-    Array.from({ length: FOUR_PLAYER_BOARD_SIZE }, () => null),
-  );
 }
 
 function placePiece(
@@ -85,10 +146,7 @@ function setupYellow(board: FourPlayerBoard) {
   const pawnRow = 1;
   for (let i = 0; i < BACK_RANK_ORDER.length; i += 1) {
     const col = 3 + i;
-    placePiece(board, backRow, col, {
-      color: "yellow",
-      type: BACK_RANK_ORDER[i],
-    });
+    placePiece(board, backRow, col, { color: "yellow", type: BACK_RANK_ORDER[i] });
     placePiece(board, pawnRow, col, { color: "yellow", type: "p" });
   }
 }
@@ -108,16 +166,31 @@ function setupGreen(board: FourPlayerBoard) {
   const pawnCol = 12;
   for (let i = 0; i < BACK_RANK_ORDER.length; i += 1) {
     const row = 3 + i;
-    placePiece(board, row, backCol, {
-      color: "green",
-      type: BACK_RANK_ORDER[i],
-    });
+    placePiece(board, row, backCol, { color: "green", type: BACK_RANK_ORDER[i] });
     placePiece(board, row, pawnCol, { color: "green", type: "p" });
   }
 }
 
 function cloneBoard(board: FourPlayerBoard): FourPlayerBoard {
   return board.map((row) => row.map((piece) => (piece ? { ...piece } : null)));
+}
+
+function createInitialCastlingRights(): CastlingRights {
+  return {
+    red: { k: true, q: true },
+    blue: { k: true, q: true },
+    yellow: { k: true, q: true },
+    green: { k: true, q: true },
+  };
+}
+
+function cloneCastlingRights(castlingRights: CastlingRights): CastlingRights {
+  return {
+    red: { ...castlingRights.red },
+    blue: { ...castlingRights.blue },
+    yellow: { ...castlingRights.yellow },
+    green: { ...castlingRights.green },
+  };
 }
 
 export function createInitialFourPlayerState(): FourPlayerState {
@@ -132,6 +205,8 @@ export function createInitialFourPlayerState(): FourPlayerState {
     turn: "red",
     winner: null,
     eliminated: [],
+    castlingRights: createInitialCastlingRights(),
+    enPassant: null,
     moves: [],
   };
 }
@@ -142,6 +217,10 @@ function isEnemy(piece: FourPlayerPiece | null, color: FourPlayerColor): boolean
 
 function isFriendly(piece: FourPlayerPiece | null, color: FourPlayerColor): boolean {
   return !!piece && piece.color === color;
+}
+
+function isAliveColor(state: FourPlayerState, color: FourPlayerColor): boolean {
+  return !state.eliminated.includes(color);
 }
 
 function getForwardData(color: FourPlayerColor) {
@@ -196,158 +275,6 @@ function getForwardData(color: FourPlayerColor) {
   };
 }
 
-function addSlidingMoves(
-  board: FourPlayerBoard,
-  from: Square,
-  color: FourPlayerColor,
-  directions: Array<{ dr: number; dc: number }>,
-  moves: Square[],
-) {
-  directions.forEach(({ dr, dc }) => {
-    let row = from.row + dr;
-    let col = from.col + dc;
-
-    while (isPlayableSquare(row, col)) {
-      const target = board[row][col];
-      if (isFriendly(target, color)) {
-        break;
-      }
-
-      moves.push({ row, col });
-
-      if (target) {
-        break;
-      }
-
-      row += dr;
-      col += dc;
-    }
-  });
-}
-
-function getPseudoLegalMoves(
-  board: FourPlayerBoard,
-  from: Square,
-  piece: FourPlayerPiece,
-): Square[] {
-  const moves: Square[] = [];
-
-  if (piece.type === "p") {
-    const forward = getForwardData(piece.color);
-    const oneStepRow = from.row + forward.dr;
-    const oneStepCol = from.col + forward.dc;
-
-    if (
-      isPlayableSquare(oneStepRow, oneStepCol) &&
-      board[oneStepRow][oneStepCol] === null
-    ) {
-      moves.push({ row: oneStepRow, col: oneStepCol });
-
-      const twoStepRow = oneStepRow + forward.dr;
-      const twoStepCol = oneStepCol + forward.dc;
-      if (
-        forward.isStart(from.row, from.col) &&
-        isPlayableSquare(twoStepRow, twoStepCol) &&
-        board[twoStepRow][twoStepCol] === null
-      ) {
-        moves.push({ row: twoStepRow, col: twoStepCol });
-      }
-    }
-
-    forward.captures.forEach(({ dr, dc }) => {
-      const row = from.row + dr;
-      const col = from.col + dc;
-      if (!isPlayableSquare(row, col)) return;
-      if (isEnemy(board[row][col], piece.color)) {
-        moves.push({ row, col });
-      }
-    });
-
-    return moves;
-  }
-
-  if (piece.type === "n") {
-    KNIGHT_OFFSETS.forEach(({ dr, dc }) => {
-      const row = from.row + dr;
-      const col = from.col + dc;
-      if (!isPlayableSquare(row, col)) return;
-      if (!isFriendly(board[row][col], piece.color)) {
-        moves.push({ row, col });
-      }
-    });
-    return moves;
-  }
-
-  if (piece.type === "k") {
-    KING_OFFSETS.forEach(({ dr, dc }) => {
-      const row = from.row + dr;
-      const col = from.col + dc;
-      if (!isPlayableSquare(row, col)) return;
-      if (!isFriendly(board[row][col], piece.color)) {
-        moves.push({ row, col });
-      }
-    });
-    return moves;
-  }
-
-  if (piece.type === "b" || piece.type === "q") {
-    addSlidingMoves(
-      board,
-      from,
-      piece.color,
-      [
-        { dr: -1, dc: -1 },
-        { dr: -1, dc: 1 },
-        { dr: 1, dc: -1 },
-        { dr: 1, dc: 1 },
-      ],
-      moves,
-    );
-  }
-
-  if (piece.type === "r" || piece.type === "q") {
-    addSlidingMoves(
-      board,
-      from,
-      piece.color,
-      [
-        { dr: -1, dc: 0 },
-        { dr: 1, dc: 0 },
-        { dr: 0, dc: -1 },
-        { dr: 0, dc: 1 },
-      ],
-      moves,
-    );
-  }
-
-  return moves;
-}
-
-export function getLegalMoves(state: FourPlayerState, from: Square): Square[] {
-  if (state.winner) return [];
-  if (!isPlayableSquare(from.row, from.col)) return [];
-
-  const piece = state.board[from.row][from.col];
-  if (!piece || piece.color !== state.turn) return [];
-
-  return getPseudoLegalMoves(state.board, from, piece);
-}
-
-function removeAllPiecesOfColor(
-  board: FourPlayerBoard,
-  color: FourPlayerColor,
-): FourPlayerBoard {
-  const nextBoard = cloneBoard(board);
-  for (let row = 0; row < FOUR_PLAYER_BOARD_SIZE; row += 1) {
-    for (let col = 0; col < FOUR_PLAYER_BOARD_SIZE; col += 1) {
-      if (nextBoard[row][col]?.color === color) {
-        nextBoard[row][col] = null;
-      }
-    }
-  }
-  return nextBoard;
-}
-
 function nextActiveColor(current: FourPlayerColor, eliminated: FourPlayerColor[]) {
   const eliminatedSet = new Set(eliminated);
   let index = PLAYER_ORDER.indexOf(current);
@@ -368,6 +295,570 @@ function alivePlayers(eliminated: FourPlayerColor[]): FourPlayerColor[] {
   return PLAYER_ORDER.filter((color) => !eliminatedSet.has(color));
 }
 
+function canCaptureTarget(
+  state: FourPlayerState,
+  target: FourPlayerPiece | null,
+  moverColor: FourPlayerColor,
+): boolean {
+  if (!target) return true;
+  if (target.color === moverColor) return false;
+
+  // Alive kings cannot be captured directly; they must be checkmated/stalemated.
+  if (target.type === "k" && isAliveColor(state, target.color)) {
+    return false;
+  }
+  return true;
+}
+
+function findKingSquare(board: FourPlayerBoard, color: FourPlayerColor): Square | null {
+  for (let row = 0; row < FOUR_PLAYER_BOARD_SIZE; row += 1) {
+    for (let col = 0; col < FOUR_PLAYER_BOARD_SIZE; col += 1) {
+      const piece = board[row][col];
+      if (piece?.color === color && piece.type === "k") {
+        return { row, col };
+      }
+    }
+  }
+  return null;
+}
+
+function attacksSquareByPiece(
+  board: FourPlayerBoard,
+  from: Square,
+  piece: FourPlayerPiece,
+  target: Square,
+): boolean {
+  if (piece.type === "p") {
+    const forward = getForwardData(piece.color);
+    return forward.captures.some(({ dr, dc }) => {
+      return from.row + dr === target.row && from.col + dc === target.col;
+    });
+  }
+
+  if (piece.type === "n") {
+    return KNIGHT_OFFSETS.some(({ dr, dc }) => {
+      return from.row + dr === target.row && from.col + dc === target.col;
+    });
+  }
+
+  if (piece.type === "k") {
+    return KING_OFFSETS.some(({ dr, dc }) => {
+      return from.row + dr === target.row && from.col + dc === target.col;
+    });
+  }
+
+  const lineDirections: Array<{ dr: number; dc: number }> = [];
+  if (piece.type === "b" || piece.type === "q") {
+    lineDirections.push(
+      { dr: -1, dc: -1 },
+      { dr: -1, dc: 1 },
+      { dr: 1, dc: -1 },
+      { dr: 1, dc: 1 },
+    );
+  }
+  if (piece.type === "r" || piece.type === "q") {
+    lineDirections.push(
+      { dr: -1, dc: 0 },
+      { dr: 1, dc: 0 },
+      { dr: 0, dc: -1 },
+      { dr: 0, dc: 1 },
+    );
+  }
+
+  for (const { dr, dc } of lineDirections) {
+    let row = from.row + dr;
+    let col = from.col + dc;
+    while (isPlayableSquare(row, col)) {
+      if (row === target.row && col === target.col) {
+        return true;
+      }
+      if (board[row][col]) {
+        break;
+      }
+      row += dr;
+      col += dc;
+    }
+  }
+
+  return false;
+}
+
+function isSquareAttacked(
+  state: FourPlayerState,
+  square: Square,
+  defenderColor: FourPlayerColor,
+): boolean {
+  for (let row = 0; row < FOUR_PLAYER_BOARD_SIZE; row += 1) {
+    for (let col = 0; col < FOUR_PLAYER_BOARD_SIZE; col += 1) {
+      const piece = state.board[row][col];
+      if (!piece) continue;
+      if (piece.color === defenderColor) continue;
+      if (!isAliveColor(state, piece.color)) continue;
+      if (attacksSquareByPiece(state.board, { row, col }, piece, square)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function isKingInCheck(state: FourPlayerState, color: FourPlayerColor): boolean {
+  if (!isAliveColor(state, color)) return false;
+  const kingSquare = findKingSquare(state.board, color);
+  if (!kingSquare) return true;
+  return isSquareAttacked(state, kingSquare, color);
+}
+
+function addSlidingMoves(
+  state: FourPlayerState,
+  from: Square,
+  color: FourPlayerColor,
+  directions: Array<{ dr: number; dc: number }>,
+  moves: MoveCandidate[],
+) {
+  directions.forEach(({ dr, dc }) => {
+    let row = from.row + dr;
+    let col = from.col + dc;
+
+    while (isPlayableSquare(row, col)) {
+      const target = state.board[row][col];
+      if (isFriendly(target, color)) {
+        break;
+      }
+
+      if (canCaptureTarget(state, target, color)) {
+        moves.push({ to: { row, col } });
+      }
+
+      if (target) {
+        break;
+      }
+
+      row += dr;
+      col += dc;
+    }
+  });
+}
+
+function getCastlingCandidates(
+  state: FourPlayerState,
+  color: FourPlayerColor,
+): MoveCandidate[] {
+  if (state.winner || !isAliveColor(state, color)) return [];
+  const rights = state.castlingRights[color];
+  if (!rights.k && !rights.q) return [];
+
+  const meta = CASTLING_META[color];
+  const kingPiece = state.board[meta.kingStart.row][meta.kingStart.col];
+  if (!kingPiece || kingPiece.type !== "k" || kingPiece.color !== color) {
+    return [];
+  }
+
+  if (isKingInCheck(state, color)) return [];
+
+  const candidates: MoveCandidate[] = [];
+  (["k", "q"] as const).forEach((side) => {
+    if (!rights[side]) return;
+
+    const rookStart = side === "k" ? meta.rookKStart : meta.rookQStart;
+    const rookPiece = state.board[rookStart.row][rookStart.col];
+    if (!rookPiece || rookPiece.type !== "r" || rookPiece.color !== color) {
+      return;
+    }
+
+    const kingCoord = coordByAxis(meta.kingStart, meta.axis);
+    const rookCoord = coordByAxis(rookStart, meta.axis);
+    const dir = rookCoord > kingCoord ? 1 : -1;
+    const kingTo = shiftSquare(meta.kingStart, meta.axis, 2 * dir);
+    const rookTo = shiftSquare(meta.kingStart, meta.axis, dir);
+
+    if (
+      !isPlayableSquare(kingTo.row, kingTo.col) ||
+      !isPlayableSquare(rookTo.row, rookTo.col)
+    ) {
+      return;
+    }
+
+    // Squares between king and rook must be empty.
+    for (let coord = kingCoord + dir; coord !== rookCoord; coord += dir) {
+      const sq = shiftSquare(meta.kingStart, meta.axis, coord - kingCoord);
+      if (state.board[sq.row][sq.col] && !squareEquals(sq, rookStart)) {
+        return;
+      }
+    }
+
+    // King path squares must be safe and clear.
+    for (let step = 1; step <= 2; step += 1) {
+      const sq = shiftSquare(meta.kingStart, meta.axis, step * dir);
+      if (state.board[sq.row][sq.col]) return;
+      if (isSquareAttacked(state, sq, color)) return;
+    }
+
+    candidates.push({ to: kingTo, castlingSide: side });
+  });
+
+  return candidates;
+}
+
+function getPseudoLegalMoveCandidates(
+  state: FourPlayerState,
+  from: Square,
+  piece: FourPlayerPiece,
+): MoveCandidate[] {
+  const moves: MoveCandidate[] = [];
+
+  if (!isAliveColor(state, piece.color)) {
+    return moves;
+  }
+
+  if (piece.type === "p") {
+    const forward = getForwardData(piece.color);
+    const oneStepRow = from.row + forward.dr;
+    const oneStepCol = from.col + forward.dc;
+
+    if (
+      isPlayableSquare(oneStepRow, oneStepCol) &&
+      state.board[oneStepRow][oneStepCol] === null
+    ) {
+      moves.push({ to: { row: oneStepRow, col: oneStepCol } });
+
+      const twoStepRow = oneStepRow + forward.dr;
+      const twoStepCol = oneStepCol + forward.dc;
+      if (
+        forward.isStart(from.row, from.col) &&
+        isPlayableSquare(twoStepRow, twoStepCol) &&
+        state.board[twoStepRow][twoStepCol] === null
+      ) {
+        moves.push({ to: { row: twoStepRow, col: twoStepCol } });
+      }
+    }
+
+    forward.captures.forEach(({ dr, dc }) => {
+      const row = from.row + dr;
+      const col = from.col + dc;
+      if (!isPlayableSquare(row, col)) return;
+      const target = state.board[row][col];
+      if (isEnemy(target, piece.color) && canCaptureTarget(state, target, piece.color)) {
+        moves.push({ to: { row, col } });
+      }
+    });
+
+    if (
+      state.enPassant &&
+      state.enPassant.availableFor === piece.color &&
+      state.enPassant.color !== piece.color
+    ) {
+      forward.captures.forEach(({ dr, dc }) => {
+        const row = from.row + dr;
+        const col = from.col + dc;
+        if (
+          row === state.enPassant!.target.row &&
+          col === state.enPassant!.target.col &&
+          state.board[row][col] === null
+        ) {
+          moves.push({
+            to: { row, col },
+            enPassant: true,
+          });
+        }
+      });
+    }
+
+    return moves;
+  }
+
+  if (piece.type === "n") {
+    KNIGHT_OFFSETS.forEach(({ dr, dc }) => {
+      const row = from.row + dr;
+      const col = from.col + dc;
+      if (!isPlayableSquare(row, col)) return;
+      const target = state.board[row][col];
+      if (!isFriendly(target, piece.color) && canCaptureTarget(state, target, piece.color)) {
+        moves.push({ to: { row, col } });
+      }
+    });
+    return moves;
+  }
+
+  if (piece.type === "k") {
+    KING_OFFSETS.forEach(({ dr, dc }) => {
+      const row = from.row + dr;
+      const col = from.col + dc;
+      if (!isPlayableSquare(row, col)) return;
+      const target = state.board[row][col];
+      if (!isFriendly(target, piece.color) && canCaptureTarget(state, target, piece.color)) {
+        moves.push({ to: { row, col } });
+      }
+    });
+
+    return [...moves, ...getCastlingCandidates(state, piece.color)];
+  }
+
+  if (piece.type === "b" || piece.type === "q") {
+    addSlidingMoves(
+      state,
+      from,
+      piece.color,
+      [
+        { dr: -1, dc: -1 },
+        { dr: -1, dc: 1 },
+        { dr: 1, dc: -1 },
+        { dr: 1, dc: 1 },
+      ],
+      moves,
+    );
+  }
+
+  if (piece.type === "r" || piece.type === "q") {
+    addSlidingMoves(
+      state,
+      from,
+      piece.color,
+      [
+        { dr: -1, dc: 0 },
+        { dr: 1, dc: 0 },
+        { dr: 0, dc: -1 },
+        { dr: 0, dc: 1 },
+      ],
+      moves,
+    );
+  }
+
+  return moves;
+}
+
+function updateCastlingRightsForMove(
+  castlingRights: CastlingRights,
+  mover: FourPlayerPiece,
+  from: Square,
+  captureSquare: Square | null,
+  captured: FourPlayerPiece | null,
+) {
+  if (mover.type === "k") {
+    castlingRights[mover.color].k = false;
+    castlingRights[mover.color].q = false;
+  }
+
+  if (mover.type === "r") {
+    const moverMeta = CASTLING_META[mover.color];
+    if (squareEquals(from, moverMeta.rookKStart)) castlingRights[mover.color].k = false;
+    if (squareEquals(from, moverMeta.rookQStart)) castlingRights[mover.color].q = false;
+  }
+
+  if (captured?.type === "r" && captureSquare) {
+    const capturedMeta = CASTLING_META[captured.color];
+    if (squareEquals(captureSquare, capturedMeta.rookKStart)) {
+      castlingRights[captured.color].k = false;
+    }
+    if (squareEquals(captureSquare, capturedMeta.rookQStart)) {
+      castlingRights[captured.color].q = false;
+    }
+  }
+}
+
+function applyMoveCandidate(
+  state: FourPlayerState,
+  from: Square,
+  candidate: MoveCandidate,
+  mover: FourPlayerPiece,
+) {
+  const board = cloneBoard(state.board);
+  const castlingRights = cloneCastlingRights(state.castlingRights);
+  let enPassant: EnPassantState | null = null;
+  let captureSquare: Square | null = null;
+
+  board[from.row][from.col] = null;
+
+  let captured: FourPlayerPiece | null = null;
+  let promoted: FourPlayerPieceType | undefined;
+
+  if (candidate.castlingSide) {
+    const meta = CASTLING_META[mover.color];
+    const rookStart =
+      candidate.castlingSide === "k" ? meta.rookKStart : meta.rookQStart;
+    const rookStartPiece = board[rookStart.row][rookStart.col];
+    board[rookStart.row][rookStart.col] = null;
+    board[candidate.to.row][candidate.to.col] = { ...mover };
+
+    const kingCoord = coordByAxis(meta.kingStart, meta.axis);
+    const rookCoord = coordByAxis(rookStart, meta.axis);
+    const dir = rookCoord > kingCoord ? 1 : -1;
+    const rookTo = shiftSquare(meta.kingStart, meta.axis, dir);
+    if (rookStartPiece) {
+      board[rookTo.row][rookTo.col] = { ...rookStartPiece };
+    }
+    castlingRights[mover.color].k = false;
+    castlingRights[mover.color].q = false;
+  } else {
+    captureSquare = { ...candidate.to };
+    if (candidate.enPassant && state.enPassant) {
+      captureSquare = { ...state.enPassant.pawn };
+      captured = board[captureSquare.row][captureSquare.col];
+      board[captureSquare.row][captureSquare.col] = null;
+    } else {
+      captured = board[candidate.to.row][candidate.to.col];
+    }
+
+    if (mover.type === "p") {
+      const forward = getForwardData(mover.color);
+      if (forward.isPromotion(candidate.to.row, candidate.to.col)) {
+        promoted = "q";
+        board[candidate.to.row][candidate.to.col] = {
+          color: mover.color,
+          type: "q",
+        };
+      } else {
+        board[candidate.to.row][candidate.to.col] = { ...mover };
+      }
+
+      const isDoubleStep =
+        candidate.to.row === from.row + forward.dr * 2 &&
+        candidate.to.col === from.col + forward.dc * 2;
+      if (isDoubleStep) {
+        enPassant = {
+          target: { row: from.row + forward.dr, col: from.col + forward.dc },
+          pawn: { ...candidate.to },
+          color: mover.color,
+          availableFor: nextActiveColor(mover.color, state.eliminated),
+        };
+      }
+    } else {
+      board[candidate.to.row][candidate.to.col] = { ...mover };
+    }
+
+    updateCastlingRightsForMove(
+      castlingRights,
+      mover,
+      from,
+      captureSquare,
+      captured,
+    );
+  }
+
+  return {
+    board,
+    castlingRights,
+    enPassant,
+    captured,
+    promoted,
+  };
+}
+
+function getLegalMoveCandidates(
+  state: FourPlayerState,
+  from: Square,
+  piece: FourPlayerPiece,
+): MoveCandidate[] {
+  const pseudo = getPseudoLegalMoveCandidates(state, from, piece);
+  const legal: MoveCandidate[] = [];
+
+  for (const candidate of pseudo) {
+    const applied = applyMoveCandidate(state, from, candidate, piece);
+    const simulated: FourPlayerState = {
+      ...state,
+      board: applied.board,
+      castlingRights: applied.castlingRights,
+      enPassant: applied.enPassant,
+    };
+    if (!isKingInCheck(simulated, piece.color)) {
+      legal.push(candidate);
+    }
+  }
+
+  return legal;
+}
+
+function hasAnyLegalMove(state: FourPlayerState, color: FourPlayerColor): boolean {
+  if (!isAliveColor(state, color)) return false;
+  const asTurn: FourPlayerState = { ...state, turn: color };
+
+  for (let row = 0; row < FOUR_PLAYER_BOARD_SIZE; row += 1) {
+    for (let col = 0; col < FOUR_PLAYER_BOARD_SIZE; col += 1) {
+      const piece = asTurn.board[row][col];
+      if (!piece || piece.color !== color) continue;
+      const candidates = getLegalMoveCandidates(asTurn, { row, col }, piece);
+      if (candidates.length > 0) return true;
+    }
+  }
+
+  return false;
+}
+
+function eliminateColorKeepPieces(
+  state: FourPlayerState,
+  color: FourPlayerColor,
+): FourPlayerState {
+  if (state.eliminated.includes(color)) return state;
+  const eliminated = [...state.eliminated, color];
+  const survivors = alivePlayers(eliminated);
+  const winner = survivors.length === 1 ? survivors[0] : null;
+
+  const castlingRights = cloneCastlingRights(state.castlingRights);
+  castlingRights[color].k = false;
+  castlingRights[color].q = false;
+
+  let enPassant = state.enPassant;
+  if (enPassant && (enPassant.color === color || enPassant.availableFor === color)) {
+    enPassant = null;
+  }
+
+  const nextTurn = winner
+    ? winner
+    : state.turn === color
+      ? nextActiveColor(color, eliminated)
+      : state.turn;
+
+  return {
+    ...state,
+    eliminated,
+    winner,
+    castlingRights,
+    enPassant,
+    turn: nextTurn,
+  };
+}
+
+function resolveTurnEliminations(state: FourPlayerState) {
+  let nextState = state;
+  let nextTurn = nextActiveColor(state.turn, state.eliminated);
+  const eliminatedNow: FourPlayerColor[] = [];
+
+  for (let i = 0; i < PLAYER_ORDER.length; i += 1) {
+    if (nextState.winner) break;
+    if (nextState.eliminated.includes(nextTurn)) {
+      nextTurn = nextActiveColor(nextTurn, nextState.eliminated);
+      continue;
+    }
+
+    if (hasAnyLegalMove(nextState, nextTurn)) {
+      nextState = {
+        ...nextState,
+        turn: nextTurn,
+      };
+      break;
+    }
+
+    // No legal moves => eliminate (checkmate or stalemate in FFA mode).
+    nextState = eliminateColorKeepPieces(nextState, nextTurn);
+    eliminatedNow.push(nextTurn);
+    if (nextState.winner) break;
+    nextTurn = nextActiveColor(nextTurn, nextState.eliminated);
+  }
+
+  return { state: nextState, eliminatedNow };
+}
+
+export function getLegalMoves(state: FourPlayerState, from: Square): Square[] {
+  if (state.winner) return [];
+  if (!isPlayableSquare(from.row, from.col)) return [];
+  if (!isAliveColor(state, state.turn)) return [];
+
+  const piece = state.board[from.row][from.col];
+  if (!piece || piece.color !== state.turn) return [];
+
+  return getLegalMoveCandidates(state, from, piece).map((candidate) => candidate.to);
+}
+
 export function applyMove(
   state: FourPlayerState,
   from: Square,
@@ -377,61 +868,39 @@ export function applyMove(
   if (!isPlayableSquare(from.row, from.col) || !isPlayableSquare(to.row, to.col)) {
     return state;
   }
+  if (!isAliveColor(state, state.turn)) return state;
 
   const piece = state.board[from.row][from.col];
   if (!piece || piece.color !== state.turn) return state;
 
-  const legalMoves = getPseudoLegalMoves(state.board, from, piece);
-  const isLegal = legalMoves.some((sq) => sq.row === to.row && sq.col === to.col);
-  if (!isLegal) return state;
+  const legalCandidates = getLegalMoveCandidates(state, from, piece);
+  const candidate = legalCandidates.find((move) => squareEquals(move.to, to));
+  if (!candidate) return state;
 
-  const board = cloneBoard(state.board);
-  const captured = board[to.row][to.col];
-  board[from.row][from.col] = null;
+  const applied = applyMoveCandidate(state, from, candidate, piece);
+  const partialState: FourPlayerState = {
+    ...state,
+    board: applied.board,
+    castlingRights: applied.castlingRights,
+    enPassant: applied.enPassant,
+  };
 
-  let promoted: FourPlayerPieceType | undefined;
-  if (piece.type === "p") {
-    const forward = getForwardData(piece.color);
-    const shouldPromote = forward.isPromotion(to.row, to.col);
-    if (shouldPromote) {
-      promoted = "q";
-      board[to.row][to.col] = { color: piece.color, type: "q" };
-    } else {
-      board[to.row][to.col] = { ...piece };
-    }
-  } else {
-    board[to.row][to.col] = { ...piece };
-  }
-
-  let eliminated = [...state.eliminated];
-  let eliminatedColor: FourPlayerColor | null = null;
-  let nextBoard = board;
-  if (captured?.type === "k") {
-    eliminatedColor = captured.color;
-    if (!eliminated.includes(captured.color)) {
-      eliminated = [...eliminated, captured.color];
-      nextBoard = removeAllPiecesOfColor(board, captured.color);
-    }
-  }
-
-  const survivors = alivePlayers(eliminated);
-  const winner = survivors.length === 1 ? survivors[0] : null;
-  const nextTurn = winner ? state.turn : nextActiveColor(state.turn, eliminated);
+  const resolved = resolveTurnEliminations(partialState);
+  const eliminatedColor = resolved.eliminatedNow[0] || null;
 
   const move: FourPlayerMove = {
     from,
-    to,
+    to: candidate.to,
     piece,
-    captured: captured || null,
-    promoted,
+    captured: applied.captured || null,
+    promoted: applied.promoted,
+    castlingSide: candidate.castlingSide,
+    enPassant: candidate.enPassant,
     eliminated: eliminatedColor,
   };
 
   return {
-    board: nextBoard,
-    turn: nextTurn,
-    winner,
-    eliminated,
+    ...resolved.state,
     moves: [...state.moves, move],
   };
 }
@@ -443,11 +912,15 @@ export function squareToText(square: Square): string {
 }
 
 export function formatMoveText(move: FourPlayerMove): string {
-  const pieceLabel =
-    move.piece.type === "p" ? "" : move.piece.type.toUpperCase();
+  if (move.castlingSide) {
+    return move.castlingSide === "k" ? "O-O" : "O-O-O";
+  }
+
+  const pieceLabel = move.piece.type === "p" ? "" : move.piece.type.toUpperCase();
   const captureMark = move.captured ? "x" : "-";
   const promo = move.promoted ? `=${move.promoted.toUpperCase()}` : "";
+  const ep = move.enPassant ? " e.p." : "";
   const eliminated = move.eliminated ? ` (eliminated ${move.eliminated})` : "";
 
-  return `${pieceLabel}${squareToText(move.from)}${captureMark}${squareToText(move.to)}${promo}${eliminated}`;
+  return `${pieceLabel}${squareToText(move.from)}${captureMark}${squareToText(move.to)}${promo}${ep}${eliminated}`;
 }
