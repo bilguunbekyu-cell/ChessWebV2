@@ -100,6 +100,7 @@ export default function Game() {
         <GameOverModal
           isOpen={showGameOverModal}
           result={gameResult}
+          onTryAgain={quickRematch}
           onNewGame={quickRematch}
           savedGameId={savedGameId}
         />

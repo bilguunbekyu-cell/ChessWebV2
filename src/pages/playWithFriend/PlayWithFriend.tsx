@@ -1,11 +1,18 @@
 import { useState } from "react";
-import { useStockfishGame } from "../../hooks/useStockfishGame";
-import type { GameSettings } from "../../components/game";
-import { defaultGameSettings } from "../../hooks/useStockfishGameTypes";
+import { useNavigate } from "react-router-dom";
+import { useFriendOnlineGame } from "../../hooks/useFriendOnlineGame";
+import { useAuthStore } from "../../store/authStore";
+import { useFriendChallengeStore } from "../../store/friendChallengeStore";
 import { FriendGameSetup } from "./FriendGameSetup";
 import { FriendGameView } from "./FriendGameView";
 
 export default function PlayWithFriend() {
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const sendChallenge = useFriendChallengeStore((state) => state.sendChallenge);
+  const lastInfo = useFriendChallengeStore((state) => state.lastInfo);
+  const clearInfo = useFriendChallengeStore((state) => state.clearInfo);
+
   const {
     game,
     lastMove,
@@ -22,42 +29,91 @@ export default function PlayWithFriend() {
     setPlayerTime,
     setOpponentTime,
     onSquareClick,
-    handleStartGame,
-    handleResign,
-    handleTimeOut,
-  } = useStockfishGame();
+    resign,
+    timeOut,
+    leaveGame,
+    resetToSetup,
+    opponentName,
+    opponentUserId,
+    gameType,
+    isRated,
+    isConnected,
+  } = useFriendOnlineGame();
 
-  const [gameMode, setGameMode] = useState<"local" | "online">("local");
   const [playAs, setPlayAs] = useState<"white" | "black" | "random">("white");
   const [timeControl, setTimeControl] = useState({
     initial: 600,
     increment: 0,
   });
   const [friendName, setFriendName] = useState("Friend");
+  const [isSendingChallenge, setIsSendingChallenge] = useState(false);
+  const [challengeError, setChallengeError] = useState<string | null>(null);
 
-  const handleStartLocalGame = () => {
-    const actualPlayAs =
-      playAs === "random" ? (Math.random() < 0.5 ? "white" : "black") : playAs;
-
-    const settings: GameSettings = {
-      ...defaultGameSettings,
-      playAs: actualPlayAs,
-      difficulty: 0, // No AI
-      timeControl,
-    };
-
-    handleStartGame(settings);
+  const handleSendChallenge = async (payload: {
+    toUserId: string;
+    toName: string;
+    gameType: string;
+    rated: boolean;
+    playAs: "white" | "black" | "random";
+    timeControl: { initial: number; increment: number };
+  }) => {
+    setIsSendingChallenge(true);
+    setChallengeError(null);
+    clearInfo();
+    const response = await sendChallenge({
+      ...payload,
+      fromRating: user?.rating,
+    });
+    if (!response.success) {
+      setChallengeError(response.error || "Failed to send challenge.");
+    }
+    setIsSendingChallenge(false);
   };
 
-  const handleRematch = () => {
-    handleStartGame({ ...gameSettings });
+  const handleTryAgain = async () => {
+    const rematchTargetUserId = opponentUserId;
+    const rematchTargetName = opponentName || friendName || "Friend";
+    const rematchPlayAs: "white" | "black" = gameSettings.playAs;
+
+    resetToSetup();
+    setFriendName(rematchTargetName);
+
+    if (!rematchTargetUserId) {
+      setChallengeError("Unable to send rematch right now.");
+      return;
+    }
+
+    setIsSendingChallenge(true);
+    setChallengeError(null);
+    clearInfo();
+
+    const response = await sendChallenge({
+      toUserId: rematchTargetUserId,
+      toName: rematchTargetName,
+      gameType: gameType || "standard",
+      rated: isRated,
+      playAs: rematchPlayAs,
+      timeControl: gameSettings.timeControl,
+      fromRating: user?.rating,
+    });
+
+    if (!response.success) {
+      setChallengeError(response.error || "Failed to send rematch.");
+    }
+
+    setIsSendingChallenge(false);
+  };
+
+  const handleNewGame = () => {
+    resetToSetup();
+    navigate("/friends");
   };
 
   // If game started, show the game board
   if (gameStarted) {
     return (
       <FriendGameView
-        friendName={friendName}
+        friendName={opponentName || friendName}
         game={game}
         lastMove={lastMove}
         moves={moves}
@@ -73,9 +129,11 @@ export default function PlayWithFriend() {
         onSquareClick={onSquareClick}
         setOpponentTime={setOpponentTime}
         setPlayerTime={setPlayerTime}
-        onTimeOut={handleTimeOut}
-        onResign={handleResign}
-        onRematch={handleRematch}
+        onTimeOut={timeOut}
+        onResign={resign}
+        onTryAgain={handleTryAgain}
+        onNewGame={handleNewGame}
+        onLeave={leaveGame}
       />
     );
   }
@@ -83,15 +141,17 @@ export default function PlayWithFriend() {
   // Setup screen
   return (
     <FriendGameSetup
-      gameMode={gameMode}
-      onGameModeChange={setGameMode}
       playAs={playAs}
       onPlayAsChange={setPlayAs}
       timeControl={timeControl}
       onTimeControlChange={setTimeControl}
       friendName={friendName}
       onFriendNameChange={setFriendName}
-      onStart={handleStartLocalGame}
+      onSendChallenge={handleSendChallenge}
+      isSendingChallenge={isSendingChallenge}
+      challengeError={challengeError}
+      challengeInfo={lastInfo}
+      isRealtimeConnected={isConnected}
     />
   );
 }

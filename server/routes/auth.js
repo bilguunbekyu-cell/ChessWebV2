@@ -5,6 +5,20 @@ import { authMiddleware } from "../middleware/index.js";
 
 const router = Router();
 
+function toPublicUser(user) {
+  if (!user) return null;
+  return {
+    id: String(user._id),
+    email: user.email,
+    fullName: user.fullName,
+    avatar: user.avatar || "",
+    rating: user.rating ?? 1200,
+    gamesPlayed: user.gamesPlayed ?? 0,
+    gamesWon: user.gamesWon ?? 0,
+    puzzleElo: user.puzzleElo ?? 0,
+  };
+}
+
 // Register
 router.post("/register", async (req, res) => {
   try {
@@ -44,7 +58,7 @@ router.post("/register", async (req, res) => {
     res.json({
       success: true,
       message: "User registered successfully",
-      user: { id: user._id, email: user.email, fullName: user.fullName },
+      user: toPublicUser(user),
     });
   } catch (err) {
     console.error("Register error:", err);
@@ -100,7 +114,7 @@ router.post("/login", async (req, res) => {
     res.json({
       success: true,
       message: "Login successful",
-      user: { id: user._id, email: user.email, fullName: user.fullName },
+      user: toPublicUser(user),
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -137,7 +151,7 @@ router.get("/me", authMiddleware, async (req, res) => {
       });
     }
 
-    res.json({ user });
+    res.json({ user: toPublicUser(user) });
   } catch (err) {
     console.error("Get user error:", err);
     res.status(500).json({ error: "Server error" });
@@ -153,7 +167,7 @@ router.put("/profile", authMiddleware, async (req, res) => {
       { fullName, avatar },
       { new: true },
     ).select("-password");
-    res.json({ success: true, user });
+    res.json({ success: true, user: toPublicUser(user) });
   } catch (err) {
     console.error("Update profile error:", err);
     res.status(500).json({ error: "Server error" });

@@ -68,12 +68,16 @@ export default function Dashboard() {
                   key={option.label}
                   to={
                     option.initial !== undefined && option.increment !== undefined
-                      ? `/play/quick?initial=${option.initial}&increment=${option.increment}`
+                      ? `/play/quick?initial=${option.initial}&increment=${option.increment}&autostart=1`
                       : "/play/quick"
                   }
                   state={
                     option.initial !== undefined && option.increment !== undefined
-                      ? { initial: option.initial, increment: option.increment }
+                      ? {
+                          initial: option.initial,
+                          increment: option.increment,
+                          autoStart: true,
+                        }
                       : undefined
                   }
                   className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/35 min-h-[124px] p-4 sm:p-5 flex flex-col items-center justify-center text-center hover:border-teal-300 dark:hover:border-teal-700/50 hover:bg-white dark:hover:bg-gray-800/60 transition-colors cursor-pointer"

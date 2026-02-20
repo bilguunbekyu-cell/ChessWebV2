@@ -9,8 +9,8 @@ const HistorySchema = new mongoose.Schema(
     },
 
     // PGN Headers
-    event: { type: String, default: "ChessFlow Game" },
-    site: { type: String, default: "ChessFlow" },
+    event: { type: String, default: "NeonGambit Game" },
+    site: { type: String, default: "NeonGambit" },
     date: { type: String },
     round: { type: String, default: "-" },
     white: { type: String, required: true },

@@ -37,7 +37,7 @@ async function seedAdmin() {
     // Default admin credentials - CHANGE THESE!
     const adminData = {
       username: "admin",
-      email: "admin@chessflow.com",
+      email: "admin@neongambit.com",
       password: "admin123", // Change this password!
     };
 

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Chess, Square } from "chess.js";
-import { io, Socket } from "socket.io-client";
 import type { GameSettings } from "../components/game";
 import { defaultGameSettings, OptionSquares } from "./useStockfishGameTypes";
 import { useMoveOptions } from "./useMoveOptions";
@@ -13,12 +12,10 @@ import {
 } from "./gameHistorySaver/utils";
 import { detectOpeningFromSan } from "../utils/openingExplorer";
 import { useAuthStore } from "../store/authStore";
-
-const socketBaseUrl =
-  import.meta.env.VITE_SOCKET_URL ||
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:3001";
-const SOCKET_URL = socketBaseUrl.replace(/\/api\/?$/, "");
+import {
+  FriendGameStartedPayload,
+  useFriendChallengeStore,
+} from "../store/friendChallengeStore";
 
 type PlayerColor = "w" | "b";
 type GameOverReason =
@@ -27,14 +24,6 @@ type GameOverReason =
   | "resign"
   | "timeout"
   | "opponent_left";
-
-interface MatchFoundPayload {
-  gameId: string;
-  color: PlayerColor;
-  fen: string;
-  opponentName?: string;
-  timeControl?: { initial: number; increment: number };
-}
 
 interface MoveAppliedPayload {
   gameId: string;
@@ -52,8 +41,15 @@ interface GameOverPayload {
   winner: PlayerColor | null;
 }
 
-export function useOnlineQuickMatch() {
+export function useFriendOnlineGame() {
   const { user } = useAuthStore();
+  const socket = useFriendChallengeStore((state) => state.socket);
+  const activeGame = useFriendChallengeStore((state) => state.activeGame);
+  const clearActiveGame = useFriendChallengeStore(
+    (state) => state.clearActiveGame,
+  );
+  const isConnected = useFriendChallengeStore((state) => state.isConnected);
+
   const [game, setGame] = useState(() => new Chess());
   const gameRef = useRef(game);
   const [moves, setMoves] = useState<string[]>([]);
@@ -69,10 +65,11 @@ export function useOnlineQuickMatch() {
   const [savedGameId, setSavedGameId] = useState<string | null>(null);
   const [playerColor, setPlayerColor] = useState<PlayerColor>("w");
   const [gameId, setGameId] = useState<string | null>(null);
-  const [opponentName, setOpponentName] = useState("Opponent");
-  const [isSearching, setIsSearching] = useState(false);
-  const [queueStatus, setQueueStatus] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const [opponentName, setOpponentName] = useState("Friend");
+  const [opponentUserId, setOpponentUserId] = useState<string | null>(null);
+  const [gameType, setGameType] = useState("standard");
+  const [isRated, setIsRated] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [moveFrom, setMoveFrom] = useState<Square | null>(null);
   const [optionSquares, setOptionSquares] = useState<OptionSquares>({});
   const [playerTime, setPlayerTime] = useState(
@@ -82,10 +79,9 @@ export function useOnlineQuickMatch() {
     defaultGameSettings.timeControl.initial,
   );
 
-  const socketRef = useRef<Socket | null>(null);
-  const playerNameRef = useRef<string>("Player");
   const gameIdRef = useRef<string | null>(null);
   const playerColorRef = useRef<PlayerColor>("w");
+  const playerNameRef = useRef<string>("Player");
   const startTimeRef = useRef<number | null>(null);
   const historySavedRef = useRef(false);
   const [lastGameOver, setLastGameOver] = useState<GameOverPayload | null>(
@@ -96,28 +92,9 @@ export function useOnlineQuickMatch() {
   const getMoveOptions = useMoveOptions(gameRef, setOptionSquares);
   const isPlayerTurn = game.turn() === playerColor;
 
-  const resetGameState = useCallback(() => {
-    const nextGame = new Chess();
-    gameRef.current = nextGame;
-    setGame(nextGame);
-    setMoves([]);
-    setLastMove(null);
-    setGameStarted(false);
-    setGameOver(false);
-    setGameResult(null);
-    setShowGameOverModal(false);
-    setMoveFrom(null);
-    setOptionSquares({});
-    setGameId(null);
-    setSavedGameId(null);
-    gameIdRef.current = null;
-    setOpponentName("Opponent");
-    setPlayerColor("w");
-    playerColorRef.current = "w";
-    startTimeRef.current = null;
-    historySavedRef.current = false;
-    setLastGameOver(null);
-  }, []);
+  useEffect(() => {
+    playerNameRef.current = user?.fullName || "Player";
+  }, [user?.fullName]);
 
   const formatResult = (payload: GameOverPayload) => {
     if (payload.reason === "draw" || !payload.winner) {
@@ -139,80 +116,93 @@ export function useOnlineQuickMatch() {
         : "You Lose";
   };
 
+  const resetGameState = useCallback(() => {
+    const nextGame = new Chess();
+    gameRef.current = nextGame;
+    setGame(nextGame);
+    setMoves([]);
+    setLastMove(null);
+    setGameStarted(false);
+    setGameOver(false);
+    setGameResult(null);
+    setShowGameOverModal(false);
+    setMoveFrom(null);
+    setOptionSquares({});
+    setGameId(null);
+    setSavedGameId(null);
+    gameIdRef.current = null;
+    setOpponentName("Friend");
+    setOpponentUserId(null);
+    setGameType("standard");
+    setIsRated(false);
+    setPlayerColor("w");
+    playerColorRef.current = "w";
+    setStatusMessage(null);
+    startTimeRef.current = null;
+    historySavedRef.current = false;
+    setLastGameOver(null);
+  }, []);
+
+  const applyFriendGameStart = useCallback((payload: FriendGameStartedPayload) => {
+    if (payload.gameId === gameIdRef.current && gameStarted) return;
+
+    const nextGame = new Chess(payload.fen);
+    gameRef.current = nextGame;
+    setGame(nextGame);
+    setMoves([]);
+    setLastMove(null);
+    setGameId(payload.gameId);
+    gameIdRef.current = payload.gameId;
+    setPlayerColor(payload.color);
+    playerColorRef.current = payload.color;
+    setOpponentUserId(
+      payload.opponentUserId ? String(payload.opponentUserId) : null,
+    );
+    setOpponentName(payload.opponentName || "Friend");
+    setGameType(payload.gameType || "standard");
+    setIsRated(payload.rated === true);
+    setGameStarted(true);
+    setGameOver(false);
+    setGameResult(null);
+    setShowGameOverModal(false);
+    setStatusMessage(null);
+    setSavedGameId(null);
+    historySavedRef.current = false;
+    startTimeRef.current = Date.now();
+    setLastGameOver(null);
+
+    const timeControl = payload.timeControl || defaultGameSettings.timeControl;
+    setGameSettings({
+      ...defaultGameSettings,
+      playAs: payload.color === "w" ? "white" : "black",
+      difficulty: 0,
+      timeControl,
+    });
+    setPlayerTime(timeControl.initial);
+    setOpponentTime(timeControl.initial);
+  }, [gameStarted]);
+
   useEffect(() => {
-    const socket = io(SOCKET_URL, {
-      withCredentials: true,
-    });
-    socketRef.current = socket;
+    if (!activeGame) return;
+    applyFriendGameStart(activeGame);
+    clearActiveGame();
+  }, [activeGame, applyFriendGameStart, clearActiveGame]);
 
-    socket.on("connect", () => {
-      setIsConnected(true);
-      setQueueStatus(null);
-    });
+  useEffect(() => {
+    if (!socket) return;
 
-    socket.on("disconnect", () => {
-      setIsConnected(false);
-      setIsSearching(false);
-      setQueueStatus("Disconnected from server.");
-    });
+    const handleFriendGameStarted = (payload: FriendGameStartedPayload) => {
+      applyFriendGameStart(payload);
+      clearActiveGame();
+    };
 
-    socket.on("connect_error", () => {
-      setIsConnected(false);
-      setIsSearching(false);
-      setQueueStatus("Unable to connect to matchmaking server.");
-    });
-
-    socket.on("queued", () => {
-      setIsSearching(true);
-      setQueueStatus("Searching for opponent...");
-    });
-
-    socket.on("queueCancelled", () => {
-      setIsSearching(false);
-      setQueueStatus("Search cancelled.");
-    });
-
-    socket.on("matchFound", (payload: MatchFoundPayload) => {
-      const nextGame = new Chess(payload.fen);
-      gameRef.current = nextGame;
-      setGame(nextGame);
-      setMoves([]);
-      setLastMove(null);
-      setGameId(payload.gameId);
-      gameIdRef.current = payload.gameId;
-      setPlayerColor(payload.color);
-      playerColorRef.current = payload.color;
-      setOpponentName(payload.opponentName || "Opponent");
-      setGameStarted(true);
-      setGameOver(false);
-      setGameResult(null);
-      setShowGameOverModal(false);
-      setIsSearching(false);
-      setQueueStatus(null);
-      setSavedGameId(null);
-      historySavedRef.current = false;
-      startTimeRef.current = Date.now();
-      setLastGameOver(null);
-
-      const timeControl =
-        payload.timeControl || defaultGameSettings.timeControl;
-      setGameSettings({
-        ...defaultGameSettings,
-        playAs: payload.color === "w" ? "white" : "black",
-        difficulty: 0,
-        timeControl,
-      });
-      setPlayerTime(timeControl.initial);
-      setOpponentTime(timeControl.initial);
-    });
-
-    socket.on("moveApplied", (payload: MoveAppliedPayload) => {
+    const handleMoveApplied = (payload: MoveAppliedPayload) => {
       if (payload.gameId !== gameIdRef.current) return;
       const currentGame = gameRef.current;
       const applied = currentGame.move({
         from: payload.move.from,
         to: payload.move.to,
-        promotion: (payload.move as any).promotion || "q",
+        promotion: (payload.move as { promotion?: string }).promotion || "q",
       });
 
       if (applied) {
@@ -228,31 +218,32 @@ export function useOnlineQuickMatch() {
       setLastMove({ from: payload.move.from, to: payload.move.to });
       setMoveFrom(null);
       setOptionSquares({});
-    });
+    };
 
-    socket.on("moveRejected", (payload: { reason?: string }) => {
-      setQueueStatus(payload?.reason || "Move rejected.");
-    });
+    const handleMoveRejected = (payload: { reason?: string }) => {
+      setStatusMessage(payload?.reason || "Move rejected.");
+    };
 
-    socket.on("gameOver", (payload: GameOverPayload) => {
+    const handleGameOver = (payload: GameOverPayload) => {
       if (payload.gameId !== gameIdRef.current) return;
       setGameOver(true);
       setShowGameOverModal(true);
       setGameResult(formatResult(payload));
       setLastGameOver(payload);
-    });
+    };
 
-    socket.on("opponentLeft", () => {
-      setGameOver(true);
-      setShowGameOverModal(true);
-      setGameResult("Opponent left. You win.");
-    });
+    socket.on("friendGameStarted", handleFriendGameStarted);
+    socket.on("moveApplied", handleMoveApplied);
+    socket.on("moveRejected", handleMoveRejected);
+    socket.on("gameOver", handleGameOver);
 
     return () => {
-      socket.removeAllListeners();
-      socket.disconnect();
+      socket.off("friendGameStarted", handleFriendGameStarted);
+      socket.off("moveApplied", handleMoveApplied);
+      socket.off("moveRejected", handleMoveRejected);
+      socket.off("gameOver", handleGameOver);
     };
-  }, []);
+  }, [socket, applyFriendGameStart, clearActiveGame]);
 
   useEffect(() => {
     if (!gameOver || !lastGameOver || historySavedRef.current) return;
@@ -304,8 +295,8 @@ export function useOnlineQuickMatch() {
           reasonMap[lastGameOver.reason] || "checkmate"
         }`;
 
-    const playerName = playerNameRef.current || "Player";
-    const opponent = opponentName || "Opponent";
+    const playerName = playerNameRef.current || user?.fullName || "Player";
+    const opponent = opponentName || "Friend";
     const playerElo = user?.rating ?? 1200;
     const opponentElo = 1200;
     const whiteName = playerColorRef.current === "w" ? playerName : opponent;
@@ -330,7 +321,7 @@ export function useOnlineQuickMatch() {
     });
 
     saveGameHistory({
-      event: "Live Chess",
+      event: "Friend Challenge",
       site: "NeonGambit",
       date: formatDate(startDate),
       round: "-",
@@ -366,67 +357,16 @@ export function useOnlineQuickMatch() {
     gameSettings.playAs,
     opponentName,
     saveGameHistory,
+    user?.fullName,
     user?.rating,
   ]);
 
-  const startMatch = useCallback(
-    (timeControl: { initial: number; increment: number }, name?: string) => {
-      if (!socketRef.current) return;
-      if (!socketRef.current.connected) {
-        setIsSearching(false);
-        setQueueStatus("Matchmaking server is offline.");
-        return;
-      }
-      playerNameRef.current = name || "Player";
-      resetGameState();
-      setIsSearching(true);
-      setQueueStatus("Searching for opponent...");
-      setGameSettings({
-        ...defaultGameSettings,
-        playAs: "white",
-        difficulty: 0,
-        timeControl,
-      });
-      setPlayerTime(timeControl.initial);
-      setOpponentTime(timeControl.initial);
-      socketRef.current.emit("findMatch", {
-        name: playerNameRef.current,
-        timeControl,
-      });
-    },
-    [resetGameState],
-  );
-
-  const cancelMatch = useCallback(() => {
-    if (!socketRef.current) return;
-    socketRef.current.emit("cancelFind");
-    setIsSearching(false);
-  }, []);
-
-  const resign = useCallback(() => {
-    if (!socketRef.current || !gameId) return;
-    socketRef.current.emit("resign", { gameId });
-  }, [gameId]);
-
-  const timeOut = useCallback(
-    (isPlayer: boolean) => {
-      if (!socketRef.current || !gameId) return;
-      if (!isPlayer) return;
-      socketRef.current.emit("timeout", { gameId });
-    },
-    [gameId],
-  );
-
-  const leaveGame = useCallback(() => {
-    if (!socketRef.current || !gameId) return;
-    socketRef.current.emit("leaveGame", { gameId });
-    resetGameState();
-  }, [gameId, resetGameState]);
-
   const onSquareClick = useCallback(
     (square: Square) => {
+      if (!socket) return;
       if (!gameStarted || gameOver) return;
       if (!isPlayerTurn) return;
+      if (!gameIdRef.current) return;
 
       const currentGame = gameRef.current;
 
@@ -445,8 +385,8 @@ export function useOnlineQuickMatch() {
       }
 
       if (optionSquares[square]) {
-        socketRef.current?.emit("makeMove", {
-          gameId,
+        socket.emit("makeMove", {
+          gameId: gameIdRef.current,
           from: moveFrom,
           to: square,
           promotion: "q",
@@ -467,23 +407,42 @@ export function useOnlineQuickMatch() {
       setOptionSquares({});
     },
     [
-      gameId,
-      gameOver,
+      socket,
       gameStarted,
-      getMoveOptions,
+      gameOver,
       isPlayerTurn,
       moveFrom,
       optionSquares,
       playerColor,
+      getMoveOptions,
     ],
   );
 
-  const rematch = useCallback(() => {
-    startMatch(gameSettings.timeControl, playerNameRef.current);
-  }, [gameSettings.timeControl, startMatch]);
+  const resign = useCallback(() => {
+    if (!socket || !gameIdRef.current) return;
+    socket.emit("resign", { gameId: gameIdRef.current });
+  }, [socket]);
+
+  const timeOut = useCallback(
+    (isPlayer: boolean) => {
+      if (!socket || !gameIdRef.current || !isPlayer) return;
+      socket.emit("timeout", { gameId: gameIdRef.current });
+    },
+    [socket],
+  );
+
+  const leaveGame = useCallback(() => {
+    if (socket && gameIdRef.current) {
+      socket.emit("leaveGame", { gameId: gameIdRef.current });
+    }
+    resetGameState();
+  }, [socket, resetGameState]);
+
+  const resetToSetup = useCallback(() => {
+    resetGameState();
+  }, [resetGameState]);
 
   return {
-    // Game state
     game,
     moves,
     gameSettings,
@@ -495,8 +454,10 @@ export function useOnlineQuickMatch() {
     savedGameId,
     lastMove,
     opponentName,
-
-    // UI state
+    opponentUserId,
+    gameType,
+    isRated,
+    statusMessage,
     showGameOverModal,
     optionSquares,
     preMoveSquares: {},
@@ -504,17 +465,11 @@ export function useOnlineQuickMatch() {
     opponentTime,
     setPlayerTime,
     setOpponentTime,
-    isSearching,
-    queueStatus,
     isConnected,
-
-    // Handlers
     onSquareClick,
-    startMatch,
-    cancelMatch,
     resign,
     timeOut,
-    rematch,
     leaveGame,
+    resetToSetup,
   };
 }

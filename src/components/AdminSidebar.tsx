@@ -40,17 +40,20 @@ export default function AdminSidebar() {
   return (
     <div className="w-72 h-screen bg-[#ebebed] dark:bg-gray-900 border-r border-gray-200/60 dark:border-gray-800 flex flex-col fixed left-0 top-0 z-50 transition-colors duration-300">
       {/* Logo */}
-      <Link to="/admin" className="p-6 flex items-center space-x-3">
+      <Link
+        to="/admin"
+        className="px-5 py-4 flex items-center gap-3 border-b border-gray-200/70 dark:border-gray-800"
+      >
         <img
           src="/images/Logo.png"
-          alt="ChessFlow"
-          className="h-20 object-contain"
+          alt="NeonGambit"
+          className="h-14 object-contain shrink-0"
         />
-        <div>
-          <span className="text-gray-900 dark:text-white font-bold text-2xl tracking-tight">
-            ChessFlow
-          </span>
-          <span className="ml-2 text-xs bg-teal-500/20 text-teal-600 dark:text-teal-400 px-2 py-0.5 rounded-full font-medium">
+        <div className="min-w-0">
+          <div className="text-gray-900 dark:text-white font-bold text-[2rem] tracking-tight leading-none">
+            NeonGambit
+          </div>
+          <span className="mt-1 inline-flex text-xs bg-teal-500/20 text-teal-600 dark:text-teal-400 px-2 py-0.5 rounded-full font-medium">
             Admin
           </span>
         </div>

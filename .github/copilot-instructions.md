@@ -1,4 +1,4 @@
-# Copilot Instructions for ChessFlow
+# Copilot Instructions for NeonGambit
 
 - **App shape**: React 18 + TypeScript SPA with React Router, Zustand stores, Tailwind styling. Main shell in [src/App.tsx](src/App.tsx) sets protected vs public routes, theme toggle, and the play dropdown. Entry point at [src/main.tsx](src/main.tsx).
 - **State stores**: Auth + theme persisted via Zustand `persist` (storage keys `auth-storage`, `theme-storage`). Auth store and API helpers live in [src/store/authStore.ts](src/store/authStore.ts); theme in [src/store/themeStore.ts](src/store/themeStore.ts). Chess session state (timers, FEN, preferences) is centralized in [src/store/chessStore.ts](src/store/chessStore.ts); prefer updating through its setters instead of local component state.

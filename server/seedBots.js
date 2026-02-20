@@ -9,7 +9,7 @@ import { botSeedData } from "./seeds/bots.js";
 config();
 
 const MONGODB_URL =
-  process.env.MONGODB_URL || "mongodb://localhost:27017/chessflow";
+  process.env.MONGODB_URL || "mongodb://localhost:27017/neongambit";
 
 async function reseedBots() {
   try {

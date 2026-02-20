@@ -8,8 +8,8 @@ const router = Router();
 router.post("/", authMiddleware, async (req, res) => {
   try {
     const {
-      event = "ChessFlow Game",
-      site = "ChessFlow",
+      event = "NeonGambit Game",
+      site = "NeonGambit",
       date,
       round = "-",
       white,

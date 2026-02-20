@@ -82,7 +82,7 @@ export function useGameHistorySaver(
     // Save to backend
     saveGameHistory({
       event: "Live Chess",
-      site: "ChessFlow",
+      site: "NeonGambit",
       date: formatDate(startDate),
       round: "-",
       white: playerInfo.whiteName,

@@ -34,6 +34,8 @@ import { AdminBots } from "./pages/adminBots";
 import { AdminFeaturedEvents } from "./pages/adminFeaturedEvents";
 import { useThemeStore } from "./store/themeStore";
 import { useAuthStore, authApi } from "./store/authStore";
+import { useFriendChallengeStore } from "./store/friendChallengeStore";
+import FriendChallengeOverlay from "./components/FriendChallengeOverlay";
 
 // Auth check component
 function AuthChecker() {
@@ -113,6 +115,22 @@ function ThemeController() {
   return null;
 }
 
+function RealtimeBridge() {
+  const { isAuthenticated, user } = useAuthStore();
+  const initialize = useFriendChallengeStore((state) => state.initialize);
+  const disconnect = useFriendChallengeStore((state) => state.disconnect);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      initialize(user);
+      return;
+    }
+    disconnect();
+  }, [disconnect, initialize, isAuthenticated, user]);
+
+  return null;
+}
+
 function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const isDashboardPage = location.pathname === "/";
@@ -186,6 +204,7 @@ function App() {
     >
       <ThemeController />
       <AuthChecker />
+      <RealtimeBridge />
       <Layout>
         <Routes>
           {/* Public routes - redirect to home if logged in */}
@@ -354,6 +373,7 @@ function App() {
           <Route path="/admin/analyze/:gameId" element={<AdminAnalyze />} />
         </Routes>
       </Layout>
+      <FriendChallengeOverlay />
     </Router>
   );
 }

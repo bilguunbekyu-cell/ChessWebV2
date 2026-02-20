@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { ChessTimer } from "./ChessTimer";
 
 interface PlayerInfoProps {
@@ -25,6 +26,12 @@ export function PlayerInfo({
   onTimeOut,
   onTimeChange,
 }: PlayerInfoProps) {
+  const [hasImageError, setHasImageError] = useState(false);
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [avatarImage]);
+
   return (
     <div className="w-full bg-white/70 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-lg px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 backdrop-blur">
       <div className="flex items-center gap-3 sm:gap-4">
@@ -35,11 +42,12 @@ export function PlayerInfo({
               : "bg-gradient-to-br from-teal-500 to-emerald-500 ring-2 ring-teal-200/60 dark:ring-emerald-500/50 shadow-teal-500/30"
           }`}
         >
-          {avatarImage ? (
+          {avatarImage && !hasImageError ? (
             <img
               src={avatarImage}
               alt={name}
               className="w-full h-full object-cover"
+              onError={() => setHasImageError(true)}
             />
           ) : (
             avatarLetter

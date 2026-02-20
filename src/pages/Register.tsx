@@ -52,7 +52,7 @@ export default function Register() {
         <div className="text-center mb-8">
           <img
             src="/images/Logo.png"
-            alt="ChessFlow"
+            alt="NeonGambit"
             className="w-36 h-36 object-contain mx-auto mb-4"
           />
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">

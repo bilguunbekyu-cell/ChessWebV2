@@ -7,6 +7,21 @@ import type { GameSettings } from "../../components/game";
 import { BOARD_FRAME } from "./types";
 import type { CSSProperties } from "react";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
+function resolveAvatarUrl(avatar?: string) {
+  if (!avatar) return "";
+  if (
+    avatar.startsWith("http://") ||
+    avatar.startsWith("https://") ||
+    avatar.startsWith("data:") ||
+    avatar.startsWith("blob:")
+  ) {
+    return avatar;
+  }
+  return `${API_URL}${avatar.startsWith("/") ? "" : "/"}${avatar}`;
+}
+
 interface FriendGameViewProps {
   friendName: string;
   game: { fen: () => string };
@@ -26,7 +41,9 @@ interface FriendGameViewProps {
   setPlayerTime: (time: number) => void;
   onTimeOut: (isPlayer: boolean) => void;
   onResign: () => void;
-  onRematch: () => void;
+  onTryAgain: () => void;
+  onNewGame: () => void;
+  onLeave?: () => void;
 }
 
 export function FriendGameView({
@@ -48,9 +65,12 @@ export function FriendGameView({
   setPlayerTime,
   onTimeOut,
   onResign,
-  onRematch,
+  onTryAgain,
+  onNewGame,
+  onLeave,
 }: FriendGameViewProps) {
   const { user } = useAuthStore();
+  const playerAvatarUrl = resolveAvatarUrl(user?.avatar);
   const navigate = useNavigate();
   const displayMoves = moves.slice(-8);
   const [boardWidth, setBoardWidth] = useState(620);
@@ -90,7 +110,8 @@ export function FriendGameView({
         <GameOverModal
           isOpen={showGameOverModal}
           result={gameResult}
-          onNewGame={onRematch}
+          onTryAgain={onTryAgain}
+          onNewGame={onNewGame}
           savedGameId={savedGameId}
         />
 
@@ -155,7 +176,7 @@ export function FriendGameView({
               avatarLetter={
                 user?.fullName?.substring(0, 2).toUpperCase() || "U"
               }
-              avatarImage={user?.avatar}
+              avatarImage={playerAvatarUrl}
               avatarStyle="player"
               initialTime={gameSettings.timeControl.initial}
               increment={gameSettings.timeControl.increment}
@@ -182,13 +203,13 @@ export function FriendGameView({
               </h2>
             </div>
 
-            {/* Turn Indicator for Local Play */}
+            {/* Turn Indicator */}
             <div className="mb-3 p-2.5 rounded-xl bg-teal-500/10 border border-teal-500/20 text-center">
               <p className="text-xs font-medium text-teal-600 dark:text-teal-400">
                 {isPlayerTurn ? "Your turn" : `${friendName}'s turn`}
               </p>
               <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
-                Pass the device to your friend after each move
+                Online challenge match
               </p>
             </div>
 
@@ -237,7 +258,10 @@ export function FriendGameView({
                 End Game
               </button>
               <button
-                onClick={() => navigate("/play")}
+                onClick={() => {
+                  onLeave?.();
+                  navigate("/play");
+                }}
                 className="w-full px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 font-medium transition-colors"
               >
                 Back to Play

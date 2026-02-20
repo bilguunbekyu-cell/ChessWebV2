@@ -40,7 +40,7 @@ export function buildFullPgn(
 
   const pgnHeaders = [
     `[Event "Live Chess"]`,
-    `[Site "ChessFlow"]`,
+    `[Site "NeonGambit"]`,
     `[Date "${formatDate(startDate)}"]`,
     `[Round "-"]`,
     `[White "${whiteName}"]`,

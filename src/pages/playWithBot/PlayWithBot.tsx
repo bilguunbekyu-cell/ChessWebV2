@@ -11,13 +11,12 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const CATEGORY_INFO: {
   key: BotPersonality["category"];
   label: string;
-  icon: string;
 }[] = [
-  { key: "beginner", label: "Beginner", icon: "🌱" },
-  { key: "casual", label: "Casual", icon: "☕" },
-  { key: "intermediate", label: "Intermediate", icon: "⚔️" },
-  { key: "advanced", label: "Advanced", icon: "🎯" },
-  { key: "master", label: "Master", icon: "👑" },
+  { key: "beginner", label: "Beginner" },
+  { key: "casual", label: "Casual" },
+  { key: "intermediate", label: "Intermediate" },
+  { key: "advanced", label: "Advanced" },
+  { key: "master", label: "Master" },
 ];
 
 // Map database bot to BotPersonality interface
@@ -157,13 +156,13 @@ export default function PlayWithBot() {
   return (
     <div
       ref={containerRef}
-      className="relative h-screen w-full bg-slate-100 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 overflow-hidden pb-10"
+      className="relative h-screen w-full bg-slate-100 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 overflow-hidden"
     >
-      <div className="h-full grid grid-cols-1 lg:grid-cols-2">
+      <div className="h-full min-h-0 grid grid-cols-1 lg:grid-cols-2">
         {/* Left Side - Board Preview with Bot Info */}
         <div
           ref={leftRef}
-          className="flex flex-col items-center justify-center p-4 pb-10 gap-4 h-full"
+          className="flex flex-col items-center justify-center p-4 gap-4 h-full min-h-0"
         >
           {/* Top Bot Info Bar */}
           <div className="w-full max-w-[900px] flex items-center gap-3 px-2">
@@ -176,7 +175,11 @@ export default function PlayWithBot() {
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">{selectedBot?.name?.substring(0, 2).toUpperCase() || "?"}</span>
+                  <span className="text-white text-lg leading-none">
+                    {selectedBot?.avatar ||
+                      selectedBot?.name?.substring(0, 2).toUpperCase() ||
+                      "?"}
+                  </span>
                 </div>
               )}
             </div>
@@ -235,7 +238,7 @@ export default function PlayWithBot() {
         </div>
 
         {/* Right Side - Bot Selection Panel */}
-        <div className="w-full bg-white/90 dark:bg-slate-900/95 border-l border-gray-200/60 dark:border-white/10 flex flex-col h-full">
+        <div className="w-full bg-white/90 dark:bg-slate-900/95 border-l border-gray-200/60 dark:border-white/10 flex flex-col h-full min-h-0">
           {/* Panel Header */}
           <div className="p-4 border-b border-gray-200/60 dark:border-white/10">
             <div className="flex items-center gap-2">
@@ -262,7 +265,10 @@ export default function PlayWithBot() {
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
-                      <span className="text-white font-bold text-lg">{selectedBot.name.substring(0, 2).toUpperCase()}</span>
+                      <span className="text-white text-2xl leading-none">
+                        {selectedBot.avatar ||
+                          selectedBot.name.substring(0, 2).toUpperCase()}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -290,7 +296,7 @@ export default function PlayWithBot() {
           )}
 
           {/* Category Sections */}
-          <div className="flex-1 overflow-hidden flex flex-col overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1 pb-3 [scrollbar-width:thin] [scrollbar-color:#334155_transparent]">
             {loading ? (
               <div className="flex items-center justify-center py-10">
                 <Loader2 className="w-6 h-6 text-teal-500 animate-spin" />
@@ -318,8 +324,7 @@ export default function PlayWithBot() {
                       onClick={() => toggleCategory(cat.key)}
                       className="w-full px-3 py-2 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{cat.icon}</span>
+                      <div className="flex items-center">
                         <span className="font-medium text-gray-900 dark:text-white">
                           {cat.label}
                         </span>
@@ -337,32 +342,54 @@ export default function PlayWithBot() {
 
                     {/* Bot Avatars Grid */}
                     {isExpanded && (
-                      <div className="px-3 pb-2 grid grid-cols-5 gap-1.5">
+                      <div className="px-3 pb-3 grid grid-cols-3 sm:grid-cols-4 xl:grid-cols-5 gap-2.5">
                         {categoryBots.map((bot) => (
                           <button
                             key={bot.id}
                             onClick={() => setSelectedBot(bot)}
-                            className={`relative w-11 h-11 rounded-lg overflow-hidden transition-all hover:scale-105 ${
-                              selectedBot?.id === bot.id
-                                ? "ring-2 ring-teal-500"
-                                : "ring-1 ring-gray-200 dark:ring-slate-700 hover:ring-gray-300 dark:hover:ring-slate-600"
-                            }`}
+                            className="w-full text-left transition-transform hover:scale-[1.02]"
                             title={`${bot.name} (${bot.rating})`}
                           >
-                            {bot.avatarUrl ? (
-                              <img
-                                src={bot.avatarUrl}
-                                alt={bot.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
-                                <span className="text-white font-bold text-xs">{bot.name.substring(0, 2).toUpperCase()}</span>
-                              </div>
-                            )}
-                            {bot.title && (
-                              <Crown className="absolute -top-1 -right-1 w-3 h-3 text-amber-500" />
-                            )}
+                            <div
+                              className={`relative w-full aspect-square rounded-xl overflow-hidden ${
+                                selectedBot?.id === bot.id
+                                  ? "ring-2 ring-teal-500 shadow-md shadow-teal-500/20"
+                                  : "ring-1 ring-gray-200 dark:ring-slate-700 hover:ring-gray-300 dark:hover:ring-slate-600"
+                              }`}
+                            >
+                              {bot.avatarUrl ? (
+                                <img
+                                  src={bot.avatarUrl}
+                                  alt={bot.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-rose-500 to-pink-600 flex flex-col items-center justify-center">
+                                  <span className="text-2xl leading-none text-white">
+                                    {bot.avatar || "🤖"}
+                                  </span>
+                                  <span className="mt-1 text-[10px] font-semibold text-white/90">
+                                    {bot.name.match(/\d+/)?.[0] ||
+                                      bot.name.substring(0, 2).toUpperCase()}
+                                  </span>
+                                </div>
+                              )}
+                              {bot.title && (
+                                <Crown className="absolute -top-1 -right-1 w-3 h-3 text-amber-500" />
+                              )}
+                            </div>
+                            <span
+                              className={`mt-1 block text-[11px] font-medium truncate ${
+                                selectedBot?.id === bot.id
+                                  ? "text-teal-600 dark:text-teal-400"
+                                  : "text-gray-700 dark:text-gray-300"
+                              }`}
+                            >
+                              {bot.name}
+                            </span>
+                            <span className="block text-[10px] text-gray-500 dark:text-gray-400">
+                              {bot.rating}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -374,7 +401,7 @@ export default function PlayWithBot() {
           </div>
 
           {/* Play Button */}
-          <div className="p-3 pb-12 border-t border-gray-200/60 dark:border-white/10">
+          <div className="p-3 border-t border-gray-200/60 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
             <button
               onClick={handleStartMatch}
               disabled={!selectedBot}

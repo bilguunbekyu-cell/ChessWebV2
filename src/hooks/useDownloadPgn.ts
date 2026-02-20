@@ -7,7 +7,7 @@ export function useDownloadPgn(game: GameHistory) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `chessflow_${game.date?.replace(/\./g, "-") || "game"}_${game._id?.slice(-6) || "unknown"}.pgn`;
+    a.download = `neongambit_${game.date?.replace(/\./g, "-") || "game"}_${game._id?.slice(-6) || "unknown"}.pgn`;
     a.click();
     URL.revokeObjectURL(url);
   }, [game]);

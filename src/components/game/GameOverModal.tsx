@@ -59,7 +59,6 @@ export function GameOverModal({
           <button
             onClick={() => {
               onNewGame();
-              navigate("/play/bot");
             }}
             className="w-full py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-medium"
           >

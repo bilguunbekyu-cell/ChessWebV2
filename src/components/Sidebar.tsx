@@ -57,9 +57,7 @@ export default function Sidebar() {
   } as const;
 
   return (
-    <div
-      className="w-72 h-screen bg-[#ebebed] dark:bg-gray-900 flex flex-col fixed left-0 top-0 z-50 transition-colors duration-300"
-    >
+    <div className="w-72 h-screen bg-[#ebebed] dark:bg-gray-900 flex flex-col fixed left-0 top-0 z-50 transition-colors duration-300">
       {/* Logo */}
       <Link
         to="/"
@@ -67,7 +65,7 @@ export default function Sidebar() {
       >
         <img
           src="/images/Logo.png"
-          alt="ChessFlow"
+          alt="NeonGambit"
           className={`object-contain ${styleGroup.logoHeight}`}
         />
         <span
@@ -75,7 +73,7 @@ export default function Sidebar() {
             isCompact ? "text-xl" : "text-2xl"
           }`}
         >
-          ChessFlow
+          NeonGambit
         </span>
       </Link>
 
@@ -99,7 +97,9 @@ export default function Sidebar() {
                     : "text-gray-400 dark:text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white"
                 }`}
               />
-              <span className={`font-medium leading-none ${fontSizeGroup.primary}`}>
+              <span
+                className={`font-medium leading-none ${fontSizeGroup.primary}`}
+              >
                 {item.label}
               </span>
             </Link>

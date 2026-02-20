@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { useOnlineQuickMatch } from "../../hooks/useOnlineQuickMatch";
 import { QuickMatchSetup } from "./QuickMatchSetup";
@@ -38,9 +38,20 @@ function getTimeControlFromSearch(
   return null;
 }
 
+function getAutoStartFromState(state: unknown): boolean {
+  if (!state || typeof state !== "object") return false;
+  return (state as { autoStart?: unknown }).autoStart === true;
+}
+
+function getAutoStartFromSearch(search: string): boolean {
+  const value = new URLSearchParams(search).get("autostart");
+  return value === "1" || value === "true";
+}
+
 export default function QuickMatch() {
   const { user } = useAuthStore();
   const location = useLocation();
+  const navigate = useNavigate();
   const {
     game,
     lastMove,
@@ -88,7 +99,65 @@ export default function QuickMatch() {
     }
   }, [location.state, location.search]);
 
+  const autoStartRequested =
+    getAutoStartFromState(location.state) || getAutoStartFromSearch(location.search);
+  const autoStartHandledRef = useRef(false);
+  const [pendingAutoStart, setPendingAutoStart] = useState(autoStartRequested);
+
+  useEffect(() => {
+    autoStartHandledRef.current = false;
+    setPendingAutoStart(autoStartRequested);
+  }, [autoStartRequested, location.key]);
+
+  useEffect(() => {
+    if (!pendingAutoStart || autoStartHandledRef.current) return;
+    if (gameStarted || isSearching) {
+      setPendingAutoStart(false);
+      autoStartHandledRef.current = true;
+      return;
+    }
+    if (!isConnected) return;
+
+    autoStartHandledRef.current = true;
+    startMatch(timeControl, user?.fullName || "Player");
+  }, [
+    gameStarted,
+    isConnected,
+    isSearching,
+    pendingAutoStart,
+    startMatch,
+    timeControl,
+    user?.fullName,
+  ]);
+
+  useEffect(() => {
+    if (!pendingAutoStart) return;
+    if (isSearching || gameStarted) {
+      setPendingAutoStart(false);
+      return;
+    }
+    if (queueStatus && /offline|unable to connect|disconnected/i.test(queueStatus)) {
+      setPendingAutoStart(false);
+    }
+  }, [gameStarted, isSearching, pendingAutoStart, queueStatus]);
+
+  const handleCancelMatch = () => {
+    setPendingAutoStart(false);
+    cancelMatch();
+  };
+
   const handleStartMatch = () => {
+    navigate(
+      `/play/quick?initial=${timeControl.initial}&increment=${timeControl.increment}`,
+      {
+        replace: true,
+        state: {
+          initial: timeControl.initial,
+          increment: timeControl.increment,
+        },
+      },
+    );
+    setPendingAutoStart(false);
     startMatch(timeControl, user?.fullName || "Player");
   };
 
@@ -126,10 +195,9 @@ export default function QuickMatch() {
       timeControl={timeControl}
       onTimeControlChange={setTimeControl}
       onStart={handleStartMatch}
-      isSearching={isSearching}
-      queueStatus={queueStatus}
+      isSearching={isSearching || pendingAutoStart}
       isConnected={isConnected}
-      onCancel={cancelMatch}
+      onCancel={handleCancelMatch}
     />
   );
 }

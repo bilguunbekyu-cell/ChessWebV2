@@ -79,7 +79,7 @@ export function GameCard({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `chessflow_${game.date.replace(/\./g, "-")}_${game._id.slice(-6)}.pgn`;
+      a.download = `neongambit_${game.date.replace(/\./g, "-")}_${game._id.slice(-6)}.pgn`;
       a.click();
       URL.revokeObjectURL(url);
     },
