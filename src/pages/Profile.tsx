@@ -76,6 +76,7 @@ export default function Profile() {
           memberSince={memberSince}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
+          isMe={true}
         />
 
         <div className="px-4 lg:px-6 py-6">

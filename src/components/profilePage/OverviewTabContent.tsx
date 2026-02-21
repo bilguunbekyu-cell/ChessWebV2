@@ -4,6 +4,8 @@ import { ProfileStats, TabType } from "./types";
 import { GameOutcomesCard } from "./GameOutcomesCard";
 import { RecentGames } from "./RecentGames";
 import { FormatStatsCard } from "./FormatStatsCard";
+import { RatingTimelineCard } from "./RatingTimelineCard";
+import { PoolLeaderboardCard } from "./PoolLeaderboardCard";
 
 interface OverviewTabContentProps {
   stats: ProfileStats;
@@ -31,6 +33,8 @@ export function OverviewTabContent({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <GameOutcomesCard stats={stats} />
         <FormatStatsCard />
+        <RatingTimelineCard />
+        <PoolLeaderboardCard />
       </div>
 
       <RecentGames

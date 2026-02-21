@@ -15,7 +15,20 @@ import {
   eliminateFourPlayerColor,
 } from "./utils/fourPlayerEngine.js";
 import { connectDB } from "./config/db.js";
-import { Friend } from "./models/index.js";
+import { Friend, RatingEvent, User } from "./models/index.js";
+import {
+  gamesFieldForPool,
+  getRatingPoolForTimeControl,
+  ratingFieldForPool,
+} from "./utils/elo.js";
+import {
+  DEFAULT_GLICKO_RD,
+  DEFAULT_GLICKO_VOLATILITY,
+  lastRatedAtFieldForPool,
+  rdFieldForPool,
+  updateGlickoPair,
+  volatilityFieldForPool,
+} from "./utils/glicko2.js";
 import { seedPuzzles, seedGamePageConfig, seedBots } from "./seeds/index.js";
 import {
   authRoutes,
@@ -32,6 +45,7 @@ import {
   adminFeaturedEventsRoutes,
   lichessRoutes,
   friendsRoutes,
+  ratingsRoutes,
 } from "./routes/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -47,12 +61,26 @@ const io = new Server(server, {
   },
 });
 
-const waitingQueues = new Map(); // key -> socket ids
-const games = new Map(); // gameId -> { room, chess, players, timeControl, variant, chess960 }
+const waitingQueues = new Map(); // key -> [{ socketId, rating, joinedAt, pool }]
+const games = new Map(); // gameId -> { room, chess, players, playerUsers, timeControl, variant, chess960, isRated }
 const fourPlayerQueues = new Map(); // key -> socket ids
 const fourPlayerGames = new Map(); // gameId -> { room, state, playersByColor, socketToColor, timeControl }
 const userSockets = new Map(); // userId -> Set<socketId>
 const pendingChallenges = new Map(); // challengeId -> challenge metadata
+const userPresence = new Map(); // userId -> { status, lastSeenAt, lastActiveAt, lastPersistedAt }
+const MIN_RATED_PLIES = 5;
+const INITIAL_MATCH_RANGE = 50;
+const MATCH_RANGE_STEP = 25;
+const MATCH_RANGE_STEP_SECONDS = 5;
+const MAX_MATCH_RANGE = 500;
+const PRESENCE_DB_WRITE_INTERVAL_MS = 45 * 1000;
+const PRESENCE_VALID_STATUSES = new Set([
+  "online",
+  "offline",
+  "searching_match",
+  "in_game",
+  "away",
+]);
 
 // Middleware
 app.use(express.json());
@@ -92,6 +120,7 @@ app.use("/api/admin/featured-events", adminFeaturedEventsRoutes);
 app.use("/api/featured-events", featuredEventsRoutes);
 app.use("/api/lichess", lichessRoutes);
 app.use("/api/friends", friendsRoutes);
+app.use("/api/ratings", ratingsRoutes);
 
 function getQueueKey(timeControl, variant) {
   const initial = Number(timeControl?.initial ?? 300);
@@ -105,6 +134,40 @@ function getQueue(key) {
     waitingQueues.set(key, []);
   }
   return waitingQueues.get(key);
+}
+
+function getExpandedMatchRange(waitMs) {
+  const safeWaitMs = Math.max(0, Number(waitMs) || 0);
+  const steps = Math.floor(safeWaitMs / (MATCH_RANGE_STEP_SECONDS * 1000));
+  return Math.min(
+    MAX_MATCH_RANGE,
+    INITIAL_MATCH_RANGE + steps * MATCH_RANGE_STEP,
+  );
+}
+
+function pruneMatchQueue(queueKey) {
+  const queue = getQueue(queueKey);
+  const nextQueue = [];
+
+  for (const rawEntry of queue) {
+    const entry =
+      typeof rawEntry === "string"
+        ? { socketId: rawEntry, rating: 1200, joinedAt: Date.now() }
+        : rawEntry;
+    const socket = io.sockets.sockets.get(entry.socketId);
+    if (
+      socket &&
+      socket.data.inQueue &&
+      !socket.data.gameId &&
+      !socket.data.fourPlayerGameId &&
+      socket.data.queueKey === queueKey
+    ) {
+      nextQueue.push(entry);
+    }
+  }
+
+  waitingQueues.set(queueKey, nextQueue);
+  return nextQueue;
 }
 
 function parseCookies(header = "") {
@@ -141,6 +204,170 @@ function normalizeId(value) {
 
 function getUserRoom(userId) {
   return `user:${userId}`;
+}
+
+function normalizePresenceStatus(value) {
+  const status = String(value || "offline").trim().toLowerCase();
+  return PRESENCE_VALID_STATUSES.has(status) ? status : "offline";
+}
+
+function toIsoOrNull(value) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (!Number.isFinite(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
+function ensurePresenceEntry(userId) {
+  const normalizedUserId = normalizeId(userId);
+  if (!normalizedUserId) return null;
+  if (!userPresence.has(normalizedUserId)) {
+    userPresence.set(normalizedUserId, {
+      status: "offline",
+      lastSeenAt: null,
+      lastActiveAt: null,
+      lastPersistedAt: 0,
+    });
+  }
+  return userPresence.get(normalizedUserId);
+}
+
+function getPresencePayload(userId) {
+  const entry = ensurePresenceEntry(userId);
+  if (!entry) {
+    return {
+      status: "offline",
+      lastSeenAt: null,
+      lastActiveAt: null,
+    };
+  }
+  return {
+    status: normalizePresenceStatus(entry.status),
+    lastSeenAt: toIsoOrNull(entry.lastSeenAt),
+    lastActiveAt: toIsoOrNull(entry.lastActiveAt),
+  };
+}
+
+function emitPresenceState(userId) {
+  const normalizedUserId = normalizeId(userId);
+  if (!normalizedUserId) return;
+  const socketIds = userSockets.get(normalizedUserId);
+  if (!socketIds || socketIds.size === 0) return;
+
+  const payload = getPresencePayload(normalizedUserId);
+  for (const socketId of socketIds) {
+    io.to(socketId).emit("presenceState", payload);
+  }
+}
+
+function persistPresence(userId, force = false) {
+  const normalizedUserId = normalizeId(userId);
+  if (!normalizedUserId) return;
+  const entry = ensurePresenceEntry(normalizedUserId);
+  if (!entry) return;
+
+  const now = Date.now();
+  if (
+    !force &&
+    now - Number(entry.lastPersistedAt || 0) < PRESENCE_DB_WRITE_INTERVAL_MS
+  ) {
+    return;
+  }
+
+  entry.lastPersistedAt = now;
+  const update = {
+    presenceStatus: normalizePresenceStatus(entry.status),
+    lastActiveAt: entry.lastActiveAt || null,
+  };
+  if (entry.lastSeenAt) {
+    update.lastSeenAt = entry.lastSeenAt;
+  }
+  if (update.presenceStatus === "offline" && !update.lastSeenAt) {
+    update.lastSeenAt = new Date();
+  }
+
+  User.updateOne({ _id: normalizedUserId }, { $set: update }).catch((error) => {
+    console.error("Presence update error:", error);
+  });
+}
+
+function setUserPresence(
+  userId,
+  status,
+  { markSeen = false, forcePersist = false } = {},
+) {
+  const normalizedUserId = normalizeId(userId);
+  if (!normalizedUserId) return;
+
+  const entry = ensurePresenceEntry(normalizedUserId);
+  if (!entry) return;
+  const now = new Date();
+
+  entry.status = normalizePresenceStatus(status);
+  entry.lastActiveAt = now;
+  if (markSeen) {
+    entry.lastSeenAt = now;
+  }
+
+  emitPresenceState(normalizedUserId);
+  persistPresence(normalizedUserId, forcePersist);
+}
+
+function socketPresenceStatus(socket) {
+  if (socket?.data?.gameId || socket?.data?.fourPlayerGameId) {
+    return "in_game";
+  }
+  if (socket?.data?.inQueue || socket?.data?.inFourPlayerQueue) {
+    return "searching_match";
+  }
+  return "online";
+}
+
+function syncUserPresenceFromSockets(userId, { forcePersist = false } = {}) {
+  const normalizedUserId = normalizeId(userId);
+  if (!normalizedUserId) return;
+
+  const socketIds = userSockets.get(normalizedUserId);
+  if (!socketIds || socketIds.size === 0) {
+    setUserPresence(normalizedUserId, "offline", {
+      markSeen: true,
+      forcePersist: true,
+    });
+    return;
+  }
+
+  let nextStatus = "online";
+  const toDelete = [];
+  for (const socketId of socketIds) {
+    const socket = io.sockets.sockets.get(socketId);
+    if (!socket) {
+      toDelete.push(socketId);
+      continue;
+    }
+
+    const status = socketPresenceStatus(socket);
+    if (status === "in_game") {
+      nextStatus = "in_game";
+      break;
+    }
+    if (status === "searching_match") {
+      nextStatus = "searching_match";
+    }
+  }
+
+  if (toDelete.length > 0) {
+    toDelete.forEach((socketId) => socketIds.delete(socketId));
+    if (socketIds.size === 0) {
+      userSockets.delete(normalizedUserId);
+      setUserPresence(normalizedUserId, "offline", {
+        markSeen: true,
+        forcePersist: true,
+      });
+      return;
+    }
+  }
+
+  setUserPresence(normalizedUserId, nextStatus, { forcePersist });
 }
 
 function registerUserSocket(userId, socketId) {
@@ -788,7 +1015,10 @@ function tryHandleChess960Castling(game, moverColor, from, to) {
 
 function removeFromQueues(socketId) {
   for (const queue of waitingQueues.values()) {
-    const idx = queue.indexOf(socketId);
+    const idx = queue.findIndex((entry) => {
+      if (typeof entry === "string") return entry === socketId;
+      return entry.socketId === socketId;
+    });
     if (idx !== -1) queue.splice(idx, 1);
   }
 }
@@ -828,13 +1058,21 @@ function serializeFourPlayerPlayers(playersByColor) {
 function clearFourPlayerGameForPlayers(game) {
   FOUR_PLAYER_COLORS.forEach((color) => {
     const player = game.playersByColor[color];
-    if (!player?.socketId) return;
+    const playerUserId = normalizeId(player?.userId);
+    if (!player?.socketId) {
+      syncUserPresenceFromSockets(playerUserId);
+      return;
+    }
     const sock = io.sockets.sockets.get(player.socketId);
-    if (!sock) return;
+    if (!sock) {
+      syncUserPresenceFromSockets(playerUserId);
+      return;
+    }
     sock.leave(game.room);
     sock.data.fourPlayerGameId = null;
     sock.data.inFourPlayerQueue = false;
     sock.data.fourPlayerQueueKey = null;
+    syncUserPresenceFromSockets(playerUserId);
   });
 }
 
@@ -870,6 +1108,8 @@ function forfeitFourPlayerSocket(socket, reason = "player_left") {
   socket.data.fourPlayerGameId = null;
   socket.data.inFourPlayerQueue = false;
   socket.data.fourPlayerQueueKey = null;
+  const userId = normalizeId(socket.data.userId);
+  syncUserPresenceFromSockets(userId);
   if (!game) return;
 
   const color = game.socketToColor[socket.id];
@@ -917,6 +1157,8 @@ function queueFourPlayerStatus(socket, queueKey) {
 function clearGameForPlayers(game) {
   const whiteSocket = io.sockets.sockets.get(game.players.white);
   const blackSocket = io.sockets.sockets.get(game.players.black);
+  const whiteUserId = normalizeId(game?.playerUsers?.white);
+  const blackUserId = normalizeId(game?.playerUsers?.black);
   if (whiteSocket) {
     whiteSocket.data.gameId = null;
     whiteSocket.data.inQueue = false;
@@ -927,12 +1169,223 @@ function clearGameForPlayers(game) {
     blackSocket.data.inQueue = false;
     blackSocket.data.queueKey = null;
   }
+  syncUserPresenceFromSockets(whiteUserId);
+  syncUserPresenceFromSockets(blackUserId);
 }
 
-function emitGameOver(gameId, reason, winner) {
+function gamePlies(game) {
+  if (!game?.chess || typeof game.chess.history !== "function") return 0;
+  const history = game.chess.history();
+  return Array.isArray(history) ? history.length : 0;
+}
+
+function ratingResultForColor(winnerColor, color) {
+  if (winnerColor !== "w" && winnerColor !== "b") return "D";
+  return winnerColor === color ? "W" : "L";
+}
+
+async function applyGameRatingUpdates(gameId, game, reason, winner) {
+  const pool = getRatingPoolForTimeControl(game?.timeControl);
+  const ratingField = ratingFieldForPool(pool);
+  const gamesField = gamesFieldForPool(pool);
+  const rdField = rdFieldForPool(pool);
+  const volatilityField = volatilityFieldForPool(pool);
+  const lastRatedAtField = lastRatedAtFieldForPool(pool);
+
+  if (!game?.isRated) {
+    return { rated: false, applied: false, pool, skippedReason: "not_rated" };
+  }
+
+  const whiteUserId = normalizeId(game?.playerUsers?.white);
+  const blackUserId = normalizeId(game?.playerUsers?.black);
+  if (!whiteUserId || !blackUserId || whiteUserId === blackUserId) {
+    return {
+      rated: true,
+      applied: false,
+      pool,
+      skippedReason: "invalid_players",
+    };
+  }
+
+  if (reason !== "checkmate" && gamePlies(game) < MIN_RATED_PLIES) {
+    return {
+      rated: true,
+      applied: false,
+      pool,
+      skippedReason: `minimum_${MIN_RATED_PLIES}_plies`,
+    };
+  }
+
+  const [whiteUser, blackUser] = await Promise.all([
+    User.findById(whiteUserId),
+    User.findById(blackUserId),
+  ]);
+  if (!whiteUser || !blackUser) {
+    return {
+      rated: true,
+      applied: false,
+      pool,
+      skippedReason: "player_not_found",
+    };
+  }
+
+  const winnerColor = winner === "w" || winner === "b" ? winner : null;
+  const whitePoolRating = whiteUser[ratingField] ?? whiteUser.rating ?? 1200;
+  const blackPoolRating = blackUser[ratingField] ?? blackUser.rating ?? 1200;
+  const whitePoolRd = whiteUser[rdField] ?? DEFAULT_GLICKO_RD;
+  const blackPoolRd = blackUser[rdField] ?? DEFAULT_GLICKO_RD;
+  const whitePoolVolatility =
+    whiteUser[volatilityField] ?? DEFAULT_GLICKO_VOLATILITY;
+  const blackPoolVolatility =
+    blackUser[volatilityField] ?? DEFAULT_GLICKO_VOLATILITY;
+  const whiteLastRatedAt = whiteUser[lastRatedAtField] ?? null;
+  const blackLastRatedAt = blackUser[lastRatedAtField] ?? null;
+  const whiteLegacyGames = Number(whiteUser.gamesPlayed ?? 0);
+  const blackLegacyGames = Number(blackUser.gamesPlayed ?? 0);
+  const whitePoolGames = Number.isFinite(Number(whiteUser[gamesField]))
+    ? Number(whiteUser[gamesField])
+    : Math.min(10, Math.max(0, whiteLegacyGames));
+  const blackPoolGames = Number.isFinite(Number(blackUser[gamesField]))
+    ? Number(blackUser[gamesField])
+    : Math.min(10, Math.max(0, blackLegacyGames));
+  const whiteWasProvisional = whitePoolGames < 10;
+  const blackWasProvisional = blackPoolGames < 10;
+  const playedAt = new Date();
+  const glicko = updateGlickoPair({
+    whiteRating: whitePoolRating,
+    whiteRd: whitePoolRd,
+    whiteVolatility: whitePoolVolatility,
+    whiteLastRatedAt,
+    blackRating: blackPoolRating,
+    blackRd: blackPoolRd,
+    blackVolatility: blackPoolVolatility,
+    blackLastRatedAt,
+    winnerColor,
+    now: playedAt,
+  });
+
+  whiteUser[ratingField] = glicko.white.newRating;
+  blackUser[ratingField] = glicko.black.newRating;
+  whiteUser[rdField] = glicko.white.newRd;
+  blackUser[rdField] = glicko.black.newRd;
+  whiteUser[volatilityField] = glicko.white.newVolatility;
+  blackUser[volatilityField] = glicko.black.newVolatility;
+  whiteUser[lastRatedAtField] = playedAt;
+  blackUser[lastRatedAtField] = playedAt;
+  whiteUser[gamesField] = whitePoolGames + 1;
+  blackUser[gamesField] = blackPoolGames + 1;
+  whiteUser.rating = glicko.white.newRating;
+  blackUser.rating = glicko.black.newRating;
+  whiteUser.gamesPlayed = (whiteUser.gamesPlayed ?? 0) + 1;
+  blackUser.gamesPlayed = (blackUser.gamesPlayed ?? 0) + 1;
+  if (winnerColor === "w") {
+    whiteUser.gamesWon = (whiteUser.gamesWon ?? 0) + 1;
+  } else if (winnerColor === "b") {
+    blackUser.gamesWon = (blackUser.gamesWon ?? 0) + 1;
+  }
+
+  await Promise.all([whiteUser.save(), blackUser.save()]);
+
+  try {
+    await RatingEvent.insertMany([
+      {
+        userId: whiteUser._id,
+        opponentId: blackUser._id,
+        pool,
+        gameId,
+        ts: playedAt,
+        result: ratingResultForColor(winnerColor, "w"),
+        reason,
+        ratingBefore: glicko.white.oldRating,
+        ratingAfter: glicko.white.newRating,
+        delta: glicko.white.delta,
+        rdBefore: glicko.white.rdBefore,
+        rdAfter: glicko.white.newRd,
+        volBefore: glicko.white.oldVolatility,
+        volAfter: glicko.white.newVolatility,
+        opponentRating: glicko.black.oldRating,
+        opponentRd: glicko.black.rdBefore,
+        isProvisional: whiteWasProvisional,
+        poolGamesBefore: whitePoolGames,
+        poolGamesAfter: whiteUser[gamesField],
+      },
+      {
+        userId: blackUser._id,
+        opponentId: whiteUser._id,
+        pool,
+        gameId,
+        ts: playedAt,
+        result: ratingResultForColor(winnerColor, "b"),
+        reason,
+        ratingBefore: glicko.black.oldRating,
+        ratingAfter: glicko.black.newRating,
+        delta: glicko.black.delta,
+        rdBefore: glicko.black.rdBefore,
+        rdAfter: glicko.black.newRd,
+        volBefore: glicko.black.oldVolatility,
+        volAfter: glicko.black.newVolatility,
+        opponentRating: glicko.white.oldRating,
+        opponentRd: glicko.white.rdBefore,
+        isProvisional: blackWasProvisional,
+        poolGamesBefore: blackPoolGames,
+        poolGamesAfter: blackUser[gamesField],
+      },
+    ]);
+  } catch (error) {
+    console.error("RatingEvent insert error:", error);
+  }
+
+  return {
+    rated: true,
+    applied: true,
+    pool,
+    white: {
+      userId: normalizeId(whiteUser._id),
+      oldRating: glicko.white.oldRating,
+      newRating: glicko.white.newRating,
+      delta: glicko.white.delta,
+      oldRd: glicko.white.rdBefore,
+      newRd: glicko.white.newRd,
+      oldVolatility: glicko.white.oldVolatility,
+      newVolatility: glicko.white.newVolatility,
+      gamesPlayed: whiteUser.gamesPlayed,
+      gamesWon: whiteUser.gamesWon ?? 0,
+      poolGamesPlayed: whiteUser[gamesField],
+      isProvisional: (whiteUser[gamesField] ?? 0) < 10,
+      wasProvisional: whiteWasProvisional,
+    },
+    black: {
+      userId: normalizeId(blackUser._id),
+      oldRating: glicko.black.oldRating,
+      newRating: glicko.black.newRating,
+      delta: glicko.black.delta,
+      oldRd: glicko.black.rdBefore,
+      newRd: glicko.black.newRd,
+      oldVolatility: glicko.black.oldVolatility,
+      newVolatility: glicko.black.newVolatility,
+      gamesPlayed: blackUser.gamesPlayed,
+      gamesWon: blackUser.gamesWon ?? 0,
+      poolGamesPlayed: blackUser[gamesField],
+      isProvisional: (blackUser[gamesField] ?? 0) < 10,
+      wasProvisional: blackWasProvisional,
+    },
+  };
+}
+
+async function emitGameOver(gameId, reason, winner) {
   const game = games.get(gameId);
   if (!game) return;
-  io.to(game.room).emit("gameOver", { gameId, reason, winner });
+  if (game.isEnding) return;
+  game.isEnding = true;
+
+  let elo = { rated: false, applied: false, skippedReason: "error" };
+  try {
+    elo = await applyGameRatingUpdates(gameId, game, reason, winner);
+  } catch (error) {
+    console.error("Elo update error:", error);
+  }
+
+  io.to(game.room).emit("gameOver", { gameId, reason, winner, elo });
   clearGameForPlayers(game);
   games.delete(gameId);
 }
@@ -977,6 +1430,7 @@ io.on("connection", (socket) => {
     socket.data.name = auth.fullName || socket.data.name || "Player";
     registerUserSocket(userId, socket.id);
     socket.join(getUserRoom(userId));
+    syncUserPresenceFromSockets(userId, { forcePersist: true });
 
     // Deliver account-level pending challenges when user comes online.
     for (const challenge of pendingChallenges.values()) {
@@ -992,7 +1446,13 @@ io.on("connection", (socket) => {
     }
   };
 
-  socket.on("findMatch", ({ name, timeControl, variant } = {}) => {
+  socket.on("presence:ping", () => {
+    const userId = normalizeId(socket.data.userId);
+    if (!userId) return;
+    syncUserPresenceFromSockets(userId);
+  });
+
+  socket.on("findMatch", async ({ name, timeControl, variant } = {}) => {
     if (socket.data.gameId || socket.data.fourPlayerGameId) return;
     socket.data.name = name || "Player";
     socket.data.inFourPlayerQueue = false;
@@ -1005,26 +1465,70 @@ io.on("connection", (socket) => {
     const normalizedVariant =
       requestedVariant === "fourPlayer" ? "standard" : requestedVariant;
     const queueKey = getQueueKey(normalizedTimeControl, normalizedVariant);
+    const pool = getRatingPoolForTimeControl(normalizedTimeControl);
+    const ratingField = ratingFieldForPool(pool);
+
+    let seekerRating = 1200;
+    const seekerUserId = normalizeId(socket.data.userId);
+    if (seekerUserId) {
+      try {
+        const seekerUser = await User.findById(seekerUserId)
+          .select(`${ratingField} rating`)
+          .lean();
+        const parsedRating = Number(
+          seekerUser?.[ratingField] ?? seekerUser?.rating ?? 1200,
+        );
+        if (Number.isFinite(parsedRating)) {
+          seekerRating = parsedRating;
+        }
+      } catch (error) {
+        console.error("findMatch rating lookup error:", error);
+      }
+    }
+
     removeFromQueues(socket.id);
     socket.data.inQueue = true;
     socket.data.queueKey = queueKey;
+    socket.data.queuePool = pool;
+    socket.data.queueRating = seekerRating;
+    syncUserPresenceFromSockets(seekerUserId);
 
-    const queue = getQueue(queueKey);
+    const queue = pruneMatchQueue(queueKey);
     let opponentSocket = null;
+    const now = Date.now();
+    const seekerRange = getExpandedMatchRange(0);
 
-    while (queue.length > 0 && !opponentSocket) {
-      const opponentId = queue.shift();
-      const candidate = io.sockets.sockets.get(opponentId);
-      if (
-        candidate &&
-        candidate.id !== socket.id &&
-        candidate.data.inQueue &&
-        !candidate.data.gameId &&
-        !candidate.data.fourPlayerGameId &&
-        candidate.data.queueKey === queueKey
-      ) {
-        opponentSocket = candidate;
+    let bestIndex = -1;
+    let bestRatingDiff = Infinity;
+    for (let i = 0; i < queue.length; i += 1) {
+      const candidateEntry = queue[i];
+      if (!candidateEntry || candidateEntry.socketId === socket.id) continue;
+
+      const candidateSocket = io.sockets.sockets.get(candidateEntry.socketId);
+      if (!candidateSocket) continue;
+
+      const candidateRating = Number(candidateEntry.rating);
+      if (!Number.isFinite(candidateRating)) continue;
+
+      const candidateWaitMs = Math.max(
+        0,
+        now - Number(candidateEntry.joinedAt || now),
+      );
+      const candidateRange = getExpandedMatchRange(candidateWaitMs);
+      const ratingDiff = Math.abs(candidateRating - seekerRating);
+
+      if (ratingDiff <= seekerRange && ratingDiff <= candidateRange) {
+        if (ratingDiff < bestRatingDiff) {
+          bestRatingDiff = ratingDiff;
+          bestIndex = i;
+        }
       }
+    }
+
+    if (bestIndex !== -1) {
+      const [selected] = queue.splice(bestIndex, 1);
+      waitingQueues.set(queueKey, queue);
+      opponentSocket = io.sockets.sockets.get(selected.socketId);
     }
 
     if (opponentSocket) {
@@ -1044,18 +1548,30 @@ io.on("connection", (socket) => {
           : new Chess(initialPosition.fen);
       const white = Math.random() < 0.5 ? socket.id : opponentSocket.id;
       const black = white === socket.id ? opponentSocket.id : socket.id;
+      const socketToUser = {
+        [socket.id]: normalizeId(socket.data.userId),
+        [opponentSocket.id]: normalizeId(opponentSocket.data.userId),
+      };
 
       games.set(gameId, {
         room,
         chess,
         players: { white, black },
+        playerUsers: {
+          white: socketToUser[white] || "",
+          black: socketToUser[black] || "",
+        },
         timeControl: normalizedTimeControl,
         variant: normalizedVariant,
         chess960: initialPosition.chess960,
+        isRated: true,
       });
 
       socket.data.gameId = gameId;
       opponentSocket.data.gameId = gameId;
+      const opponentUserId = normalizeId(opponentSocket.data.userId);
+      syncUserPresenceFromSockets(seekerUserId);
+      syncUserPresenceFromSockets(opponentUserId);
 
       socket.join(room);
       opponentSocket.join(room);
@@ -1078,12 +1594,21 @@ io.on("connection", (socket) => {
         variant: normalizedVariant,
       });
     } else {
-      if (!queue.includes(socket.id)) {
-        queue.push(socket.id);
+      if (!queue.some((entry) => entry.socketId === socket.id)) {
+        queue.push({
+          socketId: socket.id,
+          rating: seekerRating,
+          joinedAt: now,
+          pool,
+        });
       }
+      waitingQueues.set(queueKey, queue);
       socket.emit("queued", {
         timeControl: normalizedTimeControl,
         variant: normalizedVariant,
+        pool,
+        ratingRange: seekerRange,
+        playerRating: seekerRating,
       });
     }
   });
@@ -1103,6 +1628,7 @@ io.on("connection", (socket) => {
     removeFromFourPlayerQueues(socket.id);
     socket.data.inFourPlayerQueue = true;
     socket.data.fourPlayerQueueKey = queueKey;
+    syncUserPresenceFromSockets(normalizeId(socket.data.userId));
 
     const queue = getFourPlayerQueue(queueKey);
     if (!queue.includes(socket.id)) {
@@ -1164,6 +1690,9 @@ io.on("connection", (socket) => {
       playerSocket.data.fourPlayerQueueKey = null;
       playerSocket.join(room);
     });
+    selectedSockets.forEach((playerSocket) => {
+      syncUserPresenceFromSockets(normalizeId(playerSocket.data.userId));
+    });
 
     const game = {
       id: gameId,
@@ -1191,6 +1720,7 @@ io.on("connection", (socket) => {
     socket.data.inFourPlayerQueue = false;
     socket.data.fourPlayerQueueKey = null;
     removeFromFourPlayerQueues(socket.id);
+    syncUserPresenceFromSockets(normalizeId(socket.data.userId));
     socket.emit("fourPlayerQueueCancelled");
   });
 
@@ -1418,16 +1948,28 @@ io.on("connection", (socket) => {
           blackSocketId = challengerSocket.id;
         }
       }
+      const socketToUser = {
+        [challengerSocket.id]: normalizeId(challenge.fromUserId),
+        [receiverSocket.id]: normalizeId(challenge.toUserId),
+      };
 
       games.set(gameId, {
         room,
         chess,
         players: { white: whiteSocketId, black: blackSocketId },
+        playerUsers: {
+          white: socketToUser[whiteSocketId] || "",
+          black: socketToUser[blackSocketId] || "",
+        },
         timeControl: normalizedTimeControl,
+        variant: normalizeVariant(challenge.gameType),
+        isRated: challenge.rated === true,
       });
 
       challengerSocket.data.gameId = gameId;
       receiverSocket.data.gameId = gameId;
+      syncUserPresenceFromSockets(normalizeId(challengerSocket.data.userId));
+      syncUserPresenceFromSockets(normalizeId(receiverSocket.data.userId));
       challengerSocket.join(room);
       receiverSocket.join(room);
 
@@ -1473,6 +2015,7 @@ io.on("connection", (socket) => {
     socket.data.inQueue = false;
     socket.data.queueKey = null;
     removeFromQueues(socket.id);
+    syncUserPresenceFromSockets(normalizeId(socket.data.userId));
     socket.emit("queueCancelled");
   });
 
@@ -1618,6 +2161,7 @@ io.on("connection", (socket) => {
 
     const userId = normalizeId(socket.data.userId);
     unregisterUserSocket(userId, socket.id);
+    syncUserPresenceFromSockets(userId, { forcePersist: true });
 
     if (userId && !userSockets.has(userId)) {
       for (const [challengeId, challenge] of pendingChallenges.entries()) {

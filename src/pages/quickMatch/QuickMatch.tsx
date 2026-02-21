@@ -134,14 +134,16 @@ export default function QuickMatch() {
 
   useEffect(() => {
     const selectedVariant =
-      getVariantFromState(location.state) || getVariantFromSearch(location.search);
+      getVariantFromState(location.state) ||
+      getVariantFromSearch(location.search);
     if (selectedVariant) {
       setVariant(selectedVariant);
     }
   }, [location.state, location.search]);
 
   const autoStartRequested =
-    getAutoStartFromState(location.state) || getAutoStartFromSearch(location.search);
+    getAutoStartFromState(location.state) ||
+    getAutoStartFromSearch(location.search);
   const autoStartHandledRef = useRef(false);
   const [pendingAutoStart, setPendingAutoStart] = useState(autoStartRequested);
 
@@ -178,7 +180,10 @@ export default function QuickMatch() {
       setPendingAutoStart(false);
       return;
     }
-    if (queueStatus && /offline|unable to connect|disconnected/i.test(queueStatus)) {
+    if (
+      queueStatus &&
+      /offline|unable to connect|disconnected/i.test(queueStatus)
+    ) {
       setPendingAutoStart(false);
     }
   }, [gameStarted, isSearching, pendingAutoStart, queueStatus]);
@@ -196,17 +201,14 @@ export default function QuickMatch() {
     if (variant !== "standard") {
       params.set("variant", variant);
     }
-    navigate(
-      `/play/quick?${params.toString()}`,
-      {
-        replace: true,
-        state: {
-          initial: timeControl.initial,
-          increment: timeControl.increment,
-          variant,
-        },
+    navigate(`/play/quick?${params.toString()}`, {
+      replace: true,
+      state: {
+        initial: timeControl.initial,
+        increment: timeControl.increment,
+        variant,
       },
-    );
+    });
     setPendingAutoStart(false);
     startMatch(timeControl, user?.fullName || "Player", variant);
   };
@@ -255,6 +257,7 @@ export default function QuickMatch() {
       onVariantChange={setVariant}
       onStart={handleStartMatch}
       isSearching={isSearching || pendingAutoStart}
+      queueStatus={queueStatus}
       isConnected={isConnected}
       onCancel={handleCancelMatch}
     />

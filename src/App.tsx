@@ -25,6 +25,7 @@ import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
+import UserProfile from "./pages/UserProfile";
 import Analyze from "./pages/analyze";
 import Analyze960 from "./pages/analyze960";
 import AdminDashboard from "./pages/adminDashboard";
@@ -156,6 +157,7 @@ function Layout({ children }: { children: React.ReactNode }) {
       "/register",
       "/profile",
     ].includes(location.pathname) ||
+    location.pathname.startsWith("/u/") ||
     location.pathname.startsWith("/puzzles/train") ||
     location.pathname.startsWith("/analyze") ||
     location.pathname.startsWith("/admin") ||
@@ -362,6 +364,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/:userId"
+            element={
+              <ProtectedRoute>
+                <UserProfile />
               </ProtectedRoute>
             }
           />

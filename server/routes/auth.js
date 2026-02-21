@@ -5,16 +5,51 @@ import { authMiddleware } from "../middleware/index.js";
 
 const router = Router();
 
+const VALID_PRESENCE = new Set([
+  "online",
+  "offline",
+  "searching_match",
+  "in_game",
+  "away",
+]);
+
+function normalizePresenceStatus(value) {
+  const status = String(value || "offline")
+    .trim()
+    .toLowerCase();
+  return VALID_PRESENCE.has(status) ? status : "offline";
+}
+
 function toPublicUser(user) {
   if (!user) return null;
+  const baseRating = user.rating ?? 1200;
   return {
     id: String(user._id),
     email: user.email,
     fullName: user.fullName,
     avatar: user.avatar || "",
-    rating: user.rating ?? 1200,
+    rating: baseRating,
+    bulletRating: user.bulletRating ?? baseRating,
+    blitzRating: user.blitzRating ?? baseRating,
+    rapidRating: user.rapidRating ?? baseRating,
+    classicalRating: user.classicalRating ?? baseRating,
+    bulletRd: user.bulletRd ?? 350,
+    blitzRd: user.blitzRd ?? 350,
+    rapidRd: user.rapidRd ?? 350,
+    classicalRd: user.classicalRd ?? 350,
+    bulletVolatility: user.bulletVolatility ?? 0.06,
+    blitzVolatility: user.blitzVolatility ?? 0.06,
+    rapidVolatility: user.rapidVolatility ?? 0.06,
+    classicalVolatility: user.classicalVolatility ?? 0.06,
+    bulletGames: user.bulletGames ?? 0,
+    blitzGames: user.blitzGames ?? 0,
+    rapidGames: user.rapidGames ?? 0,
+    classicalGames: user.classicalGames ?? 0,
     gamesPlayed: user.gamesPlayed ?? 0,
     gamesWon: user.gamesWon ?? 0,
+    presenceStatus: normalizePresenceStatus(user.presenceStatus),
+    lastSeenAt: user.lastSeenAt ?? null,
+    lastActiveAt: user.lastActiveAt ?? null,
     puzzleElo: user.puzzleElo ?? 0,
   };
 }
@@ -154,6 +189,54 @@ router.get("/me", authMiddleware, async (req, res) => {
     res.json({ user: toPublicUser(user) });
   } catch (err) {
     console.error("Get user error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Get public profile of any user by ID
+router.get("/users/:userId", authMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const viewerId = req.user.userId;
+    const user = await User.findById(userId).select("-password");
+    if (!user || user.banned) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Determine relationship
+    let relationship = "none";
+    if (String(user._id) === String(viewerId)) {
+      relationship = "self";
+    } else {
+      const { default: Friend } = await import("../models/Friend.js");
+      const isFriend = await Friend.findOne({
+        userId: viewerId,
+        friendId: user._id,
+      }).lean();
+      if (isFriend) relationship = "friends";
+    }
+
+    // Fetch game history count
+    const { default: HistoryModel } = await import("../models/History.js");
+    const totalGames = await HistoryModel.countDocuments({ userId: user._id });
+    const totalWins = await HistoryModel.countDocuments({
+      userId: user._id,
+      $or: [
+        { result: "1-0", playAs: "white" },
+        { result: "0-1", playAs: "black" },
+      ],
+    });
+
+    res.json({
+      user: {
+        ...toPublicUser(user),
+        gamesPlayed: Math.max(user.gamesPlayed ?? 0, totalGames),
+        gamesWon: Math.max(user.gamesWon ?? 0, totalWins),
+      },
+      relationship,
+    });
+  } catch (err) {
+    console.error("Public profile error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

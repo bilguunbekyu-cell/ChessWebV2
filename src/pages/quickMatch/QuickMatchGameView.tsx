@@ -23,7 +23,11 @@ interface QuickMatchGameViewProps {
   optionSquares: Record<string, CSSProperties>;
   preMoveSquares: Record<string, CSSProperties>;
   onSquareClick: (square: Square) => void;
-  onPieceDrop: (sourceSquare: Square, targetSquare: Square, piece?: string) => boolean;
+  onPieceDrop: (
+    sourceSquare: Square,
+    targetSquare: Square,
+    piece?: string,
+  ) => boolean;
   onCancelSelection: () => void;
   isDraggablePiece: (sourceSquare: Square) => boolean;
   setOpponentTime: (time: number) => void;
@@ -36,7 +40,11 @@ interface QuickMatchGameViewProps {
   variant?: MatchVariant;
   promotionToSquare?: Square | null;
   showPromotionDialog?: boolean;
-  onPromotionPieceSelect?: (piece?: string, fromSquare?: Square, toSquare?: Square) => boolean;
+  onPromotionPieceSelect?: (
+    piece?: string,
+    fromSquare?: Square,
+    toSquare?: Square,
+  ) => boolean;
 }
 
 export function QuickMatchGameView({
@@ -128,9 +136,7 @@ export function QuickMatchGameView({
             <PlayerInfo
               name={opponentName || "Opponent"}
               subtitle="Online"
-              avatarLetter={
-                opponentName?.substring(0, 1).toUpperCase() || "O"
-              }
+              avatarLetter={opponentName?.substring(0, 1).toUpperCase() || "O"}
               avatarStyle="opponent"
               initialTime={gameSettings.timeControl.initial}
               increment={gameSettings.timeControl.increment}
@@ -226,7 +232,12 @@ export function QuickMatchGameView({
                           className="flex items-center text-xs font-mono"
                         >
                           <span className="w-8 text-gray-400 dark:text-gray-500">
-                            {Math.floor((moves.length - displayMoves.length) / 2) + i + 1}.
+                            {Math.floor(
+                              (moves.length - displayMoves.length) / 2,
+                            ) +
+                              i +
+                              1}
+                            .
                           </span>
                           <span className="flex-1 px-2 text-gray-800 dark:text-gray-200">
                             {displayMoves[i * 2]}

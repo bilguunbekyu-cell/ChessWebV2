@@ -7,12 +7,14 @@ interface ProfileAvatarUploadProps {
   currentAvatar?: string;
   userName?: string;
   onAvatarChange?: (newAvatar: string) => void;
+  size?: "md" | "lg" | "xl";
 }
 
 export function ProfileAvatarUpload({
   currentAvatar,
   userName,
   onAvatarChange,
+  size = "md",
 }: ProfileAvatarUploadProps) {
   const { setUser, user } = useAuthStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -109,11 +111,19 @@ export function ProfileAvatarUpload({
     setError(null);
   };
 
+  const avatarSizeClass =
+    size === "xl" ? "w-40 h-40" : size === "lg" ? "w-32 h-32" : "w-28 h-28";
+  const initialsClass = size === "xl" ? "text-5xl" : "text-4xl";
+  const editButtonClass =
+    size === "xl" ? "w-10 h-10" : size === "lg" ? "w-9 h-9" : "w-9 h-9";
+
   return (
     <>
       {/* Avatar with edit button */}
       <div className="relative group">
-        <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg ring-4 ring-white dark:ring-gray-900 overflow-hidden">
+        <div
+          className={`${avatarSizeClass} rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg ring-4 ring-white dark:ring-gray-900 overflow-hidden`}
+        >
           {currentAvatar ? (
             <img
               src={currentAvatar}
@@ -121,7 +131,7 @@ export function ProfileAvatarUpload({
               className="w-full h-full object-cover"
             />
           ) : (
-            <span className="text-white font-bold text-4xl">
+            <span className={`text-white font-bold ${initialsClass}`}>
               {getInitials(userName)}
             </span>
           )}
@@ -130,7 +140,7 @@ export function ProfileAvatarUpload({
         {/* Edit button overlay */}
         <button
           onClick={() => setIsModalOpen(true)}
-          className="absolute bottom-0 right-0 w-9 h-9 bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center border-2 border-white dark:border-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group-hover:scale-110"
+          className={`absolute bottom-0 right-0 ${editButtonClass} bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center border-2 border-white dark:border-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group-hover:scale-110`}
           title="Change avatar"
         >
           <Camera size={16} className="text-gray-700 dark:text-gray-300" />

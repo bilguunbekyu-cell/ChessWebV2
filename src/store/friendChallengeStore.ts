@@ -46,6 +46,19 @@ export interface SendFriendChallengeInput {
   fromRating?: number;
 }
 
+export type PresenceStatus =
+  | "online"
+  | "offline"
+  | "searching_match"
+  | "in_game"
+  | "away";
+
+interface PresenceStatePayload {
+  status?: PresenceStatus;
+  lastSeenAt?: string | null;
+  lastActiveAt?: string | null;
+}
+
 interface FriendChallengeAck {
   success: boolean;
   error?: string;
@@ -59,6 +72,9 @@ interface FriendChallengeState {
   socket: Socket | null;
   currentUserId: string | null;
   isConnected: boolean;
+  presenceStatus: PresenceStatus | null;
+  lastSeenAt: string | null;
+  lastActiveAt: string | null;
   incomingChallenges: FriendChallenge[];
   activeGame: FriendGameStartedPayload | null;
   lastError: string | null;
@@ -105,11 +121,34 @@ function emitWithAck<TResponse>(
   });
 }
 
+let heartbeatTimer: number | null = null;
+
+function stopHeartbeat() {
+  if (heartbeatTimer !== null) {
+    window.clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+}
+
+function startHeartbeat(socket: Socket) {
+  stopHeartbeat();
+  const sendPing = () => {
+    if (!socket.connected) return;
+    socket.emit("presence:ping");
+  };
+
+  sendPing();
+  heartbeatTimer = window.setInterval(sendPing, 30_000);
+}
+
 export const useFriendChallengeStore = create<FriendChallengeState>(
   (set, get) => ({
     socket: null,
     currentUserId: null,
     isConnected: false,
+    presenceStatus: null,
+    lastSeenAt: null,
+    lastActiveAt: null,
     incomingChallenges: [],
     activeGame: null,
     lastError: null,
@@ -137,17 +176,29 @@ export const useFriendChallengeStore = create<FriendChallengeState>(
       const socket = io(SOCKET_URL, { withCredentials: true });
 
       socket.on("connect", () => {
+        startHeartbeat(socket);
         set({ isConnected: true, lastError: null });
       });
 
       socket.on("disconnect", () => {
-        set({ isConnected: false });
+        stopHeartbeat();
+        set({ isConnected: false, presenceStatus: "offline" });
       });
 
       socket.on("connect_error", () => {
+        stopHeartbeat();
         set({
           isConnected: false,
+          presenceStatus: "offline",
           lastError: "Unable to connect to realtime server.",
+        });
+      });
+
+      socket.on("presenceState", (payload: PresenceStatePayload) => {
+        set({
+          presenceStatus: payload?.status || null,
+          lastSeenAt: payload?.lastSeenAt ?? null,
+          lastActiveAt: payload?.lastActiveAt ?? null,
         });
       });
 
@@ -207,6 +258,9 @@ export const useFriendChallengeStore = create<FriendChallengeState>(
         socket,
         currentUserId: nextUserId,
         isConnected: socket.connected,
+        presenceStatus: null,
+        lastSeenAt: null,
+        lastActiveAt: null,
         incomingChallenges: [],
         activeGame: null,
         lastError: null,
@@ -216,6 +270,7 @@ export const useFriendChallengeStore = create<FriendChallengeState>(
 
     disconnect: () => {
       const socket = get().socket;
+      stopHeartbeat();
       if (socket) {
         socket.removeAllListeners();
         socket.disconnect();
@@ -224,6 +279,9 @@ export const useFriendChallengeStore = create<FriendChallengeState>(
         socket: null,
         currentUserId: null,
         isConnected: false,
+        presenceStatus: null,
+        lastSeenAt: null,
+        lastActiveAt: null,
         incomingChallenges: [],
         activeGame: null,
         lastError: null,

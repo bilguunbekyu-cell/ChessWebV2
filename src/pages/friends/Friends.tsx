@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, UserPlus, UserX, MessageCircle } from "lucide-react";
 import Sidebar from "../../components/Sidebar";
 import { useAuthStore } from "../../store/authStore";
@@ -22,8 +23,22 @@ interface SearchResult {
   rating?: number;
 }
 
+function resolveAvatarUrl(avatar?: string) {
+  if (!avatar) return "";
+  if (
+    avatar.startsWith("http://") ||
+    avatar.startsWith("https://") ||
+    avatar.startsWith("data:") ||
+    avatar.startsWith("blob:")
+  ) {
+    return avatar;
+  }
+  return `${API_URL}${avatar.startsWith("/") ? "" : "/"}${avatar}`;
+}
+
 export default function Friends() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [newFriendName, setNewFriendName] = useState("");
@@ -196,11 +211,27 @@ export default function Friends() {
                     className="flex items-center justify-between gap-4 p-3 rounded-xl border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold">
-                        {friend.name.substring(0, 2).toUpperCase()}
-                      </div>
+                      <button
+                        type="button"
+                        className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold cursor-pointer overflow-hidden"
+                        onClick={() => navigate(`/u/${friend.id}`)}
+                      >
+                        {friend.avatar ? (
+                          <img
+                            src={resolveAvatarUrl(friend.avatar)}
+                            alt={friend.name}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          friend.name.substring(0, 2).toUpperCase()
+                        )}
+                      </button>
                       <div className="min-w-0">
-                        <div className="font-semibold truncate">
+                        <div
+                          className="font-semibold truncate cursor-pointer hover:text-teal-500 dark:hover:text-teal-400 transition-colors"
+                          onClick={() => navigate(`/u/${friend.id}`)}
+                        >
                           {friend.name}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -268,12 +299,33 @@ export default function Friends() {
                     key={result.id}
                     className="flex items-center justify-between gap-2 p-2 rounded-lg border border-gray-200 dark:border-gray-800"
                   >
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold truncate">
-                        {result.name}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {result.email || "No email"}
+                    <div className="min-w-0 flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 text-white text-xs font-bold overflow-hidden flex items-center justify-center shrink-0"
+                        onClick={() => navigate(`/u/${result.id}`)}
+                      >
+                        {result.avatar ? (
+                          <img
+                            src={resolveAvatarUrl(result.avatar)}
+                            alt={result.name}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          result.name.substring(0, 2).toUpperCase()
+                        )}
+                      </button>
+                      <div className="min-w-0">
+                        <div
+                          className="text-sm font-semibold truncate cursor-pointer hover:text-teal-500 dark:hover:text-teal-400 transition-colors"
+                          onClick={() => navigate(`/u/${result.id}`)}
+                        >
+                          {result.name}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {result.email || "No email"}
+                        </div>
                       </div>
                     </div>
                     <button

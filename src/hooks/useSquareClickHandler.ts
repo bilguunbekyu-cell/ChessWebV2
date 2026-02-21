@@ -10,7 +10,8 @@ import { OptionSquares } from "./useStockfishGameTypes";
 function extractPromotion(piece?: string): "q" | "r" | "b" | "n" {
   if (!piece) return "q";
   // react-chessboard format: "wQ", "bR", etc.
-  const ch = piece.length === 2 ? piece[1].toLowerCase() : piece[0].toLowerCase();
+  const ch =
+    piece.length === 2 ? piece[1].toLowerCase() : piece[0].toLowerCase();
   if (ch === "q" || ch === "r" || ch === "b" || ch === "n") return ch;
   return "q";
 }
@@ -19,7 +20,10 @@ function extractPromotion(piece?: string): "q" | "r" | "b" | "n" {
 function isPromotionMove(game: Chess, from: Square, to: Square): boolean {
   const piece = game.get(from);
   if (!piece || piece.type !== "p") return false;
-  return (piece.color === "w" && to[1] === "8") || (piece.color === "b" && to[1] === "1");
+  return (
+    (piece.color === "w" && to[1] === "8") ||
+    (piece.color === "b" && to[1] === "1")
+  );
 }
 
 export function useSquareClickHandler(
@@ -40,7 +44,9 @@ export function useSquareClickHandler(
   >,
 ) {
   // ---------- promotion dialog state (click-to-move) ----------
-  const [promotionToSquare, setPromotionToSquare] = useState<Square | null>(null);
+  const [promotionToSquare, setPromotionToSquare] = useState<Square | null>(
+    null,
+  );
   const [showPromotionDialog, setShowPromotionDialog] = useState(false);
   const [pendingPromoFrom, setPendingPromoFrom] = useState<Square | null>(null);
 

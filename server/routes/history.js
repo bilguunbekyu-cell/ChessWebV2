@@ -24,6 +24,28 @@ router.post("/", authMiddleware, async (req, res) => {
       endTime,
       whiteElo = 1200,
       blackElo = 1200,
+      rated = false,
+      ratingBefore,
+      ratingAfter,
+      ratingDelta,
+      ratingDeviationBefore,
+      ratingDeviationAfter,
+      ratingDeviationDelta,
+      volatilityBefore,
+      volatilityAfter,
+      volatilityDelta,
+      isProvisional = false,
+      opponentRatingBefore,
+      opponentRatingAfter,
+      opponentRatingDelta,
+      opponentRatingDeviationBefore,
+      opponentRatingDeviationAfter,
+      opponentRatingDeviationDelta,
+      opponentVolatilityBefore,
+      opponentVolatilityAfter,
+      opponentVolatilityDelta,
+      opponentIsProvisional = false,
+      ratingPool,
       timezone = "UTC",
       eco = "",
       ecoUrl = "",
@@ -70,6 +92,28 @@ router.post("/", authMiddleware, async (req, res) => {
       endTime,
       whiteElo,
       blackElo,
+      rated,
+      ratingBefore,
+      ratingAfter,
+      ratingDelta,
+      ratingDeviationBefore,
+      ratingDeviationAfter,
+      ratingDeviationDelta,
+      volatilityBefore,
+      volatilityAfter,
+      volatilityDelta,
+      isProvisional,
+      opponentRatingBefore,
+      opponentRatingAfter,
+      opponentRatingDelta,
+      opponentRatingDeviationBefore,
+      opponentRatingDeviationAfter,
+      opponentRatingDeviationDelta,
+      opponentVolatilityBefore,
+      opponentVolatilityAfter,
+      opponentVolatilityDelta,
+      opponentIsProvisional,
+      ratingPool,
       timezone,
       eco,
       ecoUrl,
@@ -95,6 +139,27 @@ router.post("/", authMiddleware, async (req, res) => {
     res.json({ success: true, historyId: history._id });
   } catch (err) {
     console.error("History save error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Get game history for a specific user (public)
+router.get("/user/:userId", authMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { limit = 50, skip = 0 } = req.query;
+
+    const games = await History.find({ userId })
+      .sort({ createdAt: -1 })
+      .skip(Number(skip))
+      .limit(Number(limit))
+      .lean();
+
+    const total = await History.countDocuments({ userId });
+
+    res.json({ games, total });
+  } catch (err) {
+    console.error("Get user history error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

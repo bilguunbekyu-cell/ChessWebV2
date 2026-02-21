@@ -24,7 +24,11 @@ interface BotGameViewProps {
   preMoveSquares: Record<string, CSSProperties>;
   lastMove?: { from: string; to: string } | null;
   onSquareClick: (square: Square) => void;
-  onPieceDrop: (sourceSquare: Square, targetSquare: Square, piece?: string) => boolean;
+  onPieceDrop: (
+    sourceSquare: Square,
+    targetSquare: Square,
+    piece?: string,
+  ) => boolean;
   onCancelSelection: () => void;
   isDraggablePiece: (sourceSquare: Square) => boolean;
   setOpponentTime: (time: number) => void;
@@ -35,7 +39,11 @@ interface BotGameViewProps {
   onNewGame: () => void;
   promotionToSquare?: Square | null;
   showPromotionDialog?: boolean;
-  onPromotionPieceSelect?: (piece?: string, fromSquare?: Square, toSquare?: Square) => boolean;
+  onPromotionPieceSelect?: (
+    piece?: string,
+    fromSquare?: Square,
+    toSquare?: Square,
+  ) => boolean;
 }
 
 export function BotGameView({
@@ -164,7 +172,7 @@ export function BotGameView({
         </div>
 
         {/* Right Side - Game Panel (same width as bot selection) */}
-          <div className="w-full bg-white/90 dark:bg-slate-900/95 border-l border-gray-200/60 dark:border-white/10 flex flex-col h-full">
+        <div className="w-full bg-white/90 dark:bg-slate-900/95 border-l border-gray-200/60 dark:border-white/10 flex flex-col h-full">
           {/* Panel Header */}
           <div className="p-4 border-b border-gray-200/60 dark:border-white/10">
             <div className="flex items-center gap-3">

@@ -6,3 +6,4 @@ export { default as Puzzle } from "./Puzzle.js";
 export { default as Bot } from "./Bot.js";
 export { default as FeaturedEvent } from "./FeaturedEvent.js";
 export { default as Friend } from "./Friend.js";
+export { default as RatingEvent } from "./RatingEvent.js";

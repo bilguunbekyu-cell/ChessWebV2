@@ -7,8 +7,27 @@ export interface User {
   fullName: string;
   avatar?: string;
   rating?: number;
+  bulletRating?: number;
+  blitzRating?: number;
+  rapidRating?: number;
+  classicalRating?: number;
+  bulletRd?: number;
+  blitzRd?: number;
+  rapidRd?: number;
+  classicalRd?: number;
+  bulletVolatility?: number;
+  blitzVolatility?: number;
+  rapidVolatility?: number;
+  classicalVolatility?: number;
+  bulletGames?: number;
+  blitzGames?: number;
+  rapidGames?: number;
+  classicalGames?: number;
   gamesPlayed?: number;
   gamesWon?: number;
+  presenceStatus?: "online" | "offline" | "searching_match" | "in_game" | "away";
+  lastSeenAt?: string | null;
+  lastActiveAt?: string | null;
   puzzleElo?: number;
 }
 

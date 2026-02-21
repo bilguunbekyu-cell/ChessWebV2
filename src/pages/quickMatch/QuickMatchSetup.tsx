@@ -13,6 +13,7 @@ interface QuickMatchSetupProps {
   onVariantChange: (variant: MatchVariant) => void;
   onStart: () => void;
   isSearching: boolean;
+  queueStatus?: string | null;
   isConnected: boolean;
   onCancel: () => void;
 }
@@ -24,6 +25,7 @@ export function QuickMatchSetup({
   onVariantChange,
   onStart,
   isSearching,
+  queueStatus,
   isConnected,
   onCancel,
 }: QuickMatchSetupProps) {
@@ -101,6 +103,10 @@ export function QuickMatchSetup({
   const searchingGameText = selectedTimeOption
     ? `Searching ${selectedTimeOption.label} ${selectedTimeOption.category}${variantLabel ? " " + variantLabel : ""} Game`
     : "Searching Game";
+  const expandedRange = Math.min(
+    500,
+    50 + Math.floor(searchElapsedSeconds / 5) * 25,
+  );
   const categoryOrder = ["Bullet", "Blitz", "Rapid", "Classical"];
 
   return (
@@ -199,6 +205,9 @@ export function QuickMatchSetup({
                     </p>
                     <p className="mt-2 text-lg text-gray-600 dark:text-gray-300">
                       {searchingGameText}
+                    </p>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      {queueStatus || `Rating range: ±${expandedRange}`}
                     </p>
                     <button
                       type="button"
@@ -321,7 +330,6 @@ export function QuickMatchSetup({
                     </p>
                   )}
                 </div>
-
               </div>
 
               {/* Play Button */}
@@ -331,7 +339,11 @@ export function QuickMatchSetup({
                   disabled={isSearching || !isConnected}
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold text-lg transition-all shadow-lg hover:shadow-xl active:scale-[0.98] disabled:cursor-not-allowed disabled:shadow-none"
                 >
-                  {isSearching ? "Searching..." : isConnected ? "Play" : "Server Offline"}
+                  {isSearching
+                    ? "Searching..."
+                    : isConnected
+                      ? "Play"
+                      : "Server Offline"}
                 </button>
               </div>
             </>

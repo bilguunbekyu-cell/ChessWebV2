@@ -134,7 +134,9 @@ function FourPlayerBoard({
     return new Set(moves.map((sq) => `${sq.row},${sq.col}`));
   }, [dragging, state]);
 
-  const activeLegalSet = dragging?.moved ? (dragLegalSet ?? legalMoveSet) : legalMoveSet;
+  const activeLegalSet = dragging?.moved
+    ? (dragLegalSet ?? legalMoveSet)
+    : legalMoveSet;
 
   const squareFromClient = useCallback((clientX: number, clientY: number) => {
     const grid = gridRef.current;
@@ -153,7 +155,12 @@ function FourPlayerBoard({
     const cs = rect.width / FOUR_PLAYER_BOARD_SIZE;
     const col = Math.floor((clientX - rect.left) / cs);
     const row = Math.floor((clientY - rect.top) / cs);
-    if (row < 0 || col < 0 || row >= FOUR_PLAYER_BOARD_SIZE || col >= FOUR_PLAYER_BOARD_SIZE) {
+    if (
+      row < 0 ||
+      col < 0 ||
+      row >= FOUR_PLAYER_BOARD_SIZE ||
+      col >= FOUR_PLAYER_BOARD_SIZE
+    ) {
       return null;
     }
     if (!isPlayableSquare(row, col)) return null;
@@ -190,7 +197,11 @@ function FourPlayerBoard({
     if (!dragging) return;
 
     const handlePointerMove = (event: PointerEvent) => {
-      if (dragPointerIdRef.current !== null && event.pointerId !== dragPointerIdRef.current) return;
+      if (
+        dragPointerIdRef.current !== null &&
+        event.pointerId !== dragPointerIdRef.current
+      )
+        return;
       event.preventDefault();
       setDragging((current) => {
         if (!current) return null;
@@ -217,7 +228,11 @@ function FourPlayerBoard({
     };
 
     const handlePointerUp = (event: PointerEvent) => {
-      if (dragPointerIdRef.current !== null && event.pointerId !== dragPointerIdRef.current) return;
+      if (
+        dragPointerIdRef.current !== null &&
+        event.pointerId !== dragPointerIdRef.current
+      )
+        return;
       finalizeDrag(event.clientX, event.clientY);
     };
 
@@ -227,7 +242,9 @@ function FourPlayerBoard({
     };
 
     // Use capture phase for reliable mobile drag
-    window.addEventListener("pointermove", handlePointerMove, { passive: false });
+    window.addEventListener("pointermove", handlePointerMove, {
+      passive: false,
+    });
     window.addEventListener("pointerup", handlePointerUp);
     window.addEventListener("pointercancel", handlePointerCancel);
     return () => {
@@ -307,8 +324,12 @@ function FourPlayerBoard({
 
                   // Capture pointer for reliable mobile/touch drag
                   try {
-                    (event.target as Element).setPointerCapture(event.pointerId);
-                  } catch { /* ignore if capture fails */ }
+                    (event.target as Element).setPointerCapture(
+                      event.pointerId,
+                    );
+                  } catch {
+                    /* ignore if capture fails */
+                  }
                   dragPointerIdRef.current = event.pointerId;
 
                   setDragging({
@@ -396,25 +417,29 @@ function PlayersGrid({
 }) {
   return (
     <div className="grid grid-cols-2 gap-2">
-      {(["red", "blue", "yellow", "green"] as FourPlayerColor[]).map((color) => {
-        const isOut = eliminated.includes(color);
-        const isTurn = turn === color;
-        const isYou = you === color;
-        return (
-          <div
-            key={color}
-            className={`rounded-xl border px-3 py-2 ${COLOR_LABEL_CLASS[color]} ${
-              isTurn ? `ring-2 ${COLOR_RING_CLASS[color]}` : ""
-            } ${isOut ? "opacity-45 line-through" : ""}`}
-          >
-            <div className="text-[11px] font-bold uppercase tracking-wide">
-              {color}
-              {isYou ? " (You)" : ""}
+      {(["red", "blue", "yellow", "green"] as FourPlayerColor[]).map(
+        (color) => {
+          const isOut = eliminated.includes(color);
+          const isTurn = turn === color;
+          const isYou = you === color;
+          return (
+            <div
+              key={color}
+              className={`rounded-xl border px-3 py-2 ${COLOR_LABEL_CLASS[color]} ${
+                isTurn ? `ring-2 ${COLOR_RING_CLASS[color]}` : ""
+              } ${isOut ? "opacity-45 line-through" : ""}`}
+            >
+              <div className="text-[11px] font-bold uppercase tracking-wide">
+                {color}
+                {isYou ? " (You)" : ""}
+              </div>
+              <div className="text-xs mt-0.5 truncate">
+                {players[color]?.name || color}
+              </div>
             </div>
-            <div className="text-xs mt-0.5 truncate">{players[color]?.name || color}</div>
-          </div>
-        );
-      })}
+          );
+        },
+      )}
     </div>
   );
 }
@@ -479,7 +504,8 @@ export default function FourPlayerChess() {
   }, [isSearching]);
 
   const autoStartRequested =
-    getAutoStartFromState(location.state) || getAutoStartFromSearch(location.search);
+    getAutoStartFromState(location.state) ||
+    getAutoStartFromSearch(location.search);
   const autoStartHandledRef = useRef(false);
   const [pendingAutoStart, setPendingAutoStart] = useState(autoStartRequested);
 
@@ -535,12 +561,15 @@ export default function FourPlayerChess() {
 
   const previewState = useMemo(() => createInitialFourPlayerState(), []);
   const selectedKey = selected ? `${selected.row},${selected.col}` : null;
-  const lastMoveFrom = lastMove ? `${lastMove.from.row},${lastMove.from.col}` : null;
+  const lastMoveFrom = lastMove
+    ? `${lastMove.from.row},${lastMove.from.col}`
+    : null;
   const lastMoveTo = lastMove ? `${lastMove.to.row},${lastMove.to.col}` : null;
 
   const selectedTimeOption = TIME_OPTIONS.find(
     (opt) =>
-      opt.initial === timeControl.initial && opt.increment === timeControl.increment,
+      opt.initial === timeControl.initial &&
+      opt.increment === timeControl.increment,
   );
 
   const handleStartMatch = () => {
@@ -757,7 +786,9 @@ export default function FourPlayerChess() {
                   : "bg-slate-500/15 text-slate-700 dark:text-slate-300"
               }`}
             >
-              {isMyTurn ? "Your Turn" : `${gameState.turn.toUpperCase()} to move`}
+              {isMyTurn
+                ? "Your Turn"
+                : `${gameState.turn.toUpperCase()} to move`}
             </div>
           </div>
 
@@ -783,9 +814,12 @@ export default function FourPlayerChess() {
 
         <div className="min-w-0 rounded-3xl border border-gray-200/70 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 shadow-xl backdrop-blur-lg p-4 flex flex-col min-h-0">
           <div className="mb-3">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Match Info</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+              Match Info
+            </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Playing as {players[playerColor]?.name || user?.fullName || "You"}.
+              Playing as {players[playerColor]?.name || user?.fullName || "You"}
+              .
             </p>
           </div>
 
@@ -808,7 +842,9 @@ export default function FourPlayerChess() {
             </div>
             <div className="h-full max-h-[48vh] overflow-y-auto p-2 space-y-1 text-xs font-mono text-gray-700 dark:text-gray-200">
               {gameState.moves.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400">No moves yet.</p>
+                <p className="text-gray-500 dark:text-gray-400">
+                  No moves yet.
+                </p>
               ) : (
                 gameState.moves
                   .slice()

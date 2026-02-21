@@ -5,6 +5,8 @@ export { GameOutcomesCard } from "./GameOutcomesCard";
 export { PerformanceByColorCard } from "./PerformanceByColorCard";
 export { QuickStatsCard } from "./QuickStatsCard";
 export { FormatStatsCard } from "./FormatStatsCard";
+export { RatingTimelineCard } from "./RatingTimelineCard";
+export { PoolLeaderboardCard } from "./PoolLeaderboardCard";
 export { RecentGames } from "./RecentGames";
 export { NoGamesPlaceholder } from "./NoGamesPlaceholder";
 export { GamesTabContent } from "./GamesTabContent";

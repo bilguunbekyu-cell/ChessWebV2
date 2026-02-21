@@ -7,14 +7,46 @@ const UserSchema = new mongoose.Schema(
     password: { type: String, required: true },
     avatar: { type: String, default: "" },
     rating: { type: Number, default: 1200 },
+    bulletRating: { type: Number, default: 1200 },
+    blitzRating: { type: Number, default: 1200 },
+    rapidRating: { type: Number, default: 1200 },
+    classicalRating: { type: Number, default: 1200 },
+    bulletRd: { type: Number, default: 350 },
+    blitzRd: { type: Number, default: 350 },
+    rapidRd: { type: Number, default: 350 },
+    classicalRd: { type: Number, default: 350 },
+    bulletVolatility: { type: Number, default: 0.06 },
+    blitzVolatility: { type: Number, default: 0.06 },
+    rapidVolatility: { type: Number, default: 0.06 },
+    classicalVolatility: { type: Number, default: 0.06 },
+    bulletLastRatedAt: { type: Date, default: null },
+    blitzLastRatedAt: { type: Date, default: null },
+    rapidLastRatedAt: { type: Date, default: null },
+    classicalLastRatedAt: { type: Date, default: null },
+    bulletGames: { type: Number, default: 0 },
+    blitzGames: { type: Number, default: 0 },
+    rapidGames: { type: Number, default: 0 },
+    classicalGames: { type: Number, default: 0 },
     gamesPlayed: { type: Number, default: 0 },
     gamesWon: { type: Number, default: 0 },
+    presenceStatus: {
+      type: String,
+      enum: ["online", "offline", "searching_match", "in_game", "away"],
+      default: "offline",
+    },
+    lastSeenAt: { type: Date, default: null },
+    lastActiveAt: { type: Date, default: null },
     banned: { type: Boolean, default: false },
     bannedAt: { type: Date, default: null },
     banReason: { type: String, default: "" },
   },
   { timestamps: true },
 );
+
+UserSchema.index({ bulletRating: -1 });
+UserSchema.index({ blitzRating: -1 });
+UserSchema.index({ rapidRating: -1 });
+UserSchema.index({ classicalRating: -1 });
 
 const User = mongoose.models.User || mongoose.model("User", UserSchema);
 

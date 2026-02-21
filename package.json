@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "migrate:ratings:pools": "npm --prefix server run migrate:ratings:pools --",
+    "migrate:ratings:pools:dry": "npm --prefix server run migrate:ratings:pools -- --dry-run",
+    "seed:leaderboard": "npm --prefix server run seed:leaderboard --",
+    "seed:leaderboard:dry": "npm --prefix server run seed:leaderboard -- --dry-run"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.22",
@@ -27,6 +31,7 @@
     "react-i18next": "^14.1.0",
     "react-router-dom": "^6.30.1",
     "react-use": "^17.6.0",
+    "recharts": "^3.7.0",
     "socket.io-client": "^4.7.5",
     "three": "^0.179.1",
     "zod": "^3.25.67",
