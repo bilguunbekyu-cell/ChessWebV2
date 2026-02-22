@@ -15,6 +15,7 @@ interface GameCardProps {
 }
 
 function isChess960Game(game: GameHistory): boolean {
+  if (game.variant === "chess960") return true;
   return /960|chess960/i.test(String(game.event || ""));
 }
 

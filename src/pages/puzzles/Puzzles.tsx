@@ -1,13 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Puzzle } from "lucide-react";
-import { PuzzleItem, API_URL } from "./types";
+import { useAuthStore } from "../../store/authStore";
+import {
+  API_URL,
+  detectPuzzleCollection,
+  getMateBucket,
+  MateBucket,
+  puzzleMatchesMotif,
+  puzzleMatchesQuery,
+  PuzzleCollection,
+  PuzzleItem,
+  PuzzleUserStats,
+} from "./types";
 import { PuzzleStatsCards } from "./PuzzleStatsCards";
-import { DailyPuzzleCard, TrainingThemes } from "./DailyPuzzleSection";
+import { DailyPuzzleCard } from "./DailyPuzzleSection";
 import { PuzzlesGrid } from "./PuzzlesGrid";
+import { PuzzleBrowseFilters } from "./PuzzleBrowseFilters";
 
 export default function Puzzles() {
+  const { user } = useAuthStore();
   const [puzzles, setPuzzles] = useState<PuzzleItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [stats, setStats] = useState<PuzzleUserStats | null>(null);
+  const [query, setQuery] = useState("");
+  const [collection, setCollection] = useState<PuzzleCollection>("all");
+  const [mateBucket, setMateBucket] = useState<MateBucket>("all");
+  const [motif, setMotif] = useState("All");
 
   useEffect(() => {
     fetch(`${API_URL}/api/puzzles`, { credentials: "include" })
@@ -22,6 +41,75 @@ export default function Puzzles() {
       });
   }, []);
 
+  useEffect(() => {
+    fetch(`${API_URL}/api/puzzles/me/stats`, { credentials: "include" })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch puzzle stats");
+        return res.json();
+      })
+      .then((data) => {
+        setStats(data);
+        setStatsLoading(false);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch puzzle stats:", error);
+        setStats({
+          rating: user?.puzzleElo ?? 1200,
+          bestRating: user?.puzzleBestElo ?? user?.puzzleElo ?? 1200,
+          attempts: user?.puzzleAttempts ?? 0,
+          solved: user?.puzzleSolved ?? 0,
+          failed: user?.puzzleFailed ?? 0,
+          skipped: user?.puzzleSkipped ?? 0,
+          solvedToday: 0,
+          streak: 0,
+          provisional: (user?.puzzleAttempts ?? 0) < 20,
+        });
+        setStatsLoading(false);
+      });
+  }, [
+    user?.puzzleAttempts,
+    user?.puzzleBestElo,
+    user?.puzzleElo,
+    user?.puzzleFailed,
+    user?.puzzleSkipped,
+    user?.puzzleSolved,
+  ]);
+
+  const filteredPuzzles = useMemo(() => {
+    let result = [...puzzles];
+
+    if (collection !== "all") {
+      result = result.filter((puzzle) => {
+        const detected = detectPuzzleCollection(puzzle);
+        return detected === collection;
+      });
+    }
+
+    if (collection === "mate" && mateBucket !== "all") {
+      result = result.filter((puzzle) => getMateBucket(puzzle) === mateBucket);
+    }
+
+    if ((collection === "tactics" || collection === "endgame") && motif !== "All") {
+      result = result.filter((puzzle) => puzzleMatchesMotif(puzzle, motif));
+    }
+
+    result = result.filter((puzzle) => puzzleMatchesQuery(puzzle, query));
+    result.sort((a, b) => Number(a.rating || 0) - Number(b.rating || 0));
+    return result;
+  }, [collection, mateBucket, motif, puzzles, query]);
+
+  const activeLabel = useMemo(() => {
+    if (collection === "all") return "All Puzzles";
+    if (collection === "mate") {
+      return mateBucket === "all" ? "Mate" : `Mate in ${mateBucket}`;
+    }
+    if ((collection === "tactics" || collection === "endgame") && motif !== "All") {
+      return `${collection === "tactics" ? "Tactics" : "Endgame"} • ${motif}`;
+    }
+    if (collection === "openings") return "Openings";
+    return "Filtered";
+  }, [collection, mateBucket, motif]);
+
   return (
     <div className="space-y-8">
       {/* Header & Stats */}
@@ -32,11 +120,11 @@ export default function Puzzles() {
             Puzzles
           </h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Sharpen your tactical skills
+            Train by motif and track your puzzle strength.
           </p>
         </div>
 
-        <PuzzleStatsCards />
+        <PuzzleStatsCards stats={stats} loading={statsLoading} />
       </div>
 
       {/* Main Content Grid */}
@@ -44,12 +132,30 @@ export default function Puzzles() {
         {/* Daily Puzzle (Left 2 cols) */}
         <DailyPuzzleCard />
 
-        {/* Puzzle Themes / Categories (Right col) */}
-        <TrainingThemes />
+        {/* Filters / Buckets (Right col) */}
+        <PuzzleBrowseFilters
+          query={query}
+          onQueryChange={setQuery}
+          collection={collection}
+          onCollectionChange={(nextCollection) => {
+            setCollection(nextCollection);
+            setMateBucket("all");
+            setMotif("All");
+          }}
+          mateBucket={mateBucket}
+          onMateBucketChange={setMateBucket}
+          motif={motif}
+          onMotifChange={setMotif}
+        />
       </div>
 
       {/* Recommended Puzzles Grid */}
-      <PuzzlesGrid puzzles={puzzles} loading={loading} />
+      <PuzzlesGrid
+        puzzles={filteredPuzzles}
+        loading={loading}
+        totalCount={puzzles.length}
+        activeLabel={activeLabel}
+      />
     </div>
   );
 }

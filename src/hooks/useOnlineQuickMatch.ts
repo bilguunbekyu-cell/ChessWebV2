@@ -13,6 +13,7 @@ import {
 } from "./gameHistorySaver/utils";
 import { detectOpeningFromSan } from "../utils/openingExplorer";
 import { useAuthStore } from "../store/authStore";
+import { playChessMoveSound } from "../utils/moveSounds";
 
 const socketBaseUrl =
   import.meta.env.VITE_SOCKET_URL ||
@@ -268,12 +269,19 @@ export function useOnlineQuickMatch() {
 
     socket.on("moveApplied", (payload: MoveAppliedPayload) => {
       if (payload.gameId !== gameIdRef.current) return;
+      const isOpponentMove = payload.turn === playerColorRef.current;
 
       if (payload.isChess960Castle) {
         const nextGame = new Chess(payload.fen);
         gameRef.current = nextGame;
         setGame(nextGame);
         setMoves((prev) => [...prev, payload.move.san]);
+        if (isOpponentMove) {
+          playChessMoveSound(
+            { ...payload.move, castlingSide: "k" },
+            { isOpponentMove: true },
+          );
+        }
         setLastMove({ from: payload.move.from, to: payload.move.to });
         setMoveFrom(null);
         setOptionSquares({});
@@ -291,11 +299,17 @@ export function useOnlineQuickMatch() {
         gameRef.current = currentGame;
         setGame(new Chess(currentGame.fen()));
         setMoves((prev) => [...prev, payload.move.san || applied.san]);
+        if (isOpponentMove) {
+          playChessMoveSound(applied, { isOpponentMove: true });
+        }
       } else {
         const nextGame = new Chess(payload.fen);
         gameRef.current = nextGame;
         setGame(nextGame);
         setMoves((prev) => [...prev, payload.move.san]);
+        if (isOpponentMove) {
+          playChessMoveSound(payload.move, { isOpponentMove: true });
+        }
       }
       setLastMove({ from: payload.move.from, to: payload.move.to });
       setMoveFrom(null);
@@ -507,6 +521,7 @@ export function useOnlineQuickMatch() {
 
     saveGameHistory({
       event: matchVariant === "chess960" ? "Live Chess960" : "Live Chess",
+      variant: matchVariant,
       site: "NeonGambit",
       date: formatDate(startDate),
       round: "-",
@@ -753,6 +768,37 @@ export function useOnlineQuickMatch() {
     return ch === "q" || ch === "r" || ch === "b" || ch === "n" ? ch : "q";
   };
 
+  const playLocalMoveSound = useCallback(
+    (from: Square, to: Square, promotion?: string) => {
+      const currentGame = gameRef.current;
+      const legalMoves = currentGame.moves({ square: from, verbose: true });
+
+      const exactMove =
+        legalMoves.find((move) => {
+          if (move.to !== to) return false;
+          const movePromotion = (move as { promotion?: string }).promotion;
+          return promotion ? movePromotion === promotion : true;
+        }) || legalMoves.find((move) => move.to === to);
+
+      if (exactMove) {
+        playChessMoveSound(exactMove);
+        return;
+      }
+
+      if (isChess960CastlingDrop(currentGame, from, to)) {
+        playChessMoveSound({
+          from,
+          to,
+          castlingSide: to[0] > from[0] ? "k" : "q",
+        });
+        return;
+      }
+
+      playChessMoveSound({ from, to });
+    },
+    [isChess960CastlingDrop],
+  );
+
   const onPromotionPieceSelect = useCallback(
     (piece?: string, _fromSquare?: Square, _toSquare?: Square) => {
       const from = pendingPromoFrom;
@@ -765,16 +811,19 @@ export function useOnlineQuickMatch() {
       if (!piece || !from || !to) return false;
       if (!gameIdRef.current) return false;
 
+      const promotion = extractPromo(piece);
+      playLocalMoveSound(from, to, promotion);
+
       socketRef.current?.emit("makeMove", {
         gameId: gameIdRef.current,
         from,
         to,
-        promotion: extractPromo(piece),
+        promotion,
       });
       clearSelection();
       return true;
     },
-    [clearSelection, pendingPromoFrom, promotionToSquare],
+    [clearSelection, pendingPromoFrom, playLocalMoveSound, promotionToSquare],
   );
 
   const onSquareClick = useCallback(
@@ -814,6 +863,7 @@ export function useOnlineQuickMatch() {
           return;
         }
 
+        playLocalMoveSound(moveFrom, square, "q");
         socketRef.current?.emit("makeMove", {
           gameId,
           from: moveFrom,
@@ -844,6 +894,7 @@ export function useOnlineQuickMatch() {
       isPlayerTurn,
       moveFrom,
       optionSquares,
+      playLocalMoveSound,
       playerColor,
     ],
   );
@@ -877,12 +928,14 @@ export function useOnlineQuickMatch() {
         return false;
       }
 
+      const promotion = extractPromo(piece);
       socketRef.current?.emit("makeMove", {
         gameId: gameIdRef.current,
         from: sourceSquare,
         to: targetSquare,
-        promotion: extractPromo(piece),
+        promotion,
       });
+      playLocalMoveSound(sourceSquare, targetSquare, promotion);
       clearSelection();
       return true;
     },
@@ -894,6 +947,7 @@ export function useOnlineQuickMatch() {
       getMoveOptions,
       isChess960CastlingDrop,
       isPlayerTurn,
+      playLocalMoveSound,
       playerColor,
     ],
   );

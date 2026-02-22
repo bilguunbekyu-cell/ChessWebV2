@@ -42,6 +42,7 @@ export default function PlayWithFriend() {
     opponentName,
     opponentUserId,
     gameType,
+    matchVariant,
     isRated,
     isConnected,
   } = useFriendOnlineGame();
@@ -146,6 +147,7 @@ export default function PlayWithFriend() {
         onTryAgain={handleTryAgain}
         onNewGame={handleNewGame}
         onLeave={leaveGame}
+        variant={matchVariant}
       />
     );
   }

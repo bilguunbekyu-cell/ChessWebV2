@@ -21,6 +21,7 @@ export default function AdminSidebar() {
   const { isDarkMode, toggleTheme } = useThemeStore();
   const { admin, logout } = useAdminStore();
   const isActive = (path: string) => location.pathname === path;
+  const logoSrc = isDarkMode ? "/images/Logo.png" : "/images/LightModeLogo.png";
 
   const handleLogout = async () => {
     await logout();
@@ -45,7 +46,7 @@ export default function AdminSidebar() {
         className="px-5 py-4 flex items-center gap-3 border-b border-gray-200/70 dark:border-gray-800"
       >
         <img
-          src="/images/Logo.png"
+          src={logoSrc}
           alt="NeonGambit"
           className="h-14 object-contain shrink-0"
         />

@@ -8,6 +8,8 @@ import type { GameSettings } from "../../components/game";
 import { BOARD_FRAME } from "./types";
 import type { CSSProperties } from "react";
 
+type MatchVariant = "standard" | "chess960";
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 function resolveAvatarUrl(avatar?: string) {
@@ -52,6 +54,7 @@ interface FriendGameViewProps {
   onTryAgain: () => void;
   onNewGame: () => void;
   onLeave?: () => void;
+  variant?: MatchVariant;
   promotionToSquare?: Square | null;
   showPromotionDialog?: boolean;
   onPromotionPieceSelect?: (
@@ -86,6 +89,7 @@ export function FriendGameView({
   onTryAgain,
   onNewGame,
   onLeave,
+  variant = "standard",
   promotionToSquare,
   showPromotionDialog,
   onPromotionPieceSelect,
@@ -134,6 +138,7 @@ export function FriendGameView({
           onTryAgain={onTryAgain}
           onNewGame={onNewGame}
           savedGameId={savedGameId}
+          analyzeBasePath={variant === "chess960" ? "/analyze960" : "/analyze"}
         />
 
         {/* Main Board Area */}

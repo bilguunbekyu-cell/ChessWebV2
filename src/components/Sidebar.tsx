@@ -4,19 +4,18 @@ import {
   Eye,
   Users,
   Settings,
-  Sun,
-  Moon,
+  MessageSquare,
   LogOut,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useThemeStore } from "../store/themeStore";
 import { useAuthStore, authApi } from "../store/authStore";
+import { useThemeStore } from "../store/themeStore";
 
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isDarkMode, toggleTheme } = useThemeStore();
   const { user, logout } = useAuthStore();
+  const { isDarkMode } = useThemeStore();
   const isActive = (path: string) => location.pathname === path;
   const isCompact =
     location.pathname.startsWith("/play/quick") ||
@@ -55,6 +54,7 @@ export default function Sidebar() {
     profileRowPadding: isCompact ? "px-3 py-2" : "px-3 py-2.5",
     iconButtonPadding: isCompact ? "p-1.5" : "p-2",
   } as const;
+  const logoSrc = isDarkMode ? "/images/Logo.png" : "/images/LightModeLogo.png";
 
   return (
     <div className="w-72 h-screen bg-[#ebebed] dark:bg-gray-900 flex flex-col fixed left-0 top-0 z-50 transition-colors duration-300">
@@ -64,7 +64,7 @@ export default function Sidebar() {
         className={`flex items-center gap-3 border-b border-gray-200/70 dark:border-gray-800 ${styleGroup.logoWrapper}`}
       >
         <img
-          src="/images/Logo.png"
+          src={logoSrc}
           alt="NeonGambit"
           className={`object-contain ${styleGroup.logoHeight}`}
         />
@@ -111,23 +111,8 @@ export default function Sidebar() {
       <div
         className={`border-t border-gray-200/70 dark:border-gray-800 flex flex-col ${isCompact ? "px-3 py-3 gap-1" : "px-3 py-4 gap-1.5"}`}
       >
-        {/* Theme Toggle */}
-        <button
-          onClick={toggleTheme}
-          className={`w-full flex items-center gap-3 min-h-[44px] ${styleGroup.rowPadding} rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors`}
-        >
-          {isDarkMode ? (
-            <Sun className={styleGroup.rowIcon} />
-          ) : (
-            <Moon className={styleGroup.rowIcon} />
-          )}
-          <span className={`font-medium leading-none ${fontSizeGroup.primary}`}>
-            {isDarkMode ? "Light Mode" : "Dark Mode"}
-          </span>
-        </button>
-
         {/* User Profile & Quick Actions */}
-        <div className={`${isCompact ? "pt-2 mt-1" : "pt-3 mt-1.5"}`}>
+        <div className={`${isCompact ? "pt-1" : "pt-1.5"}`}>
           <div className="flex items-center gap-2 w-full">
             {/* Click avatar/name to go to Profile */}
             <Link
@@ -171,7 +156,20 @@ export default function Sidebar() {
               </div>
             </Link>
 
-            {/* Add Friend Icon Button */}
+            {/* Messages Icon Button */}
+            <Link
+              to="/messages"
+              className={`flex-shrink-0 rounded-lg transition-colors ${
+                isActive("/messages")
+                  ? "bg-teal-500/10 text-teal-600 dark:text-teal-400"
+                  : "text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300"
+              } ${styleGroup.iconButtonPadding}`}
+              title="Messages"
+            >
+              <MessageSquare className={styleGroup.rowIcon} />
+            </Link>
+
+            {/* Friends Icon Button */}
             <Link
               to="/friends"
               className={`flex-shrink-0 rounded-lg transition-colors ${

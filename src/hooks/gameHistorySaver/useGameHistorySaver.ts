@@ -82,6 +82,7 @@ export function useGameHistorySaver(
     // Save to backend
     saveGameHistory({
       event: "Live Chess",
+      variant: "standard",
       site: "NeonGambit",
       date: formatDate(startDate),
       round: "-",

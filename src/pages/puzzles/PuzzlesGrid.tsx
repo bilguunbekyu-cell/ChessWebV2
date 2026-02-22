@@ -75,18 +75,29 @@ export function PuzzleCard({ puzzle, index }: PuzzleCardProps) {
 interface PuzzlesGridProps {
   puzzles: PuzzleItem[];
   loading: boolean;
+  totalCount?: number;
+  activeLabel?: string;
 }
 
-export function PuzzlesGrid({ puzzles, loading }: PuzzlesGridProps) {
+export function PuzzlesGrid({
+  puzzles,
+  loading,
+  totalCount,
+  activeLabel,
+}: PuzzlesGridProps) {
+  const selectedCount = puzzles.length;
+  const allCount = totalCount ?? selectedCount;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-          Recommended for You
+          Puzzle Library
         </h3>
-        <button className="text-teal-600 dark:text-teal-400 hover:text-teal-500 dark:hover:text-teal-300 text-sm font-medium transition-colors">
-          View All
-        </button>
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          {selectedCount}/{allCount} shown
+          {activeLabel ? ` • ${activeLabel}` : ""}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

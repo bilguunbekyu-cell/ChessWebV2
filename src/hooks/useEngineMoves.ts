@@ -1,6 +1,7 @@
 import { useCallback, useRef } from "react";
 import { Chess, Square } from "chess.js";
 import { StockfishEngine } from "../chess";
+import { playChessMoveSound } from "../utils/moveSounds";
 
 export function useEngineMoves(
   engineRef: React.MutableRefObject<StockfishEngine | null>,
@@ -67,6 +68,7 @@ export function useEngineMoves(
               gameRef.current = currentGame;
               setGame(new Chess(currentGame.fen()));
               setMoves(currentGame.history());
+              playChessMoveSound(move);
               setLastMove?.({ from, to });
             }
           } catch (e) {

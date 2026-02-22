@@ -29,6 +29,13 @@ const UserSchema = new mongoose.Schema(
     classicalGames: { type: Number, default: 0 },
     gamesPlayed: { type: Number, default: 0 },
     gamesWon: { type: Number, default: 0 },
+    puzzleElo: { type: Number, default: 1200 },
+    puzzleBestElo: { type: Number, default: 1200 },
+    puzzleAttempts: { type: Number, default: 0 },
+    puzzleSolved: { type: Number, default: 0 },
+    puzzleFailed: { type: Number, default: 0 },
+    puzzleSkipped: { type: Number, default: 0 },
+    puzzleLastAttemptAt: { type: Date, default: null },
     presenceStatus: {
       type: String,
       enum: ["online", "offline", "searching_match", "in_game", "away"],

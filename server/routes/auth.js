@@ -50,7 +50,13 @@ function toPublicUser(user) {
     presenceStatus: normalizePresenceStatus(user.presenceStatus),
     lastSeenAt: user.lastSeenAt ?? null,
     lastActiveAt: user.lastActiveAt ?? null,
-    puzzleElo: user.puzzleElo ?? 0,
+    puzzleElo: user.puzzleElo ?? 1200,
+    puzzleBestElo: user.puzzleBestElo ?? user.puzzleElo ?? 1200,
+    puzzleAttempts: user.puzzleAttempts ?? 0,
+    puzzleSolved: user.puzzleSolved ?? 0,
+    puzzleFailed: user.puzzleFailed ?? 0,
+    puzzleSkipped: user.puzzleSkipped ?? 0,
+    puzzleLastAttemptAt: user.puzzleLastAttemptAt ?? null,
   };
 }
 
@@ -244,15 +250,63 @@ router.get("/users/:userId", authMiddleware, async (req, res) => {
 // Update profile
 router.put("/profile", authMiddleware, async (req, res) => {
   try {
-    const { fullName, avatar } = req.body;
+    const { fullName, avatar, userId: targetUserId } = req.body || {};
+
+    if (
+      targetUserId &&
+      String(targetUserId).trim() &&
+      String(targetUserId) !== String(req.user.userId)
+    ) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const update = {};
+    if (typeof fullName === "string" && fullName.trim().length > 0) {
+      update.fullName = fullName.trim().slice(0, 80);
+    }
+    if (typeof avatar === "string") {
+      update.avatar = avatar;
+    }
+
+    if (Object.keys(update).length === 0) {
+      return res.status(400).json({ error: "No valid profile fields provided" });
+    }
+
     const user = await User.findByIdAndUpdate(
       req.user.userId,
-      { fullName, avatar },
+      { $set: update },
       { new: true },
     ).select("-password");
     res.json({ success: true, user: toPublicUser(user) });
   } catch (err) {
     console.error("Update profile error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Explicit avatar update endpoint with ownership check
+router.put("/users/:userId/avatar", authMiddleware, async (req, res) => {
+  try {
+    const targetUserId = String(req.params.userId || "");
+    const requesterId = String(req.user.userId || "");
+    if (!targetUserId || targetUserId !== requesterId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const avatar = req.body?.avatar;
+    if (typeof avatar !== "string") {
+      return res.status(400).json({ error: "Avatar is required" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      requesterId,
+      { $set: { avatar } },
+      { new: true },
+    ).select("-password");
+
+    res.json({ success: true, user: toPublicUser(user) });
+  } catch (err) {
+    console.error("Update avatar error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

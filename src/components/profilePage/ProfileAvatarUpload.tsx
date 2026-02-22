@@ -8,6 +8,7 @@ interface ProfileAvatarUploadProps {
   userName?: string;
   onAvatarChange?: (newAvatar: string) => void;
   size?: "md" | "lg" | "xl";
+  editable?: boolean;
 }
 
 export function ProfileAvatarUpload({
@@ -15,6 +16,7 @@ export function ProfileAvatarUpload({
   userName,
   onAvatarChange,
   size = "md",
+  editable = true,
 }: ProfileAvatarUploadProps) {
   const { setUser, user } = useAuthStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -138,18 +140,20 @@ export function ProfileAvatarUpload({
         </div>
 
         {/* Edit button overlay */}
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className={`absolute bottom-0 right-0 ${editButtonClass} bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center border-2 border-white dark:border-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group-hover:scale-110`}
-          title="Change avatar"
-        >
-          <Camera size={16} className="text-gray-700 dark:text-gray-300" />
-        </button>
+        {editable && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className={`absolute bottom-0 right-0 ${editButtonClass} bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center border-2 border-white dark:border-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group-hover:scale-110`}
+            title="Change avatar"
+          >
+            <Camera size={16} className="text-gray-700 dark:text-gray-300" />
+          </button>
+        )}
       </div>
 
       {/* Upload Modal */}
       <AnimatePresence>
-        {isModalOpen && (
+        {editable && isModalOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

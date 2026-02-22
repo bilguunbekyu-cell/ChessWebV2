@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Chessboard } from "react-chessboard";
 import { Clock, Shuffle } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
@@ -53,6 +53,61 @@ const TIME_OPTIONS = [
   { label: "10+5", initial: 600, increment: 5 },
   { label: "15+10", initial: 900, increment: 10 },
 ];
+
+function getTimeControlFromState(
+  state: unknown,
+): { initial: number; increment: number } | null {
+  if (!state || typeof state !== "object") return null;
+  const maybeState = state as { initial?: unknown; increment?: unknown };
+
+  if (
+    typeof maybeState.initial === "number" &&
+    typeof maybeState.increment === "number"
+  ) {
+    return {
+      initial: maybeState.initial,
+      increment: maybeState.increment,
+    };
+  }
+
+  return null;
+}
+
+function getTimeControlFromSearch(
+  search: string,
+): { initial: number; increment: number } | null {
+  const params = new URLSearchParams(search);
+  const initial = Number(params.get("initial"));
+  const increment = Number(params.get("increment"));
+
+  if (Number.isFinite(initial) && Number.isFinite(increment)) {
+    return { initial, increment };
+  }
+
+  return null;
+}
+
+function getVariantFromState(state: unknown): string | null {
+  if (!state || typeof state !== "object") return null;
+  if (!("variant" in state)) return null;
+  const value = String((state as { variant?: unknown }).variant || "");
+  if (!value) return null;
+  return value;
+}
+
+function getVariantFromSearch(search: string): string | null {
+  const value = new URLSearchParams(search).get("variant");
+  if (!value) return null;
+  return value;
+}
+
+function findVariantOption(value: string | null): VariantOption | null {
+  if (!value) return null;
+  const normalized = value.trim().toLowerCase();
+  return (
+    VARIANTS.find((option) => option.key.toLowerCase() === normalized) || null
+  );
+}
 
 function pickRandomSquare(indexes: number[]): number {
   const random = Math.floor(Math.random() * indexes.length);
@@ -141,11 +196,23 @@ function FourPlayerPreview({ size }: { size: number }) {
 
 export default function PlayVariants() {
   const { user } = useAuthStore();
+  const location = useLocation();
   const navigate = useNavigate();
-  const [selectedVariant, setSelectedVariant] = useState(VARIANTS[0]);
-  const [timeControl, setTimeControl] = useState({
-    initial: 300,
-    increment: 0,
+  const [selectedVariant, setSelectedVariant] = useState(() => {
+    return (
+      findVariantOption(getVariantFromState(location.state)) ||
+      findVariantOption(getVariantFromSearch(location.search)) ||
+      VARIANTS[0]
+    );
+  });
+  const [timeControl, setTimeControl] = useState(() => {
+    return (
+      getTimeControlFromState(location.state) ||
+      getTimeControlFromSearch(location.search) || {
+        initial: 300,
+        increment: 0,
+      }
+    );
   });
   const [previewFen, setPreviewFen] = useState("start");
 
@@ -189,6 +256,24 @@ export default function PlayVariants() {
     }
     setPreviewFen("start");
   }, [selectedVariant.key]);
+
+  useEffect(() => {
+    const selectedFromRoute =
+      findVariantOption(getVariantFromState(location.state)) ||
+      findVariantOption(getVariantFromSearch(location.search));
+    if (selectedFromRoute) {
+      setSelectedVariant(selectedFromRoute);
+    }
+  }, [location.state, location.search]);
+
+  useEffect(() => {
+    const selectedTimeControl =
+      getTimeControlFromState(location.state) ||
+      getTimeControlFromSearch(location.search);
+    if (selectedTimeControl) {
+      setTimeControl(selectedTimeControl);
+    }
+  }, [location.state, location.search]);
 
   const handleStart = () => {
     if (selectedVariant.key === "fourPlayer") {

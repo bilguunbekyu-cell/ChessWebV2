@@ -13,6 +13,7 @@ import {
   FourPlayerState,
   Square,
 } from "./types";
+import { playChessMoveSound } from "../../utils/moveSounds";
 
 const socketBaseUrl =
   import.meta.env.VITE_SOCKET_URL ||
@@ -75,6 +76,7 @@ export function useOnlineFourPlayerMatch() {
   const socketRef = useRef<Socket | null>(null);
   const gameIdRef = useRef<string | null>(null);
   const playerNameRef = useRef("Player");
+  const lastSoundMoveKeyRef = useRef<string>("");
 
   const legalMoves = useMemo(() => {
     if (!selected) return [];
@@ -98,6 +100,7 @@ export function useOnlineFourPlayerMatch() {
     setSystemMessage(null);
     setGameOverReason(null);
     setForfeitedColor(null);
+    lastSoundMoveKeyRef.current = "";
   }, []);
 
   useEffect(() => {
@@ -148,6 +151,7 @@ export function useOnlineFourPlayerMatch() {
       setSystemMessage(null);
       setGameOverReason(null);
       setForfeitedColor(null);
+      lastSoundMoveKeyRef.current = "";
       setGameStarted(true);
     });
 
@@ -162,6 +166,12 @@ export function useOnlineFourPlayerMatch() {
       }
       if (payload.lastMove) {
         setLastMove(payload.lastMove);
+        const moveCount = payload.state?.moves?.length ?? 0;
+        const moveKey = `${payload.gameId}:${moveCount}:${payload.lastMove.from.row},${payload.lastMove.from.col}->${payload.lastMove.to.row},${payload.lastMove.to.col}`;
+        if (moveKey !== lastSoundMoveKeyRef.current) {
+          lastSoundMoveKeyRef.current = moveKey;
+          playChessMoveSound(payload.lastMove);
+        }
       }
       if (payload.systemMessage) {
         setSystemMessage(payload.systemMessage);

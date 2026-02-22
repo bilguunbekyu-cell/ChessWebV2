@@ -121,7 +121,7 @@ export function RatingTimelineCard() {
   const deltaLabel = delta > 0 ? `+${delta}` : `${delta}`;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+    <div className="bg-white/85 dark:bg-slate-900/70 rounded-2xl p-6 border border-gray-200/70 dark:border-white/10 shadow-[0_10px_30px_rgba(15,23,42,0.08)] dark:shadow-[0_12px_32px_rgba(0,0,0,0.4)] backdrop-blur">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Rating Timeline
@@ -163,7 +163,7 @@ export function RatingTimelineCard() {
         ))}
       </div>
 
-      <div className="mt-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-3">
+      <div className="mt-4 rounded-xl border border-gray-200/70 dark:border-white/10 bg-gray-50/90 dark:bg-black/20 p-3">
         {loading ? (
           <div className="h-[190px] flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
             Loading timeline...

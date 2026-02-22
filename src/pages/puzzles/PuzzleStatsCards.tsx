@@ -1,7 +1,33 @@
 import { motion } from "framer-motion";
 import { Target, Brain, Zap } from "lucide-react";
+import { PuzzleUserStats } from "./types";
 
-export function PuzzleStatsCards() {
+interface PuzzleStatsCardsProps {
+  stats: PuzzleUserStats | null;
+  loading?: boolean;
+}
+
+export function PuzzleStatsCards({ stats, loading = false }: PuzzleStatsCardsProps) {
+  if (loading) {
+    return (
+      <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, idx) => (
+          <div
+            key={idx}
+            className="h-[92px] rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 animate-pulse"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  const rating = stats?.rating ?? 1200;
+  const bestRating = stats?.bestRating ?? rating;
+  const solvedToday = stats?.solvedToday ?? 0;
+  const solved = stats?.solved ?? 0;
+  const attempts = stats?.attempts ?? 0;
+  const streak = stats?.streak ?? 0;
+
   return (
     <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
       <motion.div
@@ -15,7 +41,10 @@ export function PuzzleStatsCards() {
             Puzzle Rating
           </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-white">
-            2150
+            {rating}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            Best: {bestRating}
           </div>
         </div>
         <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
@@ -34,7 +63,10 @@ export function PuzzleStatsCards() {
             Solved Today
           </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-white">
-            12
+            {solvedToday}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {solved}/{attempts} solved overall
           </div>
         </div>
         <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -53,7 +85,10 @@ export function PuzzleStatsCards() {
             Streak
           </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-white">
-            5 Days
+            {streak} {streak === 1 ? "Day" : "Days"}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            Consecutive solve days
           </div>
         </div>
         <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">

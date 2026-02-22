@@ -29,6 +29,12 @@ export interface User {
   lastSeenAt?: string | null;
   lastActiveAt?: string | null;
   puzzleElo?: number;
+  puzzleBestElo?: number;
+  puzzleAttempts?: number;
+  puzzleSolved?: number;
+  puzzleFailed?: number;
+  puzzleSkipped?: number;
+  puzzleLastAttemptAt?: string | null;
 }
 
 interface AuthState {

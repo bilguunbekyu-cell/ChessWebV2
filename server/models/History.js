@@ -16,6 +16,11 @@ const HistorySchema = new mongoose.Schema(
     white: { type: String, required: true },
     black: { type: String, required: true },
     result: { type: String, required: true },
+    variant: {
+      type: String,
+      enum: ["standard", "chess960"],
+      default: "standard",
+    },
 
     // Position
     currentPosition: { type: String },

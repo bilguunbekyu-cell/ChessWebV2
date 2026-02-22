@@ -1,0 +1,138 @@
+type MoveWithSoundHints = {
+  san?: string | null;
+  flags?: string | null;
+  captured?: unknown;
+  castlingSide?: "k" | "q" | null;
+  check?: boolean;
+  isCheck?: boolean;
+};
+
+const SOUND_PATHS = {
+  moveSelf: "/media/move-self.mp3",
+  moveOpponent: "/media/move-opponent.mp3",
+  check: "/media/move-check.mp3",
+  capture: "/media/capture.mp3",
+  castle: "/media/castle.mp3",
+} as const;
+
+const audioCache: Partial<Record<keyof typeof SOUND_PATHS, HTMLAudioElement>> =
+  {};
+let prewarmed = false;
+
+function getAudio(name: keyof typeof SOUND_PATHS): HTMLAudioElement | null {
+  if (typeof window === "undefined" || typeof Audio === "undefined") {
+    return null;
+  }
+
+  const cached = audioCache[name];
+  if (cached) return cached;
+
+  const audio = new Audio(SOUND_PATHS[name]);
+  audio.preload = "auto";
+  audioCache[name] = audio;
+  return audio;
+}
+
+function prewarmAudio() {
+  if (prewarmed || typeof window === "undefined") return;
+  prewarmed = true;
+
+  const names = Object.keys(SOUND_PATHS) as Array<keyof typeof SOUND_PATHS>;
+  names.forEach((name) => {
+    const audio = getAudio(name);
+    audio?.load();
+  });
+}
+
+if (typeof window !== "undefined") {
+  const unlock = () => {
+    prewarmAudio();
+    window.removeEventListener("pointerdown", unlock);
+    window.removeEventListener("touchstart", unlock);
+    window.removeEventListener("keydown", unlock);
+  };
+
+  window.addEventListener("pointerdown", unlock, { once: true });
+  window.addEventListener("touchstart", unlock, { once: true });
+  window.addEventListener("keydown", unlock, { once: true });
+}
+
+function playSound(name: keyof typeof SOUND_PATHS) {
+  const audio = getAudio(name);
+  if (!audio) return;
+
+  try {
+    audio.currentTime = 0;
+    void audio.play().catch(() => {
+      // Ignore autoplay-blocked cases and other playback failures.
+    });
+  } catch {
+    // Ignore playback errors to keep gameplay smooth.
+  }
+}
+
+export function isCastlingMove(move?: MoveWithSoundHints | null): boolean {
+  if (!move) return false;
+
+  if (move.castlingSide === "k" || move.castlingSide === "q") {
+    return true;
+  }
+
+  const flags = typeof move.flags === "string" ? move.flags.toLowerCase() : "";
+  if (flags.includes("k") || flags.includes("q")) {
+    return true;
+  }
+
+  const san = typeof move.san === "string" ? move.san : "";
+  return /^O-O(-O)?([+#])?$/.test(san);
+}
+
+export function isCaptureMove(move?: MoveWithSoundHints | null): boolean {
+  if (!move) return false;
+
+  const flags = typeof move.flags === "string" ? move.flags.toLowerCase() : "";
+  if (flags.includes("c") || flags.includes("e")) {
+    return true;
+  }
+
+  if (move.captured != null) {
+    return true;
+  }
+
+  const san = typeof move.san === "string" ? move.san : "";
+  return san.includes("x");
+}
+
+export function isCheckMove(move?: MoveWithSoundHints | null): boolean {
+  if (!move) return false;
+  if (move.check === true || move.isCheck === true) return true;
+
+  const san = typeof move.san === "string" ? move.san.trim() : "";
+  return /[+#]$/.test(san) || san.includes("++");
+}
+
+type MoveSoundOptions = {
+  isOpponentMove?: boolean;
+};
+
+export function playChessMoveSound(
+  move?: MoveWithSoundHints | null,
+  options: MoveSoundOptions = {},
+) {
+  if (isCastlingMove(move)) {
+    playSound("castle");
+    return;
+  }
+
+  if (isCheckMove(move)) {
+    playSound("check");
+    return;
+  }
+
+  if (isCaptureMove(move)) {
+    playSound("capture");
+    return;
+  }
+
+  playSound(options.isOpponentMove ? "moveOpponent" : "moveSelf");
+}

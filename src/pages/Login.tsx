@@ -18,6 +18,7 @@ export default function Login() {
   const { setUser, setError, banReason, setBanned } = useAuthStore();
   const { login: adminLogin } = useAdminStore();
   const { isDarkMode, toggleTheme } = useThemeStore();
+  const logoSrc = isDarkMode ? "/images/Logo.png" : "/images/LightModeLogo.png";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -76,7 +77,7 @@ export default function Login() {
       <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-800">
         <div className="text-center mb-8">
           <img
-            src="/images/Logo.png"
+            src={logoSrc}
             alt="NeonGambit"
             className="w-36 h-36 object-contain mx-auto mb-4"
           />

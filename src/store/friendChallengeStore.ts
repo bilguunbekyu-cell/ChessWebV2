@@ -33,6 +33,7 @@ export interface FriendGameStartedPayload {
   opponentName: string;
   timeControl: { initial: number; increment: number };
   gameType?: string;
+  variant?: "standard" | "chess960";
   rated?: boolean;
 }
 

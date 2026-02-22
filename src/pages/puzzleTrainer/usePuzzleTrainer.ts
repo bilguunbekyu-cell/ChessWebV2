@@ -83,28 +83,51 @@ export function usePuzzleTrainer() {
     [currentPuzzle],
   );
 
-  const puzzleElo = user?.puzzleElo ?? 0;
+  const puzzleElo = user?.puzzleElo ?? 1200;
 
-  const awardPuzzleSolve = useCallback(async () => {
-    if (!currentPuzzle) return;
-    try {
-      const res = await fetch(
-        `${API_URL}/api/puzzles/${currentPuzzle._id}/solve`,
-        {
-          method: "POST",
-          credentials: "include",
-        },
-      );
-      const data = await res.json();
-      if (res.ok && data?.puzzleElo !== undefined && setUser) {
-        if (user) {
-          setUser({ ...user, puzzleElo: data.puzzleElo });
+  const submitPuzzleAttemptResult = useCallback(
+    async (
+      result: "SOLVED" | "FAILED" | "SKIPPED",
+      payload: {
+        movesPlayed?: string[];
+        timeMs?: number;
+        usedHint?: boolean;
+      } = {},
+    ) => {
+      if (!currentPuzzle || !user) return;
+      try {
+        const res = await fetch(
+          `${API_URL}/api/puzzles/${currentPuzzle._id}/attempt`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              result,
+              movesPlayed: payload.movesPlayed ?? [],
+              timeMs: payload.timeMs ?? 0,
+              usedHint: payload.usedHint === true,
+            }),
+          },
+        );
+        const data = await res.json();
+        if (res.ok && data?.user?.puzzleElo !== undefined) {
+          setUser({
+            ...user,
+            puzzleElo: data.user.puzzleElo,
+            puzzleBestElo: data.user.puzzleBestElo,
+            puzzleAttempts: data.user.puzzleAttempts,
+            puzzleSolved: data.user.puzzleSolved,
+            puzzleFailed: data.user.puzzleFailed,
+            puzzleSkipped: data.user.puzzleSkipped,
+          });
         }
+      } catch (err) {
+        console.error("Failed to submit puzzle attempt:", err);
       }
-    } catch (err) {
-      console.error("Failed to award puzzle Elo:", err);
-    }
-  }, [currentPuzzle, setUser, user]);
+    },
+    [currentPuzzle, setUser, user],
+  );
 
   const resetPuzzleState = useCallback(() => {
     if (!currentPuzzle) return;
@@ -158,17 +181,41 @@ export function usePuzzleTrainer() {
     return () => clearTimeout(timer);
   }, [status, resetPuzzleState]);
 
-  const handlePuzzleSolved = useCallback(() => {
-    setStatus("correct");
-    setStreak((s) => s + 1);
-    awardPuzzleSolve();
-  }, [awardPuzzleSolve]);
+  const handlePuzzleSolved = useCallback(
+    (movesPlayed: string[]) => {
+      setStatus("correct");
+      setStreak((s) => s + 1);
+      void submitPuzzleAttemptResult("SOLVED", {
+        movesPlayed,
+        timeMs: Math.max(0, Date.now() - startTime),
+        usedHint: hintsUsed > 0,
+      });
+    },
+    [hintsUsed, startTime, submitPuzzleAttemptResult],
+  );
 
-  const handleWrongMove = useCallback(() => {
-    setStatus("wrong");
-    setAttemptCount((c) => c + 1);
-    setStreak(0);
-  }, []);
+  const handleWrongMove = useCallback(
+    (movesPlayed: string[]) => {
+      setStatus("wrong");
+      setAttemptCount((c) => c + 1);
+      setStreak(0);
+      void submitPuzzleAttemptResult("FAILED", {
+        movesPlayed,
+        timeMs: Math.max(0, Date.now() - startTime),
+        usedHint: hintsUsed > 0,
+      });
+    },
+    [hintsUsed, startTime, submitPuzzleAttemptResult],
+  );
+
+  const markPuzzleSkipped = useCallback(() => {
+    if (status !== "solving") return;
+    void submitPuzzleAttemptResult("SKIPPED", {
+      movesPlayed: game.history(),
+      timeMs: Math.max(0, Date.now() - startTime),
+      usedHint: hintsUsed > 0,
+    });
+  }, [game, hintsUsed, startTime, status, submitPuzzleAttemptResult]);
 
   const onDrop = useCallback(
     (sourceSquare: string, targetSquare: string) => {
@@ -199,7 +246,7 @@ export function usePuzzleTrainer() {
           setCurrentMoveIndex(nextMoveIndex);
 
           if (nextMoveIndex >= solutionMoves.length) {
-            handlePuzzleSolved();
+            handlePuzzleSolved(solutionMoves.slice(0, nextMoveIndex));
           } else {
             setTimeout(() => {
               const opponentMoveStr = solutionMoves[nextMoveIndex];
@@ -215,7 +262,7 @@ export function usePuzzleTrainer() {
                   setCurrentMoveIndex(nextMoveIndex + 1);
 
                   if (nextMoveIndex + 1 >= solutionMoves.length) {
-                    handlePuzzleSolved();
+                    handlePuzzleSolved(solutionMoves.slice(0, nextMoveIndex + 1));
                   }
                 }
               }
@@ -225,7 +272,7 @@ export function usePuzzleTrainer() {
         }
       }
 
-      handleWrongMove();
+      handleWrongMove([...game.history(), `${sourceSquare}${targetSquare}`]);
       return false;
     },
     [
@@ -241,12 +288,14 @@ export function usePuzzleTrainer() {
 
   const nextPuzzle = () => {
     if (!currentPuzzle || puzzles.length === 0) return;
+    markPuzzleSkipped();
     const nextIdx = (currentPuzzleIndex + 1) % puzzles.length;
     navigate(`/puzzles/train/${puzzles[nextIdx]._id}`);
   };
 
   const prevPuzzle = () => {
     if (!currentPuzzle || puzzles.length === 0) return;
+    markPuzzleSkipped();
     const prevIdx =
       currentPuzzleIndex === 0 ? puzzles.length - 1 : currentPuzzleIndex - 1;
     navigate(`/puzzles/train/${puzzles[prevIdx]._id}`);

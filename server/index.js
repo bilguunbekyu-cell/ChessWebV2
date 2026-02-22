@@ -1934,7 +1934,12 @@ io.on("connection", (socket) => {
 
       const gameId = crypto.randomBytes(8).toString("hex");
       const room = `game:${gameId}`;
-      const chess = new Chess();
+      const normalizedVariant = normalizeVariant(challenge.gameType);
+      const initialPosition = createInitialPosition(normalizedVariant);
+      const chess =
+        initialPosition.fen === "start"
+          ? new Chess()
+          : new Chess(initialPosition.fen);
       const normalizedTimeControl = normalizeTimeControl(challenge.timeControl);
 
       let whiteSocketId = challengerSocket.id;
@@ -1962,7 +1967,8 @@ io.on("connection", (socket) => {
           black: socketToUser[blackSocketId] || "",
         },
         timeControl: normalizedTimeControl,
-        variant: normalizeVariant(challenge.gameType),
+        variant: normalizedVariant,
+        chess960: initialPosition.chess960,
         isRated: challenge.rated === true,
       });
 
@@ -1985,6 +1991,7 @@ io.on("connection", (socket) => {
         opponentName: challenge.toName || receiverSocket.data.name || "Friend",
         timeControl: normalizedTimeControl,
         gameType: challenge.gameType,
+        variant: normalizedVariant,
         rated: challenge.rated,
       };
 
@@ -1998,6 +2005,7 @@ io.on("connection", (socket) => {
           challenge.fromName || challengerSocket.data.name || "Friend",
         timeControl: normalizedTimeControl,
         gameType: challenge.gameType,
+        variant: normalizedVariant,
         rated: challenge.rated,
       };
 

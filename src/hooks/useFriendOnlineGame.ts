@@ -12,24 +12,33 @@ import {
 } from "./gameHistorySaver/utils";
 import { detectOpeningFromSan } from "../utils/openingExplorer";
 import { useAuthStore } from "../store/authStore";
+import { playChessMoveSound } from "../utils/moveSounds";
 import {
   FriendGameStartedPayload,
   useFriendChallengeStore,
 } from "../store/friendChallengeStore";
 
 type PlayerColor = "w" | "b";
+type MatchVariant = "standard" | "chess960";
 type GameOverReason =
   | "checkmate"
   | "draw"
   | "resign"
   | "timeout"
   | "opponent_left";
+const BOARD_FILES = ["a", "b", "c", "d", "e", "f", "g", "h"] as const;
+
+function normalizeMatchVariant(value: unknown): MatchVariant {
+  if (typeof value !== "string") return "standard";
+  return value.trim().toLowerCase() === "chess960" ? "chess960" : "standard";
+}
 
 interface MoveAppliedPayload {
   gameId: string;
   move: { from: Square; to: Square; san: string };
   fen: string;
   turn: PlayerColor;
+  isChess960Castle?: boolean;
   isCheckmate?: boolean;
   isDraw?: boolean;
   isStalemate?: boolean;
@@ -105,6 +114,7 @@ export function useFriendOnlineGame() {
   const [opponentName, setOpponentName] = useState("Friend");
   const [opponentUserId, setOpponentUserId] = useState<string | null>(null);
   const [gameType, setGameType] = useState("standard");
+  const [matchVariant, setMatchVariant] = useState<MatchVariant>("standard");
   const [isRated, setIsRated] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [moveFrom, setMoveFrom] = useState<Square | null>(null);
@@ -175,6 +185,7 @@ export function useFriendOnlineGame() {
     setOpponentName("Friend");
     setOpponentUserId(null);
     setGameType("standard");
+    setMatchVariant("standard");
     setIsRated(false);
     setPlayerColor("w");
     playerColorRef.current = "w";
@@ -201,7 +212,11 @@ export function useFriendOnlineGame() {
         payload.opponentUserId ? String(payload.opponentUserId) : null,
       );
       setOpponentName(payload.opponentName || "Friend");
-      setGameType(payload.gameType || "standard");
+      const normalizedVariant = normalizeMatchVariant(
+        payload.variant ?? payload.gameType,
+      );
+      setMatchVariant(normalizedVariant);
+      setGameType(normalizedVariant);
       setIsRated(payload.rated === true);
       setGameStarted(true);
       setGameOver(false);
@@ -243,6 +258,25 @@ export function useFriendOnlineGame() {
 
     const handleMoveApplied = (payload: MoveAppliedPayload) => {
       if (payload.gameId !== gameIdRef.current) return;
+      const isOpponentMove = payload.turn === playerColorRef.current;
+
+      if (payload.isChess960Castle) {
+        const nextGame = new Chess(payload.fen);
+        gameRef.current = nextGame;
+        setGame(nextGame);
+        setMoves((prev) => [...prev, payload.move.san]);
+        if (isOpponentMove) {
+          playChessMoveSound(
+            { ...payload.move, castlingSide: "k" },
+            { isOpponentMove: true },
+          );
+        }
+        setLastMove({ from: payload.move.from, to: payload.move.to });
+        setMoveFrom(null);
+        setOptionSquares({});
+        return;
+      }
+
       const currentGame = gameRef.current;
       const applied = currentGame.move({
         from: payload.move.from,
@@ -254,11 +288,17 @@ export function useFriendOnlineGame() {
         gameRef.current = currentGame;
         setGame(new Chess(currentGame.fen()));
         setMoves(currentGame.history());
+        if (isOpponentMove) {
+          playChessMoveSound(applied, { isOpponentMove: true });
+        }
       } else {
         const nextGame = new Chess(payload.fen);
         gameRef.current = nextGame;
         setGame(nextGame);
         setMoves((prev) => [...prev, payload.move.san]);
+        if (isOpponentMove) {
+          playChessMoveSound(payload.move, { isOpponentMove: true });
+        }
       }
       setLastMove({ from: payload.move.from, to: payload.move.to });
       setMoveFrom(null);
@@ -470,7 +510,11 @@ export function useFriendOnlineGame() {
     });
 
     saveGameHistory({
-      event: "Friend Challenge",
+      event:
+        matchVariant === "chess960"
+          ? "Friend Challenge Chess960"
+          : "Friend Challenge",
+      variant: matchVariant,
       site: "NeonGambit",
       date: formatDate(startDate),
       round: "-",
@@ -571,12 +615,77 @@ export function useFriendOnlineGame() {
     user?.fullName,
     user?.rating,
     isRated,
+    matchVariant,
   ]);
 
   const clearSelection = useCallback(() => {
     setMoveFrom(null);
     setOptionSquares({});
   }, []);
+
+  const addChess960CastlingTargets = useCallback(
+    (currentGame: Chess, kingSquare: Square) => {
+      if (matchVariant !== "chess960") return;
+
+      const kingPiece = currentGame.get(kingSquare);
+      if (
+        !kingPiece ||
+        kingPiece.color !== playerColor ||
+        kingPiece.type !== "k"
+      ) {
+        return;
+      }
+
+      const rank = kingSquare[1];
+      const extraSquares: OptionSquares = {};
+
+      BOARD_FILES.forEach((file) => {
+        const candidateSquare = `${file}${rank}` as Square;
+        if (candidateSquare === kingSquare) return;
+        const candidatePiece = currentGame.get(candidateSquare);
+        if (
+          candidatePiece &&
+          candidatePiece.color === playerColor &&
+          candidatePiece.type === "r"
+        ) {
+          extraSquares[candidateSquare] = {
+            background:
+              "radial-gradient(circle, rgba(20, 184, 166, 0.35) 45%, transparent 47%)",
+            borderRadius: "50%",
+          };
+        }
+      });
+
+      if (Object.keys(extraSquares).length === 0) return;
+      setOptionSquares((prev) => ({ ...prev, ...extraSquares }));
+    },
+    [matchVariant, playerColor],
+  );
+
+  const isChess960CastlingDrop = useCallback(
+    (currentGame: Chess, sourceSquare: Square, targetSquare: Square) => {
+      if (matchVariant !== "chess960") return false;
+
+      const kingPiece = currentGame.get(sourceSquare);
+      if (
+        !kingPiece ||
+        kingPiece.color !== playerColor ||
+        kingPiece.type !== "k"
+      ) {
+        return false;
+      }
+
+      if (sourceSquare[1] !== targetSquare[1]) return false;
+
+      const targetPiece = currentGame.get(targetSquare);
+      return (
+        !!targetPiece &&
+        targetPiece.color === playerColor &&
+        targetPiece.type === "r"
+      );
+    },
+    [matchVariant, playerColor],
+  );
 
   // ---------- promotion dialog state (click-to-move) ----------
   const [promotionToSquare, setPromotionToSquare] = useState<Square | null>(
@@ -593,6 +702,37 @@ export function useFriendOnlineGame() {
     return ch === "q" || ch === "r" || ch === "b" || ch === "n" ? ch : "q";
   };
 
+  const playLocalMoveSound = useCallback(
+    (from: Square, to: Square, promotion?: string) => {
+      const currentGame = gameRef.current;
+      const legalMoves = currentGame.moves({ square: from, verbose: true });
+
+      const exactMove =
+        legalMoves.find((move) => {
+          if (move.to !== to) return false;
+          const movePromotion = (move as { promotion?: string }).promotion;
+          return promotion ? movePromotion === promotion : true;
+        }) || legalMoves.find((move) => move.to === to);
+
+      if (exactMove) {
+        playChessMoveSound(exactMove);
+        return;
+      }
+
+      if (isChess960CastlingDrop(currentGame, from, to)) {
+        playChessMoveSound({
+          from,
+          to,
+          castlingSide: to[0] > from[0] ? "k" : "q",
+        });
+        return;
+      }
+
+      playChessMoveSound({ from, to });
+    },
+    [isChess960CastlingDrop],
+  );
+
   const onPromotionPieceSelect = useCallback(
     (piece?: string, _fromSquare?: Square, _toSquare?: Square) => {
       const from = pendingPromoFrom;
@@ -603,17 +743,25 @@ export function useFriendOnlineGame() {
       setPendingPromoFrom(null);
 
       if (!piece || !from || !to || !socket || !gameIdRef.current) return false;
+      const promotion = extractPromo(piece);
+      playLocalMoveSound(from, to, promotion);
 
       socket.emit("makeMove", {
         gameId: gameIdRef.current,
         from,
         to,
-        promotion: extractPromo(piece),
+        promotion,
       });
       clearSelection();
       return true;
     },
-    [clearSelection, pendingPromoFrom, promotionToSquare, socket],
+    [
+      clearSelection,
+      pendingPromoFrom,
+      playLocalMoveSound,
+      promotionToSquare,
+      socket,
+    ],
   );
 
   const onSquareClick = useCallback(
@@ -630,6 +778,7 @@ export function useFriendOnlineGame() {
         if (!piece || piece.color !== playerColor) return;
         setMoveFrom(square);
         getMoveOptions(square);
+        addChess960CastlingTargets(currentGame, square);
         return;
       }
 
@@ -654,6 +803,7 @@ export function useFriendOnlineGame() {
           return;
         }
 
+        playLocalMoveSound(moveFrom, square, "q");
         socket.emit("makeMove", {
           gameId: gameIdRef.current,
           from: moveFrom,
@@ -668,6 +818,7 @@ export function useFriendOnlineGame() {
       if (piece && piece.color === playerColor) {
         setMoveFrom(square);
         getMoveOptions(square);
+        addChess960CastlingTargets(currentGame, square);
         return;
       }
 
@@ -682,7 +833,9 @@ export function useFriendOnlineGame() {
       moveFrom,
       optionSquares,
       playerColor,
+      playLocalMoveSound,
       getMoveOptions,
+      addChess960CastlingTargets,
     ],
   );
 
@@ -700,22 +853,30 @@ export function useFriendOnlineGame() {
       const isLegalMove = currentGame
         .moves({ square: sourceSquare, verbose: true })
         .some((move) => move.to === targetSquare);
+      const isLegalChess960Castle = isChess960CastlingDrop(
+        currentGame,
+        sourceSquare,
+        targetSquare,
+      );
 
-      if (!isLegalMove) {
+      if (!isLegalMove && !isLegalChess960Castle) {
         if (getMoveOptions(sourceSquare)) {
           setMoveFrom(sourceSquare);
+          addChess960CastlingTargets(currentGame, sourceSquare);
         } else {
           clearSelection();
         }
         return false;
       }
 
+      const promotion = extractPromo(piece);
       socket.emit("makeMove", {
         gameId: gameIdRef.current,
         from: sourceSquare,
         to: targetSquare,
-        promotion: extractPromo(piece),
+        promotion,
       });
+      playLocalMoveSound(sourceSquare, targetSquare, promotion);
       clearSelection();
       return true;
     },
@@ -724,7 +885,10 @@ export function useFriendOnlineGame() {
       gameOver,
       gameStarted,
       getMoveOptions,
+      isChess960CastlingDrop,
+      addChess960CastlingTargets,
       isPlayerTurn,
+      playLocalMoveSound,
       playerColor,
       socket,
     ],
@@ -777,6 +941,7 @@ export function useFriendOnlineGame() {
     opponentName,
     opponentUserId,
     gameType,
+    matchVariant,
     isRated,
     statusMessage,
     showGameOverModal,

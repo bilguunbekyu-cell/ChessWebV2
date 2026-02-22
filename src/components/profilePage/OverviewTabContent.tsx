@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { GameHistory } from "../../historyTypes";
 import { ProfileStats, TabType } from "./types";
-import { GameOutcomesCard } from "./GameOutcomesCard";
 import { RecentGames } from "./RecentGames";
 import { FormatStatsCard } from "./FormatStatsCard";
 import { RatingTimelineCard } from "./RatingTimelineCard";
@@ -31,8 +30,9 @@ export function OverviewTabContent({
       transition={{ duration: 0.3 }}
     >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <GameOutcomesCard stats={stats} />
-        <FormatStatsCard />
+        <div className="lg:col-span-2">
+          <FormatStatsCard />
+        </div>
         <RatingTimelineCard />
         <PoolLeaderboardCard />
       </div>

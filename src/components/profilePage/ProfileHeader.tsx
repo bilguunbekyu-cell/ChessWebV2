@@ -64,6 +64,20 @@ function presenceDotClass(status: PresenceStatus) {
   return "bg-gray-400";
 }
 
+function resolveAvatarUrl(avatar?: string) {
+  if (!avatar) return "";
+  if (
+    avatar.startsWith("http://") ||
+    avatar.startsWith("https://") ||
+    avatar.startsWith("data:") ||
+    avatar.startsWith("blob:")
+  ) {
+    return avatar;
+  }
+  const base = import.meta.env.VITE_API_URL || "http://localhost:3001";
+  return `${base}${avatar.startsWith("/") ? "" : "/"}${avatar}`;
+}
+
 interface ProfileHeaderProps {
   user: {
     fullName?: string;
@@ -95,7 +109,7 @@ export function ProfileHeader({
   memberSince,
   activeTab,
   setActiveTab,
-  isMe = true,
+  isMe = false,
   relationship = "self",
   onAddFriend,
   onRemoveFriend,
@@ -162,6 +176,7 @@ export function ProfileHeader({
     () => presenceText(effectiveStatus, effectiveLastSeen),
     [clockTick, effectiveLastSeen, effectiveStatus],
   );
+  const showVisitorActions = !isMe && (!!onChallenge || !!onAddFriend || !!onRemoveFriend);
 
   return (
     <div className="relative">
@@ -169,15 +184,31 @@ export function ProfileHeader({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl p-5 lg:p-6"
+          className="relative overflow-hidden rounded-2xl border border-gray-200/70 dark:border-white/10 bg-gradient-to-br from-white via-gray-50 to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:shadow-[0_22px_48px_rgba(0,0,0,0.5)] p-4 lg:p-5"
         >
-          <div className="flex flex-col xl:flex-row xl:items-start gap-6">
+          <div className="pointer-events-none absolute -top-20 -left-12 w-64 h-64 rounded-full bg-teal-400/15 blur-3xl" />
+          <div className="relative z-10 flex flex-col xl:flex-row xl:items-start gap-5">
             <div className="flex-shrink-0">
-              <ProfileAvatarUpload
-                currentAvatar={user?.avatar}
-                userName={user?.fullName}
-                size="xl"
-              />
+              {isMe ? (
+                <ProfileAvatarUpload
+                  currentAvatar={user?.avatar}
+                  userName={user?.fullName}
+                  size="xl"
+                  editable={true}
+                />
+              ) : (
+                <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 shadow-[0_0_42px_rgba(20,184,166,0.28)] ring-4 ring-white/70 dark:ring-black/30 overflow-hidden flex items-center justify-center text-white text-4xl font-bold">
+                  {user?.avatar ? (
+                    <img
+                      src={resolveAvatarUrl(user.avatar)}
+                      alt={displayName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    displayName.substring(0, 2).toUpperCase()
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex-1 min-w-0">
@@ -201,20 +232,28 @@ export function ProfileHeader({
                       <button
                         type="button"
                         onClick={() => navigate("/settings")}
-                        className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-semibold text-gray-900 dark:text-white inline-flex items-center gap-2 transition-colors"
+                        className="px-4 py-2.5 rounded-lg border border-gray-300/80 dark:border-white/15 bg-white/85 dark:bg-black/25 hover:bg-white dark:hover:bg-black/35 text-sm font-semibold text-gray-900 dark:text-white inline-flex items-center gap-2 transition-colors"
                       >
                         <Settings size={16} />
                         Edit Profile
                       </button>
                     </>
-                  ) : (
+                  ) : showVisitorActions ? (
                     <>
+                      <button
+                        type="button"
+                        onClick={onChallenge}
+                        className="px-4 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-sm font-semibold text-white inline-flex items-center gap-2 transition-colors shadow-[0_8px_20px_rgba(13,148,136,0.35)]"
+                      >
+                        <Swords size={16} />
+                        Challenge
+                      </button>
                       {relationship === "friends" ? (
                         <button
                           type="button"
                           onClick={onRemoveFriend}
                           disabled={friendLoading}
-                          className="px-4 py-2.5 rounded-lg border border-teal-400/40 bg-teal-50 dark:bg-teal-500/10 hover:bg-teal-100 dark:hover:bg-teal-500/20 text-sm font-semibold text-teal-700 dark:text-teal-300 inline-flex items-center gap-2 transition-colors disabled:opacity-50"
+                          className="px-4 py-2.5 rounded-lg border border-teal-400/40 bg-teal-50/80 dark:bg-teal-500/10 hover:bg-teal-100 dark:hover:bg-teal-500/20 text-sm font-semibold text-teal-700 dark:text-teal-300 inline-flex items-center gap-2 transition-colors disabled:opacity-50"
                         >
                           <UserCheck size={16} />
                           Friends
@@ -224,7 +263,7 @@ export function ProfileHeader({
                           type="button"
                           onClick={onAddFriend}
                           disabled={friendLoading}
-                          className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-semibold text-gray-900 dark:text-white inline-flex items-center gap-2 transition-colors disabled:opacity-50"
+                          className="px-4 py-2.5 rounded-lg border border-gray-300/80 dark:border-white/15 bg-white/85 dark:bg-black/25 hover:bg-white dark:hover:bg-black/35 text-sm font-semibold text-gray-900 dark:text-white inline-flex items-center gap-2 transition-colors disabled:opacity-50"
                         >
                           <UserRoundPlus size={16} />
                           Add Friend
@@ -232,25 +271,17 @@ export function ProfileHeader({
                       )}
                       <button
                         type="button"
-                        onClick={onChallenge}
-                        className="px-4 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-sm font-semibold text-white inline-flex items-center gap-2 transition-colors"
-                      >
-                        <Swords size={16} />
-                        Challenge
-                      </button>
-                      <button
-                        type="button"
-                        className="w-10 h-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 inline-flex items-center justify-center transition-colors"
+                        className="w-10 h-10 rounded-lg border border-gray-300/80 dark:border-white/15 bg-white/85 dark:bg-black/25 hover:bg-white dark:hover:bg-black/35 text-gray-700 dark:text-gray-200 inline-flex items-center justify-center transition-colors"
                         aria-label="More profile actions"
                       >
                         <MoreHorizontal size={18} />
                       </button>
                     </>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
-              <div className="mt-5 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+              <div className="mt-4 pt-3 border-t border-gray-200/70 dark:border-white/10 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
                 <span className="text-gray-500 dark:text-gray-400">
                   Joined{" "}
                   <span className="text-gray-900 dark:text-white">
@@ -269,13 +300,13 @@ export function ProfileHeader({
             </div>
           </div>
 
-          <div className="mt-6 border-t border-gray-200 dark:border-gray-800 pt-4">
-            <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
+          <div className="relative z-10 mt-5 border-t border-gray-200/70 dark:border-white/10 pt-4">
+            <div className="flex gap-1.5 bg-white/70 dark:bg-black/20 border border-gray-200/70 dark:border-white/10 p-1 rounded-xl w-fit backdrop-blur">
               <button
                 onClick={() => setActiveTab("overview")}
                 className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                   activeTab === "overview"
-                    ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
+                    ? "bg-white dark:bg-slate-900 text-gray-900 dark:text-white shadow-sm"
                     : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                 }`}
               >
@@ -286,7 +317,7 @@ export function ProfileHeader({
                 onClick={() => setActiveTab("games")}
                 className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                   activeTab === "games"
-                    ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
+                    ? "bg-white dark:bg-slate-900 text-gray-900 dark:text-white shadow-sm"
                     : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
                 }`}
               >

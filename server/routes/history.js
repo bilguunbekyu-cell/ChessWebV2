@@ -4,6 +4,18 @@ import { authMiddleware } from "../middleware/index.js";
 
 const router = Router();
 
+function normalizeVariant(value) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  return normalized === "chess960" ? "chess960" : "standard";
+}
+
+function detectVariantFromEvent(event) {
+  const text = String(event || "");
+  return /960|chess960/i.test(text) ? "chess960" : "standard";
+}
+
 // Save game history
 router.post("/", authMiddleware, async (req, res) => {
   try {
@@ -15,6 +27,7 @@ router.post("/", authMiddleware, async (req, res) => {
       white,
       black,
       result,
+      variant,
       currentPosition,
       timeControl,
       utcDate,
@@ -83,6 +96,7 @@ router.post("/", authMiddleware, async (req, res) => {
       white,
       black,
       result,
+      variant: variant ? normalizeVariant(variant) : detectVariantFromEvent(event),
       currentPosition,
       timeControl,
       utcDate,

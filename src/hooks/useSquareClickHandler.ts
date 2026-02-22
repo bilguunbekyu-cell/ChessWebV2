@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { Chess, Square } from "chess.js";
 import { OptionSquares } from "./useStockfishGameTypes";
+import { playChessMoveSound } from "../utils/moveSounds";
 
 /**
  * Extract a single-char promotion key ("q", "r", "b", "n") from the piece
@@ -70,6 +71,7 @@ export function useSquareClickHandler(
         gameRef.current = currentGame;
         setGame(new Chess(currentGame.fen()));
         setMoves(currentGame.history());
+        playChessMoveSound(result);
         clearPreMove();
         setLastMove?.({ from, to });
         clearSelection();

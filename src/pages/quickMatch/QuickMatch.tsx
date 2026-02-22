@@ -6,6 +6,7 @@ import { QuickMatchSetup } from "./QuickMatchSetup";
 import { QuickMatchGameView } from "./QuickMatchGameView";
 
 type MatchVariant = "standard" | "chess960";
+const LAST_QUICK_TIME_CONTROL_KEY = "quickMatch:lastTimeControl";
 
 function normalizeVariant(value: unknown): MatchVariant {
   if (typeof value !== "string") return "standard";
@@ -43,6 +44,48 @@ function getTimeControlFromSearch(
   }
 
   return null;
+}
+
+function getStoredTimeControl():
+  | { initial: number; increment: number }
+  | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(LAST_QUICK_TIME_CONTROL_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as { initial?: unknown; increment?: unknown };
+    if (
+      typeof parsed.initial === "number" &&
+      Number.isFinite(parsed.initial) &&
+      parsed.initial >= 0 &&
+      typeof parsed.increment === "number" &&
+      Number.isFinite(parsed.increment) &&
+      parsed.increment >= 0
+    ) {
+      return {
+        initial: parsed.initial,
+        increment: parsed.increment,
+      };
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function storeTimeControl(value: { initial: number; increment: number }) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      LAST_QUICK_TIME_CONTROL_KEY,
+      JSON.stringify(value),
+    );
+  } catch {
+    // Ignore persistence issues.
+  }
 }
 
 function getAutoStartFromState(state: unknown): boolean {
@@ -109,7 +152,8 @@ export default function QuickMatch() {
   const [timeControl, setTimeControl] = useState(() => {
     return (
       getTimeControlFromState(location.state) ||
-      getTimeControlFromSearch(location.search) || {
+      getTimeControlFromSearch(location.search) ||
+      getStoredTimeControl() || {
         initial: 300,
         increment: 0,
       }
@@ -129,16 +173,16 @@ export default function QuickMatch() {
       getTimeControlFromSearch(location.search);
     if (selectedTimeControl) {
       setTimeControl(selectedTimeControl);
+      return;
     }
+    setTimeControl(getStoredTimeControl() || { initial: 300, increment: 0 });
   }, [location.state, location.search]);
 
   useEffect(() => {
     const selectedVariant =
       getVariantFromState(location.state) ||
       getVariantFromSearch(location.search);
-    if (selectedVariant) {
-      setVariant(selectedVariant);
-    }
+    setVariant(selectedVariant || "standard");
   }, [location.state, location.search]);
 
   const autoStartRequested =
@@ -162,6 +206,7 @@ export default function QuickMatch() {
     if (!isConnected) return;
 
     autoStartHandledRef.current = true;
+    storeTimeControl(timeControl);
     startMatch(timeControl, user?.fullName || "Player", variant);
   }, [
     gameStarted,
@@ -194,6 +239,8 @@ export default function QuickMatch() {
   };
 
   const handleStartMatch = () => {
+    storeTimeControl(timeControl);
+
     const params = new URLSearchParams({
       initial: String(timeControl.initial),
       increment: String(timeControl.increment),
@@ -211,6 +258,42 @@ export default function QuickMatch() {
     });
     setPendingAutoStart(false);
     startMatch(timeControl, user?.fullName || "Player", variant);
+  };
+
+  const handleVariantChange = (nextVariant: MatchVariant) => {
+    setVariant(nextVariant);
+    const params = new URLSearchParams({
+      initial: String(timeControl.initial),
+      increment: String(timeControl.increment),
+    });
+    if (nextVariant !== "standard") {
+      params.set("variant", nextVariant);
+    }
+
+    navigate(`/play/quick?${params.toString()}`, {
+      replace: true,
+      state: {
+        initial: timeControl.initial,
+        increment: timeControl.increment,
+        variant: nextVariant,
+      },
+    });
+  };
+
+  const handleOpenVariantPage = (variantKey: string) => {
+    const params = new URLSearchParams({
+      initial: String(timeControl.initial),
+      increment: String(timeControl.increment),
+      variant: variantKey,
+    });
+
+    navigate(`/play/variants?${params.toString()}`, {
+      state: {
+        initial: timeControl.initial,
+        increment: timeControl.increment,
+        variant: variantKey,
+      },
+    });
   };
 
   // If game started, show the game board
@@ -254,7 +337,8 @@ export default function QuickMatch() {
       timeControl={timeControl}
       onTimeControlChange={setTimeControl}
       variant={variant}
-      onVariantChange={setVariant}
+      onVariantChange={handleVariantChange}
+      onOpenVariantPage={handleOpenVariantPage}
       onStart={handleStartMatch}
       isSearching={isSearching || pendingAutoStart}
       queueStatus={queueStatus}

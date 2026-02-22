@@ -90,14 +90,13 @@ export function QuickMatchGameView({
 
     const updateSize = () => {
       const rect = container.getBoundingClientRect();
-      const padding = 12;
+      const padding = 24;
       const topH = topRef.current?.offsetHeight ?? 60;
       const bottomH = bottomRef.current?.offsetHeight ?? 60;
-      const gap = 8;
       const availableWidth = rect.width - padding - BOARD_FRAME;
-      const availableHeight = rect.height - topH - bottomH - gap * 2 - padding;
+      const availableHeight = rect.height - topH - bottomH - padding;
       const size = Math.floor(Math.min(availableWidth, availableHeight));
-      setBoardWidth(Math.max(320, Math.min(size, 720)));
+      setBoardWidth(Math.max(400, Math.min(size, 720)));
     };
 
     updateSize();
@@ -112,7 +111,7 @@ export function QuickMatchGameView({
 
   return (
     <div className="relative h-screen w-full bg-slate-100 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 overflow-hidden">
-      <div className="relative h-full w-full grid grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] gap-2 p-2 overflow-hidden">
+      <div className="relative h-full w-full grid grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] overflow-hidden">
         <GameOverModal
           isOpen={showGameOverModal}
           result={gameResult}
@@ -125,7 +124,7 @@ export function QuickMatchGameView({
         {/* Main Board Area */}
         <div
           ref={leftRef}
-          className="min-w-0 flex flex-col items-center justify-center gap-2 h-full overflow-hidden"
+          className="min-w-0 flex flex-col items-center justify-center p-4 gap-4 h-full overflow-hidden"
         >
           {/* Opponent Info */}
           <div

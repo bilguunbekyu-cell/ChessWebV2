@@ -185,7 +185,7 @@ export default function UserProfile() {
     );
   }
 
-  const isMe = authUser?.id === profileUser.id;
+  const isMe = false;
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex transition-colors duration-300">

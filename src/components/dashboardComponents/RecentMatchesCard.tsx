@@ -54,7 +54,9 @@ function transformGameHistory(game: GameHistory): RecentMatch {
     timeControl: game.timeControl || "10+0",
     date: formatTimeAgo(game.createdAt),
     ratingChange,
-    analyzePath: /960|chess960/i.test(String(game.event || ""))
+    analyzePath:
+      game.variant === "chess960" ||
+      /960|chess960/i.test(String(game.event || ""))
       ? `/analyze960/${game._id}`
       : `/analyze/${game._id}`,
   };

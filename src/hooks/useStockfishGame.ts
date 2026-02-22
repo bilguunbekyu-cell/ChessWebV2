@@ -16,6 +16,7 @@ import { useGameHistorySaver } from "./useGameHistorySaver";
 import { useSquareClickHandler } from "./useSquareClickHandler";
 import { useGameActions } from "./useGameActions";
 import { useOpeningExplorer } from "./useOpeningExplorer";
+import { playChessMoveSound } from "../utils/moveSounds";
 
 export type { GameHistoryPayload };
 
@@ -84,6 +85,7 @@ export function useStockfishGame() {
         gameRef.current = currentGame;
         setGame(new Chess(currentGame.fen()));
         setMoves(currentGame.history());
+        playChessMoveSound(move);
         setLastMove({ from: queued.from as Square, to: queued.to as Square });
       }
     } catch {
