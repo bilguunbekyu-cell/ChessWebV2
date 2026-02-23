@@ -1,24 +1,27 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { PreMove, PreMoveSquares } from "./types";
 
 export const usePreMove = () => {
   const [preMove, setPreMove] = useState<PreMove | null>(null);
+  const preMoveRef = useRef<PreMove | null>(null);
   const [preMoveSquares, setPreMoveSquares] = useState<PreMoveSquares>({});
 
-  // Set a pre-move with visual highlight - distinctive cyan/teal color with border
+  // Set a pre-move with red target highlight similar to chess premove UX.
   const setPreMoveWithHighlight = useCallback(
     (from: string, to: string, promotion?: "b" | "n" | "r" | "q") => {
-      setPreMove({ from, to, promotion });
+      const nextPreMove = { from, to, promotion };
+      preMoveRef.current = nextPreMove;
+      setPreMove(nextPreMove);
       setPreMoveSquares({
         [from]: {
-          backgroundColor: "rgba(0, 200, 200, 0.4)",
-          boxShadow: "inset 0 0 0 3px rgba(0, 200, 200, 0.8)",
+          backgroundColor: "rgba(245, 158, 11, 0.35)",
+          boxShadow: "inset 0 0 0 3px rgba(245, 158, 11, 0.8)",
         },
         [to]: {
-          backgroundColor: "rgba(0, 200, 200, 0.4)",
-          boxShadow: "inset 0 0 0 3px rgba(0, 200, 200, 0.8)",
+          backgroundColor: "rgba(244, 63, 94, 0.38)",
+          boxShadow: "inset 0 0 0 3px rgba(244, 63, 94, 0.92)",
           backgroundImage:
-            "repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0, 200, 200, 0.2) 5px, rgba(0, 200, 200, 0.2) 10px)",
+            "repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(255, 255, 255, 0.14) 6px, rgba(255, 255, 255, 0.14) 12px)",
         },
       });
     },
@@ -27,19 +30,20 @@ export const usePreMove = () => {
 
   // Clear the pre-move
   const clearPreMove = useCallback(() => {
+    preMoveRef.current = null;
     setPreMove(null);
     setPreMoveSquares({});
   }, []);
 
   // Check if a pre-move is set
   const hasPreMove = useCallback(() => {
-    return preMove !== null;
-  }, [preMove]);
+    return preMoveRef.current !== null;
+  }, []);
 
   // Get the current pre-move
   const getPreMove = useCallback(() => {
-    return preMove;
-  }, [preMove]);
+    return preMoveRef.current;
+  }, []);
 
   return {
     preMove,

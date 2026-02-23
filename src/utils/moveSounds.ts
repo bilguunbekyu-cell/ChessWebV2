@@ -5,14 +5,19 @@ type MoveWithSoundHints = {
   castlingSide?: "k" | "q" | null;
   check?: boolean;
   isCheck?: boolean;
+  checkmate?: boolean;
+  isCheckmate?: boolean;
 };
 
 const SOUND_PATHS = {
   moveSelf: "/media/move-self.mp3",
   moveOpponent: "/media/move-opponent.mp3",
   check: "/media/move-check.mp3",
+  checkmate: "/media/game-end.mp3",
   capture: "/media/capture.mp3",
   castle: "/media/castle.mp3",
+  puzzleCorrect: "/media/puzzle-correct.mp3",
+  puzzleWrong: "/media/puzzle-wrong.mp3",
 } as const;
 
 const audioCache: Partial<Record<keyof typeof SOUND_PATHS, HTMLAudioElement>> =
@@ -108,7 +113,15 @@ export function isCheckMove(move?: MoveWithSoundHints | null): boolean {
   if (move.check === true || move.isCheck === true) return true;
 
   const san = typeof move.san === "string" ? move.san.trim() : "";
-  return /[+#]$/.test(san) || san.includes("++");
+  return san.endsWith("+") || san.includes("++");
+}
+
+export function isCheckmateMove(move?: MoveWithSoundHints | null): boolean {
+  if (!move) return false;
+  if (move.checkmate === true || move.isCheckmate === true) return true;
+
+  const san = typeof move.san === "string" ? move.san : "";
+  return san.includes("#");
 }
 
 type MoveSoundOptions = {
@@ -119,6 +132,11 @@ export function playChessMoveSound(
   move?: MoveWithSoundHints | null,
   options: MoveSoundOptions = {},
 ) {
+  if (isCheckmateMove(move)) {
+    playSound("checkmate");
+    return;
+  }
+
   if (isCastlingMove(move)) {
     playSound("castle");
     return;
@@ -135,4 +153,10 @@ export function playChessMoveSound(
   }
 
   playSound(options.isOpponentMove ? "moveOpponent" : "moveSelf");
+}
+
+type UiSoundName = "puzzleCorrect" | "puzzleWrong";
+
+export function playUiSound(name: UiSoundName) {
+  playSound(name);
 }

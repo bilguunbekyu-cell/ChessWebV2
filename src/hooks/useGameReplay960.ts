@@ -15,6 +15,7 @@ import { usePlaybackControls } from "./usePlaybackControls";
 import { useKeyboardControls } from "./useKeyboardControls";
 import { useEvaluation } from "./useEvaluation";
 import { useDownloadPgn } from "./useDownloadPgn";
+import { useReplayMoveSounds } from "./useReplayMoveSounds";
 
 export type {
   MoveQuality,
@@ -65,6 +66,7 @@ export function useGameReplay960(game: GameHistory) {
   } = usePlaybackControls(game, totalPlies);
 
   useKeyboardControls(ply, totalPlies, jumpTo, togglePlay, flipBoard);
+  useReplayMoveSounds(ply, plies, game.playAs);
 
   const { evalPercent, evalLabel } = useEvaluation(analysis, ply);
   const downloadPgn = useDownloadPgn(game);

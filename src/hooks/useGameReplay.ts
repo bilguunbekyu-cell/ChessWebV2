@@ -17,6 +17,7 @@ import { useEvaluation } from "./useEvaluation";
 import { useDownloadPgn } from "./useDownloadPgn";
 import { useOpeningExplorer } from "./useOpeningExplorer";
 import { findOpeningByEco } from "../utils/openingExplorer";
+import { useReplayMoveSounds } from "./useReplayMoveSounds";
 
 export type {
   MoveQuality,
@@ -84,6 +85,7 @@ export function useGameReplay(game: GameHistory) {
 
   // Keyboard controls
   useKeyboardControls(ply, totalPlies, jumpTo, togglePlay, flipBoard);
+  useReplayMoveSounds(ply, plies, game.playAs);
 
   // Evaluation
   const { evalPercent, evalLabel } = useEvaluation(analysis, ply);

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Chess } from "chess.js";
 import { useAuthStore } from "../../store/authStore";
+import { playChessMoveSound, playUiSound } from "../../utils/moveSounds";
 import { PuzzleItem, PuzzleStatus, API_URL } from "./types";
 import {
   normalizeFen,
@@ -183,6 +184,7 @@ export function usePuzzleTrainer() {
 
   const handlePuzzleSolved = useCallback(
     (movesPlayed: string[]) => {
+      playUiSound("puzzleCorrect");
       setStatus("correct");
       setStreak((s) => s + 1);
       void submitPuzzleAttemptResult("SOLVED", {
@@ -196,6 +198,7 @@ export function usePuzzleTrainer() {
 
   const handleWrongMove = useCallback(
     (movesPlayed: string[]) => {
+      playUiSound("puzzleWrong");
       setStatus("wrong");
       setAttemptCount((c) => c + 1);
       setStreak(0);
@@ -239,6 +242,7 @@ export function usePuzzleTrainer() {
         });
 
         if (move) {
+          playChessMoveSound(move);
           setGame(gameCopy);
           setLastMove({ from: sourceSquare, to: targetSquare });
 
@@ -257,6 +261,7 @@ export function usePuzzleTrainer() {
                   opponentMoveStr,
                 );
                 if (opponentMove) {
+                  playChessMoveSound(opponentMove, { isOpponentMove: true });
                   setGame(opponentGame);
                   setLastMove({ from: opponentMove.from, to: opponentMove.to });
                   setCurrentMoveIndex(nextMoveIndex + 1);

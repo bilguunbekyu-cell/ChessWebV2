@@ -86,6 +86,53 @@ interface GameOverPayload {
   };
 }
 
+interface PreMove {
+  from: Square;
+  to: Square;
+  promotion?: string;
+}
+
+const PREMOVE_SOURCE_STYLE = {
+  background:
+    "radial-gradient(circle, rgba(245, 158, 11, 0.35) 45%, transparent 47%)",
+  borderRadius: "50%",
+};
+
+function buildPreMoveSquares(preMove: PreMove | null): OptionSquares {
+  if (!preMove) return {};
+  return {
+    [preMove.from]: { backgroundColor: "rgba(249, 115, 22, 0.4)" },
+    [preMove.to]: { backgroundColor: "rgba(244, 63, 94, 0.36)" },
+  };
+}
+
+function isPromotionTargetSquare(color: PlayerColor, targetSquare: Square) {
+  return (
+    (color === "w" && targetSquare[1] === "8") ||
+    (color === "b" && targetSquare[1] === "1")
+  );
+}
+
+function isChess960CastlingDropForColor(
+  currentGame: Chess,
+  sourceSquare: Square,
+  targetSquare: Square,
+  color: PlayerColor,
+  variant: MatchVariant,
+) {
+  if (variant !== "chess960") return false;
+
+  const kingPiece = currentGame.get(sourceSquare);
+  if (!kingPiece || kingPiece.color !== color || kingPiece.type !== "k") {
+    return false;
+  }
+
+  if (sourceSquare[1] !== targetSquare[1]) return false;
+
+  const targetPiece = currentGame.get(targetSquare);
+  return !!targetPiece && targetPiece.color === color && targetPiece.type === "r";
+}
+
 export function useFriendOnlineGame() {
   const { user, setUser } = useAuthStore();
   const userRef = useRef(user);
@@ -119,6 +166,7 @@ export function useFriendOnlineGame() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [moveFrom, setMoveFrom] = useState<Square | null>(null);
   const [optionSquares, setOptionSquares] = useState<OptionSquares>({});
+  const [pendingPreMove, setPendingPreMove] = useState<PreMove | null>(null);
   const [playerTime, setPlayerTime] = useState(
     defaultGameSettings.timeControl.initial,
   );
@@ -128,6 +176,8 @@ export function useFriendOnlineGame() {
 
   const gameIdRef = useRef<string | null>(null);
   const playerColorRef = useRef<PlayerColor>("w");
+  const matchVariantRef = useRef<MatchVariant>("standard");
+  const pendingPreMoveRef = useRef<PreMove | null>(null);
   const playerNameRef = useRef<string>("Player");
   const startTimeRef = useRef<number | null>(null);
   const historySavedRef = useRef(false);
@@ -138,6 +188,64 @@ export function useFriendOnlineGame() {
 
   const getMoveOptions = useMoveOptions(gameRef, setOptionSquares);
   const isPlayerTurn = game.turn() === playerColor;
+  const preMoveSquares = buildPreMoveSquares(pendingPreMove);
+
+  const clearPreMove = useCallback(() => {
+    pendingPreMoveRef.current = null;
+    setPendingPreMove(null);
+  }, []);
+
+  const queuePreMove = useCallback((preMove: PreMove) => {
+    pendingPreMoveRef.current = preMove;
+    setPendingPreMove(preMove);
+    setMoveFrom(null);
+    setOptionSquares({});
+  }, []);
+
+  const selectPreMoveSource = useCallback((sourceSquare: Square) => {
+    setMoveFrom(sourceSquare);
+    setOptionSquares({
+      [sourceSquare]: PREMOVE_SOURCE_STYLE,
+    });
+  }, []);
+
+  const trySubmitQueuedPreMove = useCallback(() => {
+    const queuedPreMove = pendingPreMoveRef.current;
+    if (!queuedPreMove) return false;
+    if (!socket || !gameIdRef.current) return false;
+
+    const currentGame = gameRef.current;
+    if (currentGame.turn() !== playerColorRef.current) return false;
+
+    const validationGame = new Chess(currentGame.fen());
+    const isChess960Castle = isChess960CastlingDropForColor(
+      validationGame,
+      queuedPreMove.from,
+      queuedPreMove.to,
+      playerColorRef.current,
+      matchVariantRef.current,
+    );
+    const preview =
+      !isChess960Castle &&
+      validationGame.move({
+        from: queuedPreMove.from,
+        to: queuedPreMove.to,
+        promotion: queuedPreMove.promotion || "q",
+      });
+
+    pendingPreMoveRef.current = null;
+    setPendingPreMove(null);
+
+    if (!isChess960Castle && !preview) return false;
+
+    socket.emit("makeMove", {
+      gameId: gameIdRef.current,
+      from: queuedPreMove.from,
+      to: queuedPreMove.to,
+      promotion: queuedPreMove.promotion || "q",
+    });
+    return true;
+  }, [socket]);
 
   useEffect(() => {
     playerNameRef.current = user?.fullName || "Player";
@@ -146,6 +254,14 @@ export function useFriendOnlineGame() {
   useEffect(() => {
     userRef.current = user;
   }, [user]);
+
+  useEffect(() => {
+    matchVariantRef.current = matchVariant;
+  }, [matchVariant]);
+
+  useEffect(() => {
+    pendingPreMoveRef.current = pendingPreMove;
+  }, [pendingPreMove]);
 
   const formatResult = (payload: GameOverPayload) => {
     if (payload.reason === "draw" || !payload.winner) {
@@ -179,6 +295,8 @@ export function useFriendOnlineGame() {
     setShowGameOverModal(false);
     setMoveFrom(null);
     setOptionSquares({});
+    setPendingPreMove(null);
+    pendingPreMoveRef.current = null;
     setGameId(null);
     setSavedGameId(null);
     gameIdRef.current = null;
@@ -186,6 +304,7 @@ export function useFriendOnlineGame() {
     setOpponentUserId(null);
     setGameType("standard");
     setMatchVariant("standard");
+    matchVariantRef.current = "standard";
     setIsRated(false);
     setPlayerColor("w");
     playerColorRef.current = "w";
@@ -206,6 +325,8 @@ export function useFriendOnlineGame() {
       setLastMove(null);
       setGameId(payload.gameId);
       gameIdRef.current = payload.gameId;
+      setPendingPreMove(null);
+      pendingPreMoveRef.current = null;
       setPlayerColor(payload.color);
       playerColorRef.current = payload.color;
       setOpponentUserId(
@@ -216,6 +337,7 @@ export function useFriendOnlineGame() {
         payload.variant ?? payload.gameType,
       );
       setMatchVariant(normalizedVariant);
+      matchVariantRef.current = normalizedVariant;
       setGameType(normalizedVariant);
       setIsRated(payload.rated === true);
       setGameStarted(true);
@@ -271,38 +393,38 @@ export function useFriendOnlineGame() {
             { isOpponentMove: true },
           );
         }
-        setLastMove({ from: payload.move.from, to: payload.move.to });
-        setMoveFrom(null);
-        setOptionSquares({});
-        return;
-      }
-
-      const currentGame = gameRef.current;
-      const applied = currentGame.move({
-        from: payload.move.from,
-        to: payload.move.to,
-        promotion: (payload.move as { promotion?: string }).promotion || "q",
-      });
-
-      if (applied) {
-        gameRef.current = currentGame;
-        setGame(new Chess(currentGame.fen()));
-        setMoves(currentGame.history());
-        if (isOpponentMove) {
-          playChessMoveSound(applied, { isOpponentMove: true });
-        }
       } else {
-        const nextGame = new Chess(payload.fen);
-        gameRef.current = nextGame;
-        setGame(nextGame);
-        setMoves((prev) => [...prev, payload.move.san]);
-        if (isOpponentMove) {
-          playChessMoveSound(payload.move, { isOpponentMove: true });
+        const currentGame = gameRef.current;
+        const applied = currentGame.move({
+          from: payload.move.from,
+          to: payload.move.to,
+          promotion: (payload.move as { promotion?: string }).promotion || "q",
+        });
+
+        if (applied) {
+          gameRef.current = currentGame;
+          setGame(new Chess(currentGame.fen()));
+          setMoves(currentGame.history());
+          if (isOpponentMove) {
+            playChessMoveSound(applied, { isOpponentMove: true });
+          }
+        } else {
+          const nextGame = new Chess(payload.fen);
+          gameRef.current = nextGame;
+          setGame(nextGame);
+          setMoves((prev) => [...prev, payload.move.san]);
+          if (isOpponentMove) {
+            playChessMoveSound(payload.move, { isOpponentMove: true });
+          }
         }
       }
+
       setLastMove({ from: payload.move.from, to: payload.move.to });
       setMoveFrom(null);
       setOptionSquares({});
+
+      // Opponent just moved and it may now be our turn.
+      trySubmitQueuedPreMove();
     };
 
     const handleMoveRejected = (payload: { reason?: string }) => {
@@ -315,6 +437,8 @@ export function useFriendOnlineGame() {
       setShowGameOverModal(true);
       setGameResult(formatResult(payload));
       setLastGameOver(payload);
+      setPendingPreMove(null);
+      pendingPreMoveRef.current = null;
 
       const currentUser = userRef.current;
       if (!currentUser?.id || !payload.elo?.applied) return;
@@ -374,7 +498,20 @@ export function useFriendOnlineGame() {
       socket.off("moveRejected", handleMoveRejected);
       socket.off("gameOver", handleGameOver);
     };
-  }, [socket, applyFriendGameStart, clearActiveGame, setUser]);
+  }, [socket, applyFriendGameStart, clearActiveGame, setUser, trySubmitQueuedPreMove]);
+
+  // Fallback for tight timing races: submit queued premove as soon as our turn starts.
+  useEffect(() => {
+    if (!gameStarted || gameOver || !isPlayerTurn || !pendingPreMove) return;
+    trySubmitQueuedPreMove();
+  }, [
+    game,
+    gameOver,
+    gameStarted,
+    isPlayerTurn,
+    pendingPreMove,
+    trySubmitQueuedPreMove,
+  ]);
 
   useEffect(() => {
     if (!gameOver || !lastGameOver || historySavedRef.current) return;
@@ -742,8 +879,16 @@ export function useFriendOnlineGame() {
       setPromotionToSquare(null);
       setPendingPromoFrom(null);
 
-      if (!piece || !from || !to || !socket || !gameIdRef.current) return false;
+      if (!piece || !from || !to) return false;
       const promotion = extractPromo(piece);
+
+      if (!isPlayerTurn) {
+        queuePreMove({ from, to, promotion });
+        clearSelection();
+        return true;
+      }
+
+      if (!socket || !gameIdRef.current) return false;
       playLocalMoveSound(from, to, promotion);
 
       socket.emit("makeMove", {
@@ -760,6 +905,8 @@ export function useFriendOnlineGame() {
       pendingPromoFrom,
       playLocalMoveSound,
       promotionToSquare,
+      isPlayerTurn,
+      queuePreMove,
       socket,
     ],
   );
@@ -768,10 +915,51 @@ export function useFriendOnlineGame() {
     (square: Square) => {
       if (!socket) return;
       if (!gameStarted || gameOver) return;
-      if (!isPlayerTurn) return;
       if (!gameIdRef.current) return;
 
       const currentGame = gameRef.current;
+
+      if (!isPlayerTurn) {
+        if (!moveFrom) {
+          const piece = currentGame.get(square);
+          if (!piece || piece.color !== playerColor) return;
+          selectPreMoveSource(square);
+          return;
+        }
+
+        if (square === moveFrom) {
+          clearSelection();
+          return;
+        }
+
+        const sourcePiece = currentGame.get(moveFrom);
+        if (!sourcePiece || sourcePiece.color !== playerColor) {
+          clearSelection();
+          return;
+        }
+
+        const isChess960Castle = isChess960CastlingDrop(currentGame, moveFrom, square);
+        const targetPiece = currentGame.get(square);
+        if (targetPiece && targetPiece.color === playerColor && !isChess960Castle) {
+          selectPreMoveSource(square);
+          return;
+        }
+
+        const isPromo =
+          sourcePiece.type === "p" &&
+          isPromotionTargetSquare(sourcePiece.color as PlayerColor, square);
+
+        if (isPromo) {
+          setPendingPromoFrom(moveFrom);
+          setPromotionToSquare(square);
+          setShowPromotionDialog(true);
+          clearSelection();
+          return;
+        }
+
+        queuePreMove({ from: moveFrom, to: square });
+        return;
+      }
 
       if (!moveFrom) {
         const piece = currentGame.get(square);
@@ -836,6 +1024,9 @@ export function useFriendOnlineGame() {
       playLocalMoveSound,
       getMoveOptions,
       addChess960CastlingTargets,
+      isChess960CastlingDrop,
+      queuePreMove,
+      selectPreMoveSource,
     ],
   );
 
@@ -843,12 +1034,37 @@ export function useFriendOnlineGame() {
     (sourceSquare: Square, targetSquare: Square, piece?: string) => {
       if (!socket) return false;
       if (!gameStarted || gameOver) return false;
-      if (!isPlayerTurn) return false;
       if (!gameIdRef.current) return false;
 
       const currentGame = gameRef.current;
       const sourcePiece = currentGame.get(sourceSquare);
       if (!sourcePiece || sourcePiece.color !== playerColor) return false;
+
+      if (!isPlayerTurn) {
+        const isChess960Castle = isChess960CastlingDrop(
+          currentGame,
+          sourceSquare,
+          targetSquare,
+        );
+        const targetPiece = currentGame.get(targetSquare);
+        if (targetPiece && targetPiece.color === playerColor && !isChess960Castle) {
+          selectPreMoveSource(sourceSquare);
+          return false;
+        }
+
+        const promotion =
+          sourcePiece.type === "p" &&
+          isPromotionTargetSquare(sourcePiece.color as PlayerColor, targetSquare)
+            ? extractPromo(piece)
+            : undefined;
+
+        queuePreMove({
+          from: sourceSquare,
+          to: targetSquare,
+          promotion,
+        });
+        return false;
+      }
 
       const isLegalMove = currentGame
         .moves({ square: sourceSquare, verbose: true })
@@ -890,18 +1106,28 @@ export function useFriendOnlineGame() {
       isPlayerTurn,
       playLocalMoveSound,
       playerColor,
+      queuePreMove,
+      selectPreMoveSource,
       socket,
     ],
   );
 
   const isDraggablePiece = useCallback(
     (sourceSquare: Square) => {
-      if (!gameStarted || gameOver || !isPlayerTurn) return false;
+      if (!gameStarted || gameOver) return false;
       const piece = gameRef.current.get(sourceSquare);
       return !!piece && piece.color === playerColor;
     },
-    [gameOver, gameStarted, isPlayerTurn, playerColor],
+    [gameOver, gameStarted, playerColor],
   );
+
+  const cancelSelectionOrPreMove = useCallback(() => {
+    if (moveFrom) {
+      clearSelection();
+      return;
+    }
+    clearPreMove();
+  }, [clearPreMove, clearSelection, moveFrom]);
 
   const resign = useCallback(() => {
     if (!socket || !gameIdRef.current) return;
@@ -946,7 +1172,7 @@ export function useFriendOnlineGame() {
     statusMessage,
     showGameOverModal,
     optionSquares,
-    preMoveSquares: {},
+    preMoveSquares,
     playerTime,
     opponentTime,
     setPlayerTime,
@@ -954,7 +1180,7 @@ export function useFriendOnlineGame() {
     isConnected,
     onSquareClick,
     onPieceDrop,
-    onCancelSelection: clearSelection,
+    onCancelSelection: cancelSelectionOrPreMove,
     isDraggablePiece,
     promotionToSquare,
     showPromotionDialog,

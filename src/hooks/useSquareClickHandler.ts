@@ -27,6 +27,22 @@ function isPromotionMove(game: Chess, from: Square, to: Square): boolean {
   );
 }
 
+function isPromotionTargetSquare(
+  color: "w" | "b",
+  targetSquare: Square,
+): boolean {
+  return (
+    (color === "w" && targetSquare[1] === "8") ||
+    (color === "b" && targetSquare[1] === "1")
+  );
+}
+
+const PREMOVE_SOURCE_STYLE = {
+  background:
+    "radial-gradient(circle, rgba(245, 158, 11, 0.35) 45%, transparent 47%)",
+  borderRadius: "50%",
+};
+
 export function useSquareClickHandler(
   gameRef: React.MutableRefObject<Chess>,
   gameStarted: boolean,
@@ -100,9 +116,22 @@ export function useSquareClickHandler(
       }
 
       const promo = extractPromotion(piece);
+      if (gameRef.current.turn() !== playerColor) {
+        setPreMove(from, to, promo);
+        clearSelection();
+        return true;
+      }
       return commitMove(from, to, promo);
     },
-    [commitMove, pendingPromoFrom, promotionToSquare],
+    [
+      clearSelection,
+      commitMove,
+      gameRef,
+      pendingPromoFrom,
+      playerColor,
+      promotionToSquare,
+      setPreMove,
+    ],
   );
 
   const onSquareClick = useCallback(
@@ -117,17 +146,46 @@ export function useSquareClickHandler(
         if (!moveFrom) {
           const piece = currentGame.get(square);
           if (piece && piece.color === playerColor) {
-            getMoveOptions(square);
+            setOptionSquares({
+              [square]: PREMOVE_SOURCE_STYLE,
+            });
             setMoveFrom(square);
           }
           return;
         }
 
-        const moves = currentGame.moves({ square: moveFrom, verbose: true });
-        const legal = moves.find((m) => m.to === square);
-        if (legal) {
-          setPreMove(moveFrom, square, legal.promotion as any);
+        if (moveFrom === square) {
+          clearSelection();
+          return;
         }
+
+        const sourcePiece = currentGame.get(moveFrom);
+        if (!sourcePiece || sourcePiece.color !== playerColor) {
+          clearSelection();
+          return;
+        }
+
+        const targetPiece = currentGame.get(square);
+        if (targetPiece && targetPiece.color === playerColor) {
+          setOptionSquares({
+            [square]: PREMOVE_SOURCE_STYLE,
+          });
+          setMoveFrom(square);
+          return;
+        }
+
+        const isPromo =
+          sourcePiece.type === "p" &&
+          isPromotionTargetSquare(sourcePiece.color, square);
+        if (isPromo) {
+          setPendingPromoFrom(moveFrom);
+          setPromotionToSquare(square);
+          setShowPromotionDialog(true);
+          clearSelection();
+          return;
+        }
+
+        setPreMove(moveFrom, square);
         clearSelection();
         return;
       }
@@ -199,11 +257,11 @@ export function useSquareClickHandler(
 
       const turn = currentGame.turn();
       if (turn !== playerColor) {
-        const premove = currentGame
-          .moves({ square: sourceSquare, verbose: true })
-          .find((move) => move.to === targetSquare);
-        if (!premove) return false;
-        setPreMove(sourceSquare, targetSquare, premove.promotion as any);
+        const promotion =
+          srcPiece.type === "p" && isPromotionTargetSquare(srcPiece.color, targetSquare)
+            ? extractPromotion(piece)
+            : undefined;
+        setPreMove(sourceSquare, targetSquare, promotion);
         clearSelection();
         return false;
       }

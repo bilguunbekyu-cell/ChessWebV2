@@ -30,7 +30,8 @@ export function useStockfishGame() {
   const [gameSettings, setGameSettings] =
     useState<GameSettings>(defaultGameSettings);
 
-  const { preMoveSquares, setPreMove, clearPreMove, getPreMove } = usePreMove();
+  const { preMove, preMoveSquares, setPreMove, clearPreMove, getPreMove } =
+    usePreMove();
 
   const [gameStarted, setGameStarted] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(true);
@@ -139,6 +140,15 @@ export function useStockfishGame() {
     }
   }, [gameStarted, gameSettings.playAs, game, makeEngineMove]);
 
+  // Fallback trigger: if turn flips and a premove is queued, execute immediately.
+  useEffect(() => {
+    if (!gameStarted || gameOver || !isPlayerTurn || !preMove) return;
+    const timer = setTimeout(() => {
+      tryApplyPreMove();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [gameStarted, gameOver, isPlayerTurn, preMove, tryApplyPreMove]);
+
   // Save history once when game ends
   useGameHistorySaver(
     gameOver,
@@ -156,7 +166,7 @@ export function useStockfishGame() {
   const {
     onSquareClick,
     onPieceDrop,
-    onCancelSelection,
+    onCancelSelection: baseOnCancelSelection,
     isDraggablePiece,
     promotionToSquare,
     showPromotionDialog,
@@ -178,7 +188,12 @@ export function useStockfishGame() {
   );
 
   // Game actions
-  const { handleStartGame, handleNewGame, handleResign, handleTimeOut } =
+  const {
+    handleStartGame: baseHandleStartGame,
+    handleNewGame: baseHandleNewGame,
+    handleResign: baseHandleResign,
+    handleTimeOut: baseHandleTimeOut,
+  } =
     useGameActions(
       gameRef,
       setGame,
@@ -199,6 +214,40 @@ export function useStockfishGame() {
       startTimeRef,
       setLastMove,
     );
+
+  const handleStartGame = useCallback(
+    (settings: GameSettings) => {
+      clearPreMove();
+      baseHandleStartGame(settings);
+    },
+    [baseHandleStartGame, clearPreMove],
+  );
+
+  const handleNewGame = useCallback(() => {
+    clearPreMove();
+    baseHandleNewGame();
+  }, [baseHandleNewGame, clearPreMove]);
+
+  const handleResign = useCallback(() => {
+    clearPreMove();
+    baseHandleResign();
+  }, [baseHandleResign, clearPreMove]);
+
+  const handleTimeOut = useCallback(
+    (isPlayer: boolean) => {
+      clearPreMove();
+      baseHandleTimeOut(isPlayer);
+    },
+    [baseHandleTimeOut, clearPreMove],
+  );
+
+  const onCancelSelection = useCallback(() => {
+    if (moveFrom) {
+      baseOnCancelSelection();
+      return;
+    }
+    clearPreMove();
+  }, [baseOnCancelSelection, clearPreMove, moveFrom]);
 
   return {
     // Game state

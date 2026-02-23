@@ -45,7 +45,10 @@ export function useEngineMoves(
       if (!bestMove || !isEngineThinking.current) return;
 
       const currentGame = gameRef.current;
-      if (currentGame.turn() === playerColor) return;
+      if (currentGame.turn() === playerColor) {
+        isEngineThinking.current = false;
+        return;
+      }
 
       setTimeout(
         () => {
