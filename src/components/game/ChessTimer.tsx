@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { playGameplaySound } from "../../utils/moveSounds";
 
 interface ChessTimerProps {
   initialTime: number;
@@ -19,10 +20,12 @@ export function ChessTimer({
 
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const tenSecondWarningPlayedRef = useRef(false);
 
   // Reset when initialTime changes
   useEffect(() => {
     setTimeLeft(initialTime);
+    tenSecondWarningPlayedRef.current = false;
   }, [initialTime]);
 
   useEffect(() => {
@@ -49,6 +52,24 @@ export function ChessTimer({
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isActive, initialTime, onTimeOut]);
+
+  useEffect(() => {
+    if (!isActive) {
+      tenSecondWarningPlayedRef.current = false;
+      return;
+    }
+
+    if (timeLeft > 10) {
+      tenSecondWarningPlayedRef.current = false;
+      return;
+    }
+
+    if (timeLeft <= 0) return;
+    if (tenSecondWarningPlayedRef.current) return;
+
+    tenSecondWarningPlayedRef.current = true;
+    playGameplaySound("tenSeconds");
+  }, [isActive, timeLeft]);
 
   // Add increment
   const addIncrement = useCallback(() => {

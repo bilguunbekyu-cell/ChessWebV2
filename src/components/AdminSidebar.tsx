@@ -10,6 +10,7 @@ import {
   Brain,
   Bot,
   Trophy,
+  MessageSquare,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useThemeStore } from "../store/themeStore";
@@ -34,7 +35,6 @@ export default function AdminSidebar() {
     { icon: Brain, label: "Puzzles", path: "/admin/puzzles" },
     { icon: Trophy, label: "Events", path: "/admin/events" },
     { icon: Gamepad2, label: "Games", path: "/admin/games" },
-    { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
     { icon: Settings, label: "Settings", path: "/admin/settings" },
   ];
 
@@ -107,6 +107,13 @@ export default function AdminSidebar() {
             </div>
             <div className="text-xs text-gray-500 truncate">Administrator</div>
           </div>
+          <Link
+            to="/messages"
+            className="flex-shrink-0 p-2 rounded-lg text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            title="Messages"
+          >
+            <MessageSquare className="w-5 h-5" />
+          </Link>
         </div>
 
         <button

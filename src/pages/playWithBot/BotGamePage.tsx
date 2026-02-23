@@ -69,8 +69,7 @@ export default function BotGamePage() {
     onPieceDrop,
     onCancelSelection,
     isDraggablePiece,
-    promotionToSquare,
-    showPromotionDialog,
+    promotionState,
     onPromotionPieceSelect,
     handleStartGame,
     handleNewGame,
@@ -274,8 +273,7 @@ export default function BotGamePage() {
                     isDraggablePiece={isDraggablePiece}
                     customSquareStyles={{ ...optionSquares, ...preMoveSquares }}
                     lastMove={lastMove}
-                    promotionToSquare={promotionToSquare}
-                    showPromotionDialog={showPromotionDialog}
+                    promotionState={promotionState}
                     onPromotionPieceSelect={onPromotionPieceSelect}
                   />
                 </div>

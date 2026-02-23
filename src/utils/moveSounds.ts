@@ -1,7 +1,10 @@
+import { useSettingsStore } from "../store/settingsStore";
+
 type MoveWithSoundHints = {
   san?: string | null;
   flags?: string | null;
   captured?: unknown;
+  promotion?: string | null;
   castlingSide?: "k" | "q" | null;
   check?: boolean;
   isCheck?: boolean;
@@ -16,6 +19,12 @@ const SOUND_PATHS = {
   checkmate: "/media/game-end.mp3",
   capture: "/media/capture.mp3",
   castle: "/media/castle.mp3",
+  premove: "/media/premove.mp3",
+  promote: "/media/promote.mp3",
+  illegal: "/media/illegal.mp3",
+  gameStart: "/media/game-start.mp3",
+  gameEnd: "/media/game-end.mp3",
+  tenSeconds: "/media/tenseconds.mp3",
   puzzleCorrect: "/media/puzzle-correct.mp3",
   puzzleWrong: "/media/puzzle-wrong.mp3",
 } as const;
@@ -23,6 +32,7 @@ const SOUND_PATHS = {
 const audioCache: Partial<Record<keyof typeof SOUND_PATHS, HTMLAudioElement>> =
   {};
 let prewarmed = false;
+let lastTerminalSoundAt = 0;
 
 function getAudio(name: keyof typeof SOUND_PATHS): HTMLAudioElement | null {
   if (typeof window === "undefined" || typeof Audio === "undefined") {
@@ -63,14 +73,26 @@ if (typeof window !== "undefined") {
 }
 
 function playSound(name: keyof typeof SOUND_PATHS) {
+  const settings = useSettingsStore.getState().settings;
+  if (!settings.soundEffects) return;
+
+  const now = Date.now();
+  if ((name === "checkmate" || name === "gameEnd") && now - lastTerminalSoundAt < 800) {
+    return;
+  }
+
   const audio = getAudio(name);
   if (!audio) return;
 
   try {
+    audio.volume = Math.max(0, Math.min(1, settings.soundVolume / 100));
     audio.currentTime = 0;
     void audio.play().catch(() => {
       // Ignore autoplay-blocked cases and other playback failures.
     });
+    if (name === "checkmate" || name === "gameEnd") {
+      lastTerminalSoundAt = now;
+    }
   } catch {
     // Ignore playback errors to keep gameplay smooth.
   }
@@ -124,6 +146,22 @@ export function isCheckmateMove(move?: MoveWithSoundHints | null): boolean {
   return san.includes("#");
 }
 
+export function isPromotionMove(move?: MoveWithSoundHints | null): boolean {
+  if (!move) return false;
+
+  if (typeof move.promotion === "string" && move.promotion.length > 0) {
+    return true;
+  }
+
+  const flags = typeof move.flags === "string" ? move.flags.toLowerCase() : "";
+  if (flags.includes("p")) {
+    return true;
+  }
+
+  const san = typeof move.san === "string" ? move.san : "";
+  return san.includes("=");
+}
+
 type MoveSoundOptions = {
   isOpponentMove?: boolean;
 };
@@ -134,6 +172,11 @@ export function playChessMoveSound(
 ) {
   if (isCheckmateMove(move)) {
     playSound("checkmate");
+    return;
+  }
+
+  if (isPromotionMove(move)) {
+    playSound("promote");
     return;
   }
 
@@ -158,5 +201,16 @@ export function playChessMoveSound(
 type UiSoundName = "puzzleCorrect" | "puzzleWrong";
 
 export function playUiSound(name: UiSoundName) {
+  playSound(name);
+}
+
+type GameplaySoundName =
+  | "premove"
+  | "illegal"
+  | "gameStart"
+  | "gameEnd"
+  | "tenSeconds";
+
+export function playGameplaySound(name: GameplaySoundName) {
   playSound(name);
 }

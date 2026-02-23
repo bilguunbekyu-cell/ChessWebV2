@@ -35,6 +35,7 @@ import AdminAnalyze from "./pages/adminAnalyze";
 import AdminPuzzles from "./pages/AdminPuzzles";
 import { AdminBots } from "./pages/adminBots";
 import { AdminFeaturedEvents } from "./pages/adminFeaturedEvents";
+import { AdminGames } from "./pages/adminGames";
 import { useThemeStore } from "./store/themeStore";
 import { useAuthStore, authApi } from "./store/authStore";
 import { useFriendChallengeStore } from "./store/friendChallengeStore";
@@ -399,6 +400,7 @@ function App() {
           <Route path="/admin/puzzles" element={<AdminPuzzles />} />
           <Route path="/admin/bots" element={<AdminBots />} />
           <Route path="/admin/events" element={<AdminFeaturedEvents />} />
+          <Route path="/admin/games" element={<AdminGames />} />
           <Route path="/admin/analyze/:gameId" element={<AdminAnalyze />} />
         </Routes>
       </Layout>

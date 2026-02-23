@@ -1,5 +1,4 @@
 export { ReplayBoard } from "./ReplayBoard";
-export { ReplayControls } from "./ReplayControls";
 export { ReplayMoveList } from "./ReplayMoveList";
 export { ReplayEvalBar } from "./ReplayEvalBar";
 export { ReplayHeader } from "./ReplayHeader";

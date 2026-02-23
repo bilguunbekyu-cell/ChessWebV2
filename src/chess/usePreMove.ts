@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { PreMove, PreMoveSquares } from "./types";
+import { playGameplaySound } from "../utils/moveSounds";
 
 export const usePreMove = () => {
   const [preMove, setPreMove] = useState<PreMove | null>(null);
@@ -12,6 +13,7 @@ export const usePreMove = () => {
       const nextPreMove = { from, to, promotion };
       preMoveRef.current = nextPreMove;
       setPreMove(nextPreMove);
+      playGameplaySound("premove");
       setPreMoveSquares({
         [from]: {
           backgroundColor: "rgba(245, 158, 11, 0.35)",

@@ -3,7 +3,6 @@ import { ArrowLeft } from "lucide-react";
 import { GameHistory } from "../../historyTypes";
 import {
   ReplayBoard,
-  ReplayControls,
   ReplayMoveList,
   ReplayEvalBar,
   CapturedPieces,
@@ -91,20 +90,7 @@ export function ReplayContent({ game }: ReplayContentProps) {
               </div>
             </div>
 
-            {/* Controls */}
-            <div className="flex-shrink-0">
-              <ReplayControls
-                ply={replay.ply}
-                totalPlies={replay.totalPlies}
-                isPlaying={replay.isPlaying}
-                speed={replay.speed}
-                currentMoveSan={replay.currentMoveSan}
-                onJumpTo={replay.jumpTo}
-                onTogglePlay={replay.togglePlay}
-                onSetSpeed={replay.setSpeed}
-                onFlipBoard={replay.flipBoard}
-              />
-            </div>
+
           </div>
 
           {/* Right - Move Explanation + Move List */}

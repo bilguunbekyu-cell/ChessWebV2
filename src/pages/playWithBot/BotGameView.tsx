@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { Square } from "chess.js";
 import { useAuthStore } from "../../store/authStore";
 import { GameOverModal, PlayerInfo, GameBoard } from "../../components/game";
-import type { GameSettings } from "../../components/game";
+import type { GameSettings, PromotionState } from "../../components/game";
 import { BOARD_FRAME } from "./types";
 import type { CSSProperties } from "react";
 
@@ -37,8 +37,7 @@ interface BotGameViewProps {
   onResign: () => void;
   onRematch: () => void;
   onNewGame: () => void;
-  promotionToSquare?: Square | null;
-  showPromotionDialog?: boolean;
+  promotionState?: PromotionState;
   onPromotionPieceSelect?: (
     piece?: string,
     fromSquare?: Square,
@@ -72,8 +71,7 @@ export function BotGameView({
   onResign,
   onRematch,
   onNewGame,
-  promotionToSquare,
-  showPromotionDialog,
+  promotionState,
   onPromotionPieceSelect,
 }: BotGameViewProps) {
   const { user } = useAuthStore();
@@ -141,8 +139,7 @@ export function BotGameView({
               isDraggablePiece={isDraggablePiece}
               customSquareStyles={{ ...optionSquares, ...preMoveSquares }}
               lastMove={lastMove}
-              promotionToSquare={promotionToSquare}
-              showPromotionDialog={showPromotionDialog}
+              promotionState={promotionState}
               onPromotionPieceSelect={onPromotionPieceSelect}
             />
           </div>

@@ -1,10 +1,23 @@
 /* ═══════════════════════════════════════════════════════
    Community — Premium Redesign
    ═══════════════════════════════════════════════════════ */
-import { useState, useMemo } from "react";
-import { Search } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+
+const POSTS_PER_PAGE = 8;
+
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [1];
+  const left = Math.max(2, current - 1);
+  const right = Math.min(total - 1, current + 1);
+  if (left > 2) pages.push("...");
+  for (let i = left; i <= right; i++) pages.push(i);
+  if (right < total - 1) pages.push("...");
+  pages.push(total);
+  return pages;
+}
 import Sidebar from "../components/Sidebar";
-import { FilterTabs } from "../components/community/FilterTabs";
 import { PostComposer } from "../components/community/PostComposer";
 import { PostCard } from "../components/community/PostCard";
 import {
@@ -18,29 +31,15 @@ import {
 } from "../components/community/SidebarWidgets";
 import {
   COMMUNITY_POSTS,
-  COMMUNITY_TABS,
-  type CommunityTab,
 } from "../data/communityData";
 
 export default function Community() {
-  const [activeTab, setActiveTab] = useState<CommunityTab>("for-you");
   const [searchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  /* ── Filter posts by tab ── */
+  /* ── Filter posts ── */
   const filteredPosts = useMemo(() => {
     let posts = COMMUNITY_POSTS;
-    if (activeTab === "games") posts = posts.filter((p) => p.pgn || p.fen);
-    else if (activeTab === "puzzles")
-      posts = posts.filter((p) => p.tags?.includes("puzzle"));
-    else if (activeTab === "tournaments")
-      posts = posts.filter(
-        (p) => p.tags?.includes("tournament") || p.tags?.includes("candidates"),
-      );
-    else if (activeTab === "videos")
-      posts = posts.filter(
-        (p) => p.tags?.includes("stream") || p.tags?.includes("video"),
-      );
-    // "for-you" and "following" show all
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -54,23 +53,39 @@ export default function Community() {
     return posts;
   }, [activeTab, searchQuery]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredPosts.length / POSTS_PER_PAGE),
+  );
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedPosts = useMemo(() => {
+    const start = (safePage - 1) * POSTS_PER_PAGE;
+    return filteredPosts.slice(start, start + POSTS_PER_PAGE);
+  }, [filteredPosts, safePage]);
+
+  const pageNums = getPageNumbers(safePage, totalPages);
+  const rangeStart =
+    filteredPosts.length === 0 ? 0 : (safePage - 1) * POSTS_PER_PAGE + 1;
+  const rangeEnd = Math.min(safePage * POSTS_PER_PAGE, filteredPosts.length);
+
+  const btnBase =
+    "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus:outline-none disabled:pointer-events-none disabled:opacity-40";
+  const btnPage = (active: boolean) =>
+    active
+      ? `${btnBase} w-9 h-9 bg-teal-500 text-white shadow-md shadow-teal-500/25`
+      : `${btnBase} w-9 h-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400`;
+
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex transition-colors duration-300">
       <Sidebar />
 
       <main className="flex-1 ml-72 min-h-screen">
-        {/* ── Sticky Header ── */}
-        <header className="sticky top-0 z-30 bg-white/70 dark:bg-gray-950/70 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-800/60">
-          {/* Tabs */}
-          <div className="max-w-[1440px] mx-auto px-6">
-            <FilterTabs
-              tabs={COMMUNITY_TABS}
-              activeTab={activeTab}
-              onTabChange={(t) => setActiveTab(t as CommunityTab)}
-            />
-          </div>
-        </header>
-
         {/* ── Content Grid ── */}
         <div className="max-w-[1440px] mx-auto flex justify-center gap-6 px-6 py-6">
           {/* Feed Column */}
@@ -86,11 +101,58 @@ export default function Community() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {filteredPosts.map((post, i) => (
-                  <PostCard key={post.id} post={post} index={i} />
-                ))}
-              </div>
+              <>
+                {/* Range info */}
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {rangeStart}–{rangeEnd} of {filteredPosts.length} posts
+                </div>
+
+                <div className="space-y-4">
+                  {paginatedPosts.map((post, i) => (
+                    <PostCard key={post.id} post={post} index={i} />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-1.5 pt-2 pb-4">
+                    <button
+                      disabled={safePage <= 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className={`${btnBase} w-9 h-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400`}
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    {pageNums.map((p, i) =>
+                      p === "..." ? (
+                        <span
+                          key={`dots-${i}`}
+                          className="w-9 h-9 flex items-center justify-center text-gray-400 dark:text-gray-600 text-sm select-none"
+                        >
+                          …
+                        </span>
+                      ) : (
+                        <button
+                          key={p}
+                          onClick={() => setCurrentPage(p)}
+                          className={btnPage(p === safePage)}
+                        >
+                          {p}
+                        </button>
+                      ),
+                    )}
+                    <button
+                      disabled={safePage >= totalPages}
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      className={`${btnBase} w-9 h-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400`}
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

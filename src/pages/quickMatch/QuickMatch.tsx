@@ -144,8 +144,7 @@ export default function QuickMatch() {
     rematch,
     leaveGame,
     matchVariant,
-    promotionToSquare,
-    showPromotionDialog,
+    promotionState,
     onPromotionPieceSelect,
   } = useOnlineQuickMatch();
 
@@ -317,8 +316,7 @@ export default function QuickMatch() {
         onCancelSelection={onCancelSelection}
         isDraggablePiece={isDraggablePiece}
         opponentName={opponentName}
-        promotionToSquare={promotionToSquare}
-        showPromotionDialog={showPromotionDialog}
+        promotionState={promotionState}
         onPromotionPieceSelect={onPromotionPieceSelect}
         setOpponentTime={setOpponentTime}
         setPlayerTime={setPlayerTime}

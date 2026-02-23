@@ -168,8 +168,7 @@ export function useStockfishGame() {
     onPieceDrop,
     onCancelSelection: baseOnCancelSelection,
     isDraggablePiece,
-    promotionToSquare,
-    showPromotionDialog,
+    promotionState,
     onPromotionPieceSelect,
   } = useSquareClickHandler(
     gameRef,
@@ -279,9 +278,7 @@ export function useStockfishGame() {
     onPieceDrop,
     onCancelSelection,
     isDraggablePiece,
-    // Promotion dialog state
-    promotionToSquare,
-    showPromotionDialog,
+    promotionState,
     onPromotionPieceSelect,
     handleStartGame,
     handleNewGame,

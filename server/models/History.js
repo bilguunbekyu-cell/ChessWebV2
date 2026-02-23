@@ -76,7 +76,14 @@ const HistorySchema = new mongoose.Schema(
     blackTitle: { type: String, default: "" },
 
     // Moves
-    moves: { type: [String], default: [] },
+    moves: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: (moves) => Array.isArray(moves) && moves.length >= 3,
+        message: "Game must contain at least 3 moves to be stored",
+      },
+    },
     moveText: { type: String, default: "" },
     pgn: { type: String },
     analysis: [

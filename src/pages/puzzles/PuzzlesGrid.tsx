@@ -1,7 +1,10 @@
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Play, Loader2 } from "lucide-react";
+import { Play, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { PuzzleItem, getDifficultyColor } from "./types";
+
+const ITEMS_PER_PAGE = 12;
 
 interface PuzzleCardProps {
   puzzle: PuzzleItem;
@@ -79,14 +82,52 @@ interface PuzzlesGridProps {
   activeLabel?: string;
 }
 
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [1];
+  const left = Math.max(2, current - 1);
+  const right = Math.min(total - 1, current + 1);
+  if (left > 2) pages.push("...");
+  for (let i = left; i <= right; i++) pages.push(i);
+  if (right < total - 1) pages.push("...");
+  pages.push(total);
+  return pages;
+}
+
 export function PuzzlesGrid({
   puzzles,
   loading,
   totalCount,
   activeLabel,
 }: PuzzlesGridProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset to page 1 whenever the filtered list changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [puzzles.length, activeLabel]);
+
   const selectedCount = puzzles.length;
   const allCount = totalCount ?? selectedCount;
+  const totalPages = Math.max(1, Math.ceil(selectedCount / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedPuzzles = useMemo(() => {
+    const start = (safePage - 1) * ITEMS_PER_PAGE;
+    return puzzles.slice(start, start + ITEMS_PER_PAGE);
+  }, [puzzles, safePage]);
+
+  const pageNums = getPageNumbers(safePage, totalPages);
+
+  const rangeStart = (safePage - 1) * ITEMS_PER_PAGE + 1;
+  const rangeEnd = Math.min(safePage * ITEMS_PER_PAGE, selectedCount);
+
+  const btnBase =
+    "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus:outline-none disabled:pointer-events-none disabled:opacity-40";
+  const btnPage = (active: boolean) =>
+    active
+      ? `${btnBase} w-9 h-9 bg-teal-500 text-white shadow-md shadow-teal-500/25`
+      : `${btnBase} w-9 h-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400`;
 
   return (
     <div className="space-y-6">
@@ -95,7 +136,9 @@ export function PuzzlesGrid({
           Puzzle Library
         </h3>
         <div className="text-sm text-gray-500 dark:text-gray-400">
-          {selectedCount}/{allCount} shown
+          {selectedCount === 0
+            ? `0/${allCount} shown`
+            : `${rangeStart}–${rangeEnd} of ${selectedCount}`}
           {activeLabel ? ` • ${activeLabel}` : ""}
         </div>
       </div>
@@ -110,11 +153,54 @@ export function PuzzlesGrid({
             No puzzles available
           </div>
         ) : (
-          puzzles.map((puzzle, idx) => (
+          paginatedPuzzles.map((puzzle, idx) => (
             <PuzzleCard key={puzzle._id} puzzle={puzzle} index={idx} />
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1.5 pt-2">
+          {/* Previous */}
+          <button
+            disabled={safePage <= 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            className={`${btnBase} w-9 h-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400`}
+          >
+            <ChevronLeft size={16} />
+          </button>
+
+          {/* Page numbers */}
+          {pageNums.map((p, i) =>
+            p === "..." ? (
+              <span
+                key={`dots-${i}`}
+                className="w-9 h-9 flex items-center justify-center text-gray-400 dark:text-gray-600 text-sm select-none"
+              >
+                …
+              </span>
+            ) : (
+              <button
+                key={p}
+                onClick={() => setCurrentPage(p)}
+                className={btnPage(p === safePage)}
+              >
+                {p}
+              </button>
+            ),
+          )}
+
+          {/* Next */}
+          <button
+            disabled={safePage >= totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            className={`${btnBase} w-9 h-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400`}
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

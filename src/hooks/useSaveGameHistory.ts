@@ -2,10 +2,15 @@ import { useCallback } from "react";
 import { API_URL, GameHistoryPayload } from "./useStockfishGameTypes";
 
 let historyErrorLogged = false;
+const MIN_STORED_MOVES = 3;
 
 export function useSaveGameHistory() {
   const saveGameHistory = useCallback(
     async (payload: GameHistoryPayload): Promise<string | null> => {
+      if ((payload.moves?.length || 0) < MIN_STORED_MOVES) {
+        return null;
+      }
+
       try {
         const res = await fetch(`${API_URL}/api/history`, {
           method: "POST",

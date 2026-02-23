@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { Chess, Square } from "chess.js";
 import { GameSettings } from "../components/game";
 import { OptionSquares } from "./useStockfishGameTypes";
+import { playGameplaySound } from "../utils/moveSounds";
 
 export function useGameActions(
   gameRef: React.MutableRefObject<Chess>,
@@ -46,6 +47,7 @@ export function useGameActions(
       historySavedRef.current = false;
       startTimeRef.current = Date.now();
       setLastMove?.(null);
+      playGameplaySound("gameStart");
     },
     [
       gameRef,
@@ -62,12 +64,12 @@ export function useGameActions(
       setOptionSquares,
       setPlayerTime,
       setOpponentTime,
-    isEngineThinking,
-    historySavedRef,
-    startTimeRef,
-    setLastMove,
-  ],
-);
+      isEngineThinking,
+      historySavedRef,
+      startTimeRef,
+      setLastMove,
+    ],
+  );
 
   const handleNewGame = useCallback(() => {
     const newGame = new Chess();
@@ -108,6 +110,7 @@ export function useGameActions(
     setGameResult("You Resigned");
     setGameOver(true);
     setShowGameOverModal(true);
+    playGameplaySound("gameEnd");
   }, [setGameResult, setGameOver, setShowGameOverModal]);
 
   const handleTimeOut = useCallback(
@@ -115,6 +118,7 @@ export function useGameActions(
       setGameResult(isPlayer ? "Stockfish Wins on Time!" : "You Win on Time!");
       setGameOver(true);
       setShowGameOverModal(true);
+      playGameplaySound("gameEnd");
     },
     [setGameResult, setGameOver, setShowGameOverModal],
   );

@@ -32,8 +32,7 @@ export default function PlayWithFriend() {
     onPieceDrop,
     onCancelSelection,
     isDraggablePiece,
-    promotionToSquare,
-    showPromotionDialog,
+    promotionState,
     onPromotionPieceSelect,
     resign,
     timeOut,
@@ -137,8 +136,7 @@ export default function PlayWithFriend() {
         onPieceDrop={onPieceDrop}
         onCancelSelection={onCancelSelection}
         isDraggablePiece={isDraggablePiece}
-        promotionToSquare={promotionToSquare}
-        showPromotionDialog={showPromotionDialog}
+        promotionState={promotionState}
         onPromotionPieceSelect={onPromotionPieceSelect}
         setOpponentTime={setOpponentTime}
         setPlayerTime={setPlayerTime}

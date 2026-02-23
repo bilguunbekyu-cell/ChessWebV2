@@ -27,8 +27,7 @@ export default function Game() {
     onPieceDrop,
     onCancelSelection,
     isDraggablePiece,
-    promotionToSquare,
-    showPromotionDialog,
+    promotionState,
     onPromotionPieceSelect,
     handleStartGame,
     handleTimeOut,
@@ -152,8 +151,7 @@ export default function Game() {
                 onCancelSelection={onCancelSelection}
                 isDraggablePiece={isDraggablePiece}
                 customSquareStyles={{ ...optionSquares, ...preMoveSquares }}
-                promotionToSquare={promotionToSquare}
-                showPromotionDialog={showPromotionDialog}
+                promotionState={promotionState}
                 onPromotionPieceSelect={onPromotionPieceSelect}
               />
             </div>

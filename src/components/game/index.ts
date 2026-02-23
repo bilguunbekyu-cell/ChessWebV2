@@ -4,4 +4,4 @@ export { GameOverModal } from "./GameOverModal";
 export { PlayerInfo } from "./PlayerInfo";
 export { GameBoard } from "./GameBoard";
 export { GameSidebar } from "./GameSidebar";
-export type { GameSettings } from "./types";
+export type { GameSettings, PromotionState, PromotionPiece } from "./types";

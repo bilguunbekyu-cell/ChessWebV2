@@ -3,6 +3,7 @@ import { History } from "../models/index.js";
 import { authMiddleware } from "../middleware/index.js";
 
 const router = Router();
+const MIN_STORED_MOVES = 3;
 
 function normalizeVariant(value) {
   const normalized = String(value || "")
@@ -14,6 +15,13 @@ function normalizeVariant(value) {
 function detectVariantFromEvent(event) {
   const text = String(event || "");
   return /960|chess960/i.test(text) ? "chess960" : "standard";
+}
+
+function normalizeMoves(moves) {
+  if (!Array.isArray(moves)) return [];
+  return moves
+    .map((move) => String(move || "").trim())
+    .filter(Boolean);
 }
 
 // Save game history
@@ -81,10 +89,18 @@ router.post("/", authMiddleware, async (req, res) => {
       moveTimes = [],
     } = req.body;
 
+    const normalizedMoves = normalizeMoves(moves);
+
     if (!result || !playAs || !white || !black) {
       return res
         .status(400)
         .json({ error: "result, playAs, white, and black are required" });
+    }
+
+    if (normalizedMoves.length < MIN_STORED_MOVES) {
+      return res.status(400).json({
+        error: `Games with fewer than ${MIN_STORED_MOVES} moves are not stored`,
+      });
     }
 
     const history = await History.create({
@@ -139,7 +155,7 @@ router.post("/", authMiddleware, async (req, res) => {
       blackUrl,
       blackCountry,
       blackTitle,
-      moves,
+      moves: normalizedMoves,
       moveText,
       pgn,
       playAs,
@@ -153,6 +169,9 @@ router.post("/", authMiddleware, async (req, res) => {
     res.json({ success: true, historyId: history._id });
   } catch (err) {
     console.error("History save error:", err);
+    if (err?.name === "ValidationError") {
+      return res.status(400).json({ error: err.message });
+    }
     res.status(500).json({ error: "Server error" });
   }
 });

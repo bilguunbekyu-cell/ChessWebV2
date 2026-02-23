@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -14,7 +14,23 @@ import {
   Square as SquareIcon,
   Eraser,
   Star,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+
+const PUZZLES_PER_PAGE = 10;
+
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [1];
+  const left = Math.max(2, current - 1);
+  const right = Math.min(total - 1, current + 1);
+  if (left > 2) pages.push("...");
+  for (let i = left; i <= right; i++) pages.push(i);
+  if (right < total - 1) pages.push("...");
+  pages.push(total);
+  return pages;
+}
 import { Chessboard } from "react-chessboard";
 import type {
   BoardPosition,
@@ -400,11 +416,44 @@ export default function AdminPuzzles() {
     }
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+
   const filteredPuzzles = puzzles.filter(
     (p) =>
       p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.themes.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())),
   );
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredPuzzles.length / PUZZLES_PER_PAGE),
+  );
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedPuzzles = useMemo(() => {
+    const start = (safePage - 1) * PUZZLES_PER_PAGE;
+    return filteredPuzzles.slice(start, start + PUZZLES_PER_PAGE);
+  }, [filteredPuzzles, safePage]);
+
+  const pageNums = getPageNumbers(safePage, totalPages);
+  const rangeStart =
+    filteredPuzzles.length === 0 ? 0 : (safePage - 1) * PUZZLES_PER_PAGE + 1;
+  const rangeEnd = Math.min(
+    safePage * PUZZLES_PER_PAGE,
+    filteredPuzzles.length,
+  );
+
+  const pBtnBase =
+    "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus:outline-none disabled:pointer-events-none disabled:opacity-40";
+  const pBtnPage = (active: boolean) =>
+    active
+      ? `${pBtnBase} w-9 h-9 bg-teal-500 text-white shadow-md shadow-teal-500/25`
+      : `${pBtnBase} w-9 h-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400`;
 
   const toggleFeatured = async (puzzleId: string, currentFeatured: boolean) => {
     try {
@@ -513,7 +562,7 @@ export default function AdminPuzzles() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredPuzzles.map((puzzle) => (
+                  {paginatedPuzzles.map((puzzle) => (
                     <tr
                       key={puzzle._id}
                       className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50"
@@ -611,6 +660,55 @@ export default function AdminPuzzles() {
                 <div className="text-center py-12 text-gray-500">
                   <Brain className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>No puzzles found</p>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {filteredPuzzles.length > 0 && (
+                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-800">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {rangeStart}–{rangeEnd} of {filteredPuzzles.length} puzzles
+                  </div>
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        disabled={safePage <= 1}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(1, p - 1))
+                        }
+                        className={`${pBtnBase} w-9 h-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400`}
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      {pageNums.map((p, i) =>
+                        p === "..." ? (
+                          <span
+                            key={`dots-${i}`}
+                            className="w-9 h-9 flex items-center justify-center text-gray-400 dark:text-gray-600 text-sm select-none"
+                          >
+                            …
+                          </span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => setCurrentPage(p)}
+                            className={pBtnPage(p === safePage)}
+                          >
+                            {p}
+                          </button>
+                        ),
+                      )}
+                      <button
+                        disabled={safePage >= totalPages}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        }
+                        className={`${pBtnBase} w-9 h-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400`}
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

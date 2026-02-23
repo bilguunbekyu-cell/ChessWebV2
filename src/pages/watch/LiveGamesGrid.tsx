@@ -1,6 +1,27 @@
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Eye, ChevronRight, ExternalLink, RefreshCw } from "lucide-react";
+import {
+  Eye,
+  ChevronRight,
+  ChevronLeft,
+  ExternalLink,
+  RefreshCw,
+} from "lucide-react";
 import { TransformedLiveGame } from "../../utils/lichessApi";
+
+const GAMES_PER_PAGE = 12;
+
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [1];
+  const left = Math.max(2, current - 1);
+  const right = Math.min(total - 1, current + 1);
+  if (left > 2) pages.push("...");
+  for (let i = left; i <= right; i++) pages.push(i);
+  if (right < total - 1) pages.push("...");
+  pages.push(total);
+  return pages;
+}
 
 interface LiveGameCardProps {
   game: TransformedLiveGame;
@@ -125,6 +146,8 @@ export function LiveGamesGrid({
   loading,
   onRefresh,
 }: LiveGamesGridProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+
   const getCategory = (game: TransformedLiveGame) => {
     if (game.category) return game.category;
     if (game.speed) {
@@ -161,6 +184,34 @@ export function LiveGamesGrid({
     }
     return true;
   });
+
+  // Reset to page 1 when tab or game list changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, games.length]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredGames.length / GAMES_PER_PAGE),
+  );
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedGames = useMemo(() => {
+    const start = (safePage - 1) * GAMES_PER_PAGE;
+    return filteredGames.slice(start, start + GAMES_PER_PAGE);
+  }, [filteredGames, safePage]);
+
+  const pageNums = getPageNumbers(safePage, totalPages);
+  const rangeStart =
+    filteredGames.length === 0 ? 0 : (safePage - 1) * GAMES_PER_PAGE + 1;
+  const rangeEnd = Math.min(safePage * GAMES_PER_PAGE, filteredGames.length);
+
+  const btnBase =
+    "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus:outline-none disabled:pointer-events-none disabled:opacity-40";
+  const btnPage = (active: boolean) =>
+    active
+      ? `${btnBase} w-9 h-9 bg-teal-500 text-white shadow-md shadow-teal-500/25`
+      : `${btnBase} w-9 h-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400`;
 
   return (
     <section>
@@ -199,15 +250,22 @@ export function LiveGamesGrid({
         )}
       </div>
 
+      {/* Count info */}
+      {!loading && filteredGames.length > 0 && (
+        <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          {rangeStart}–{rangeEnd} of {filteredGames.length} games
+        </div>
+      )}
+
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <GameCardSkeleton key={i} />
           ))}
         </div>
-      ) : filteredGames.length > 0 ? (
+      ) : paginatedGames.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredGames.map((game, index) => (
+          {paginatedGames.map((game, index) => (
             <LiveGameCard key={`${game.id}-${index}`} game={game} />
           ))}
         </div>
@@ -217,6 +275,44 @@ export function LiveGamesGrid({
           <p className="text-sm mt-2">
             Check back soon or try another category
           </p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1.5 pt-4">
+          <button
+            disabled={safePage <= 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            className={`${btnBase} w-9 h-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400`}
+          >
+            <ChevronLeft size={16} />
+          </button>
+          {pageNums.map((p, i) =>
+            p === "..." ? (
+              <span
+                key={`dots-${i}`}
+                className="w-9 h-9 flex items-center justify-center text-gray-400 dark:text-gray-600 text-sm select-none"
+              >
+                …
+              </span>
+            ) : (
+              <button
+                key={p}
+                onClick={() => setCurrentPage(p)}
+                className={btnPage(p === safePage)}
+              >
+                {p}
+              </button>
+            ),
+          )}
+          <button
+            disabled={safePage >= totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            className={`${btnBase} w-9 h-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400`}
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
       )}
 

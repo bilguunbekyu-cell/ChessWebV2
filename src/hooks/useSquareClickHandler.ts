@@ -1,7 +1,8 @@
 import { useCallback, useState } from "react";
 import { Chess, Square } from "chess.js";
 import { OptionSquares } from "./useStockfishGameTypes";
-import { playChessMoveSound } from "../utils/moveSounds";
+import { playChessMoveSound, playGameplaySound } from "../utils/moveSounds";
+import type { PromotionState } from "../components/game";
 
 /**
  * Extract a single-char promotion key ("q", "r", "b", "n") from the piece
@@ -38,9 +39,6 @@ function isPromotionTargetSquare(
 }
 
 const PREMOVE_SOURCE_STYLE = {
-  background:
-    "radial-gradient(circle, rgba(245, 158, 11, 0.35) 45%, transparent 47%)",
-  borderRadius: "50%",
 };
 
 export function useSquareClickHandler(
@@ -82,7 +80,10 @@ export function useSquareClickHandler(
           to,
           promotion,
         });
-        if (!result) return false;
+        if (!result) {
+          playGameplaySound("illegal");
+          return false;
+        }
 
         gameRef.current = currentGame;
         setGame(new Chess(currentGame.fen()));
@@ -93,6 +94,7 @@ export function useSquareClickHandler(
         clearSelection();
         return true;
       } catch {
+        playGameplaySound("illegal");
         return false;
       }
     },
@@ -218,14 +220,14 @@ export function useSquareClickHandler(
         return;
       }
 
-      if (commitMove(moveFrom, square)) {
-        return;
-      }
-
       const piece = currentGame.get(square);
       if (piece && piece.color === playerColor) {
         getMoveOptions(square);
         setMoveFrom(square);
+        return;
+      }
+
+      if (commitMove(moveFrom, square)) {
         return;
       }
 
@@ -253,23 +255,41 @@ export function useSquareClickHandler(
 
       const currentGame = gameRef.current;
       const srcPiece = currentGame.get(sourceSquare);
-      if (!srcPiece || srcPiece.color !== playerColor) return false;
+      if (!srcPiece || srcPiece.color !== playerColor) {
+        playGameplaySound("illegal");
+        return false;
+      }
 
       const turn = currentGame.turn();
       if (turn !== playerColor) {
-        const promotion =
-          srcPiece.type === "p" && isPromotionTargetSquare(srcPiece.color, targetSquare)
-            ? extractPromotion(piece)
-            : undefined;
-        setPreMove(sourceSquare, targetSquare, promotion);
+        const isPromo =
+          srcPiece.type === "p" &&
+          isPromotionTargetSquare(srcPiece.color, targetSquare);
+        if (isPromo) {
+          setPendingPromoFrom(sourceSquare);
+          setPromotionToSquare(targetSquare);
+          setShowPromotionDialog(true);
+          clearSelection();
+          return false;
+        }
+
+        setPreMove(sourceSquare, targetSquare);
         clearSelection();
         return false;
       }
 
-      // For drag-and-drop, react-chessboard already showed the promotion dialog
-      // and passes the chosen piece (e.g. "bQ") as the third argument.
-      const promo = extractPromotion(piece);
-      const moved = commitMove(sourceSquare, targetSquare, promo);
+      const isPromo =
+        srcPiece.type === "p" &&
+        isPromotionTargetSquare(srcPiece.color, targetSquare);
+      if (isPromo) {
+        setPendingPromoFrom(sourceSquare);
+        setPromotionToSquare(targetSquare);
+        setShowPromotionDialog(true);
+        clearSelection();
+        return false;
+      }
+
+      const moved = commitMove(sourceSquare, targetSquare);
       if (moved) return true;
 
       if (getMoveOptions(sourceSquare)) {
@@ -299,14 +319,25 @@ export function useSquareClickHandler(
     [gameOver, gameRef, gameStarted, playerColor],
   );
 
+  const promotionState: PromotionState = {
+    isOpen: showPromotionDialog,
+    from: pendingPromoFrom,
+    to: promotionToSquare,
+    color:
+      (pendingPromoFrom
+        ? gameRef.current.get(pendingPromoFrom)?.color ?? null
+        : null) ??
+      (promotionToSquare
+        ? (promotionToSquare[1] === "8" ? "w" : "b")
+        : null),
+  };
+
   return {
     onSquareClick,
     onPieceDrop,
     onCancelSelection: clearSelection,
     isDraggablePiece,
-    // Promotion dialog state for click-to-move
-    promotionToSquare,
-    showPromotionDialog,
+    promotionState,
     onPromotionPieceSelect,
   };
 }

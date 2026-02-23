@@ -13,7 +13,7 @@ import {
   FourPlayerState,
   Square,
 } from "./types";
-import { playChessMoveSound } from "../../utils/moveSounds";
+import { playChessMoveSound, playGameplaySound } from "../../utils/moveSounds";
 
 const socketBaseUrl =
   import.meta.env.VITE_SOCKET_URL ||
@@ -153,6 +153,7 @@ export function useOnlineFourPlayerMatch() {
       setForfeitedColor(null);
       lastSoundMoveKeyRef.current = "";
       setGameStarted(true);
+      playGameplaySound("gameStart");
     });
 
     socket.on("fourPlayerState", (payload: StatePayload) => {
@@ -182,6 +183,7 @@ export function useOnlineFourPlayerMatch() {
     socket.on("fourPlayerMoveRejected", (payload: { reason?: string }) => {
       setQueueStatus(payload?.reason || "Move rejected.");
       setSelected(null);
+      playGameplaySound("illegal");
     });
 
     socket.on(
@@ -200,6 +202,7 @@ export function useOnlineFourPlayerMatch() {
         if (payload.forfeitedColor) {
           setForfeitedColor(payload.forfeitedColor);
         }
+        playGameplaySound("gameEnd");
       },
     );
 
@@ -315,6 +318,9 @@ export function useOnlineFourPlayerMatch() {
         return;
       }
 
+      if (selected) {
+        playGameplaySound("illegal");
+      }
       setSelected(null);
     },
     [gameStarted, gameState, playerColor, selected, tryMove],
@@ -328,6 +334,7 @@ export function useOnlineFourPlayerMatch() {
       const to = { row: toRow, col: toCol };
       const moved = tryMove(from, to);
       if (!moved) {
+        playGameplaySound("illegal");
         setSelected(from);
       }
       return moved;

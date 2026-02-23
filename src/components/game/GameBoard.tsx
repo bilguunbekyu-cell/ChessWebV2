@@ -2,6 +2,15 @@ import { Chessboard } from "react-chessboard";
 import { Square } from "chess.js";
 import { useEffect } from "react";
 import type { CSSProperties } from "react";
+import { PromotionModal } from "./PromotionModal";
+import type { PromotionState } from "./types";
+
+const CLOSED_PROMOTION_STATE: PromotionState = {
+  isOpen: false,
+  from: null,
+  to: null,
+  color: null,
+};
 
 interface GameBoardProps {
   fen: string;
@@ -17,11 +26,7 @@ interface GameBoardProps {
   isDraggablePiece?: (sourceSquare: Square) => boolean;
   customSquareStyles: Record<string, CSSProperties>;
   lastMove?: { from: string; to: string } | null;
-  /** Square where the promotion dialog should appear (click-to-move) */
-  promotionToSquare?: Square | null;
-  /** Whether the promotion dialog is visible (click-to-move) */
-  showPromotionDialog?: boolean;
-  /** Handler for when a promotion piece is selected */
+  promotionState?: PromotionState;
   onPromotionPieceSelect?: (
     piece?: string,
     fromSquare?: Square,
@@ -39,22 +44,31 @@ export function GameBoard({
   isDraggablePiece,
   customSquareStyles,
   lastMove,
-  promotionToSquare,
-  showPromotionDialog,
+  promotionState = CLOSED_PROMOTION_STATE,
   onPromotionPieceSelect,
 }: GameBoardProps) {
+  const isPromotionOpen = promotionState.isOpen;
+
   useEffect(() => {
-    if (!onCancelSelection) return;
+    if (!onCancelSelection && !onPromotionPieceSelect) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onCancelSelection();
+        if (isPromotionOpen) {
+          onPromotionPieceSelect?.(
+            undefined,
+            promotionState.from ?? undefined,
+            promotionState.to ?? undefined,
+          );
+          return;
+        }
+        onCancelSelection?.();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onCancelSelection]);
+  }, [isPromotionOpen, onCancelSelection, onPromotionPieceSelect, promotionState.from, promotionState.to]);
 
   const lastMoveStyles = lastMove
     ? {
@@ -72,13 +86,19 @@ export function GameBoard({
       <Chessboard
         id="PlayVsStockfish"
         animationDuration={200}
-        arePiecesDraggable={!!onPieceDrop}
+        arePiecesDraggable={!!onPieceDrop && !isPromotionOpen}
         boardWidth={boardWidth}
         position={fen}
-        onSquareClick={onSquareClick}
-        onSquareRightClick={() => onCancelSelection?.()}
+        onSquareClick={(square) => {
+          if (isPromotionOpen) return;
+          onSquareClick(square as Square);
+        }}
+        onSquareRightClick={() => {
+          if (isPromotionOpen) return;
+          onCancelSelection?.();
+        }}
         onPieceDrop={(sourceSquare, targetSquare, piece) => {
-          if (!onPieceDrop) return false;
+          if (!onPieceDrop || isPromotionOpen) return false;
           return onPieceDrop(
             sourceSquare as Square,
             targetSquare as Square,
@@ -86,7 +106,7 @@ export function GameBoard({
           );
         }}
         isDraggablePiece={({ sourceSquare }) => {
-          if (!onPieceDrop) return false;
+          if (!onPieceDrop || isPromotionOpen) return false;
           if (!isDraggablePiece) return true;
           return isDraggablePiece(sourceSquare as Square);
         }}
@@ -98,18 +118,17 @@ export function GameBoard({
         customSquareStyles={{ ...customSquareStyles, ...lastMoveStyles }}
         customDarkSquareStyle={{ backgroundColor: "#779556" }}
         customLightSquareStyle={{ backgroundColor: "#ebecd0" }}
-        promotionToSquare={promotionToSquare ?? null}
-        showPromotionDialog={showPromotionDialog ?? false}
-        onPromotionPieceSelect={
-          onPromotionPieceSelect
-            ? (piece, fromSquare, toSquare) =>
-                onPromotionPieceSelect(
-                  piece as string | undefined,
-                  fromSquare as Square | undefined,
-                  toSquare as Square | undefined,
-                )
-            : undefined
-        }
+      />
+
+      <PromotionModal
+        state={promotionState}
+        onSelect={(piece) => {
+          onPromotionPieceSelect?.(
+            piece,
+            promotionState.from ?? undefined,
+            promotionState.to ?? undefined,
+          );
+        }}
       />
     </div>
   );

@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Chess } from "chess.js";
+import { playGameplaySound } from "../utils/moveSounds";
 
 export function useGameStateChecker(
   game: Chess,
@@ -12,10 +13,16 @@ export function useGameStateChecker(
   setGameOver: React.Dispatch<React.SetStateAction<boolean>>,
   setShowGameOverModal: React.Dispatch<React.SetStateAction<boolean>>,
 ) {
+  const gameEndSoundPlayedRef = useRef(false);
+
   useEffect(() => {
     const currentGame = gameRef.current;
 
     if (currentGame.game_over()) {
+      if (!gameEndSoundPlayedRef.current) {
+        playGameplaySound("gameEnd");
+        gameEndSoundPlayedRef.current = true;
+      }
       let result = "Draw";
       if (currentGame.in_checkmate()) {
         result =
@@ -32,6 +39,8 @@ export function useGameStateChecker(
       setShowGameOverModal(true);
       return;
     }
+
+    gameEndSoundPlayedRef.current = false;
 
     if (
       gameStarted &&

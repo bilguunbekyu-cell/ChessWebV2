@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Square } from "chess.js";
 import { useAuthStore } from "../../store/authStore";
 import { GameOverModal, PlayerInfo, GameBoard } from "../../components/game";
-import type { GameSettings } from "../../components/game";
+import type { GameSettings, PromotionState } from "../../components/game";
 import { BOARD_FRAME } from "./types";
 import type { CSSProperties } from "react";
 
@@ -38,8 +38,7 @@ interface QuickMatchGameViewProps {
   onLeave?: () => void;
   opponentName?: string;
   variant?: MatchVariant;
-  promotionToSquare?: Square | null;
-  showPromotionDialog?: boolean;
+  promotionState?: PromotionState;
   onPromotionPieceSelect?: (
     piece?: string,
     fromSquare?: Square,
@@ -72,8 +71,7 @@ export function QuickMatchGameView({
   onLeave,
   opponentName,
   variant = "standard",
-  promotionToSquare,
-  showPromotionDialog,
+  promotionState,
   onPromotionPieceSelect,
 }: QuickMatchGameViewProps) {
   const { user } = useAuthStore();
@@ -170,8 +168,7 @@ export function QuickMatchGameView({
                 >
               }
               lastMove={lastMove}
-              promotionToSquare={promotionToSquare}
-              showPromotionDialog={showPromotionDialog}
+              promotionState={promotionState}
               onPromotionPieceSelect={onPromotionPieceSelect}
             />
           </div>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Chess, Square } from "chess.js";
-import type { GameSettings } from "../components/game";
+import type { GameSettings, PromotionState } from "../components/game";
 import { defaultGameSettings, OptionSquares } from "./useStockfishGameTypes";
 import { useMoveOptions } from "./useMoveOptions";
 import { useSaveGameHistory } from "./useSaveGameHistory";
@@ -12,7 +12,7 @@ import {
 } from "./gameHistorySaver/utils";
 import { detectOpeningFromSan } from "../utils/openingExplorer";
 import { useAuthStore } from "../store/authStore";
-import { playChessMoveSound } from "../utils/moveSounds";
+import { playChessMoveSound, playGameplaySound } from "../utils/moveSounds";
 import {
   FriendGameStartedPayload,
   useFriendChallengeStore,
@@ -93,9 +93,6 @@ interface PreMove {
 }
 
 const PREMOVE_SOURCE_STYLE = {
-  background:
-    "radial-gradient(circle, rgba(245, 158, 11, 0.35) 45%, transparent 47%)",
-  borderRadius: "50%",
 };
 
 function buildPreMoveSquares(preMove: PreMove | null): OptionSquares {
@@ -200,6 +197,7 @@ export function useFriendOnlineGame() {
     setPendingPreMove(preMove);
     setMoveFrom(null);
     setOptionSquares({});
+    playGameplaySound("premove");
   }, []);
 
   const selectPreMoveSource = useCallback((sourceSquare: Square) => {
@@ -349,6 +347,7 @@ export function useFriendOnlineGame() {
       historySavedRef.current = false;
       startTimeRef.current = Date.now();
       setLastGameOver(null);
+      playGameplaySound("gameStart");
 
       const timeControl =
         payload.timeControl || defaultGameSettings.timeControl;
@@ -429,6 +428,7 @@ export function useFriendOnlineGame() {
 
     const handleMoveRejected = (payload: { reason?: string }) => {
       setStatusMessage(payload?.reason || "Move rejected.");
+      playGameplaySound("illegal");
     };
 
     const handleGameOver = (payload: GameOverPayload) => {
@@ -439,6 +439,7 @@ export function useFriendOnlineGame() {
       setLastGameOver(payload);
       setPendingPreMove(null);
       pendingPreMoveRef.current = null;
+      playGameplaySound("gameEnd");
 
       const currentUser = userRef.current;
       if (!currentUser?.id || !payload.elo?.applied) return;
@@ -785,11 +786,7 @@ export function useFriendOnlineGame() {
           candidatePiece.color === playerColor &&
           candidatePiece.type === "r"
         ) {
-          extraSquares[candidateSquare] = {
-            background:
-              "radial-gradient(circle, rgba(20, 184, 166, 0.35) 45%, transparent 47%)",
-            borderRadius: "50%",
-          };
+          extraSquares[candidateSquare] = {};
         }
       });
 
@@ -1010,6 +1007,7 @@ export function useFriendOnlineGame() {
         return;
       }
 
+      playGameplaySound("illegal");
       clearSelection();
     },
     [
@@ -1038,7 +1036,10 @@ export function useFriendOnlineGame() {
 
       const currentGame = gameRef.current;
       const sourcePiece = currentGame.get(sourceSquare);
-      if (!sourcePiece || sourcePiece.color !== playerColor) return false;
+      if (!sourcePiece || sourcePiece.color !== playerColor) {
+        playGameplaySound("illegal");
+        return false;
+      }
 
       if (!isPlayerTurn) {
         const isChess960Castle = isChess960CastlingDrop(
@@ -1052,16 +1053,20 @@ export function useFriendOnlineGame() {
           return false;
         }
 
-        const promotion =
+        const isPromo =
           sourcePiece.type === "p" &&
-          isPromotionTargetSquare(sourcePiece.color as PlayerColor, targetSquare)
-            ? extractPromo(piece)
-            : undefined;
+          isPromotionTargetSquare(sourcePiece.color as PlayerColor, targetSquare);
+        if (isPromo) {
+          setPendingPromoFrom(sourceSquare);
+          setPromotionToSquare(targetSquare);
+          setShowPromotionDialog(true);
+          clearSelection();
+          return false;
+        }
 
         queuePreMove({
           from: sourceSquare,
           to: targetSquare,
-          promotion,
         });
         return false;
       }
@@ -1076,12 +1081,24 @@ export function useFriendOnlineGame() {
       );
 
       if (!isLegalMove && !isLegalChess960Castle) {
+        playGameplaySound("illegal");
         if (getMoveOptions(sourceSquare)) {
           setMoveFrom(sourceSquare);
           addChess960CastlingTargets(currentGame, sourceSquare);
         } else {
           clearSelection();
         }
+        return false;
+      }
+
+      const isPromo =
+        sourcePiece.type === "p" &&
+        isPromotionTargetSquare(sourcePiece.color as PlayerColor, targetSquare);
+      if (isPromo) {
+        setPendingPromoFrom(sourceSquare);
+        setPromotionToSquare(targetSquare);
+        setShowPromotionDialog(true);
+        clearSelection();
         return false;
       }
 
@@ -1120,6 +1137,19 @@ export function useFriendOnlineGame() {
     },
     [gameOver, gameStarted, playerColor],
   );
+
+  const promotionState: PromotionState = {
+    isOpen: showPromotionDialog,
+    from: pendingPromoFrom,
+    to: promotionToSquare,
+    color:
+      (pendingPromoFrom
+        ? gameRef.current.get(pendingPromoFrom)?.color ?? null
+        : null) ??
+      (promotionToSquare
+        ? (promotionToSquare[1] === "8" ? "w" : "b")
+        : null),
+  };
 
   const cancelSelectionOrPreMove = useCallback(() => {
     if (moveFrom) {
@@ -1182,8 +1212,7 @@ export function useFriendOnlineGame() {
     onPieceDrop,
     onCancelSelection: cancelSelectionOrPreMove,
     isDraggablePiece,
-    promotionToSquare,
-    showPromotionDialog,
+    promotionState,
     onPromotionPieceSelect,
     resign,
     timeOut,

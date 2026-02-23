@@ -17,16 +17,8 @@ export function useMoveOptions(
 
       const newSquares: OptionSquares = {};
       movesForSquare.forEach((move) => {
-        newSquares[move.to] = {
-          background:
-            currentGame.get(move.to) &&
-            currentGame.get(move.to)!.color !== currentGame.get(square)!.color
-              ? "radial-gradient(circle, rgba(0,0,0,.1) 85%, transparent 85%)"
-              : "radial-gradient(circle, rgba(0,0,0,.1) 25%, transparent 25%)",
-          borderRadius: "50%",
-        };
+        newSquares[move.to] = {};
       });
-      newSquares[square] = { background: "rgba(255, 255, 0, 0.4)" };
       setOptionSquares(newSquares);
       return true;
     },

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Square } from "chess.js";
 import { useAuthStore } from "../../store/authStore";
 import { GameOverModal, PlayerInfo, GameBoard } from "../../components/game";
-import type { GameSettings } from "../../components/game";
+import type { GameSettings, PromotionState } from "../../components/game";
 import { BOARD_FRAME } from "./types";
 import type { CSSProperties } from "react";
 
@@ -55,8 +55,7 @@ interface FriendGameViewProps {
   onNewGame: () => void;
   onLeave?: () => void;
   variant?: MatchVariant;
-  promotionToSquare?: Square | null;
-  showPromotionDialog?: boolean;
+  promotionState?: PromotionState;
   onPromotionPieceSelect?: (
     piece?: string,
     fromSquare?: Square,
@@ -90,8 +89,7 @@ export function FriendGameView({
   onNewGame,
   onLeave,
   variant = "standard",
-  promotionToSquare,
-  showPromotionDialog,
+  promotionState,
   onPromotionPieceSelect,
 }: FriendGameViewProps) {
   const { user } = useAuthStore();
@@ -190,8 +188,7 @@ export function FriendGameView({
                 >
               }
               lastMove={lastMove}
-              promotionToSquare={promotionToSquare}
-              showPromotionDialog={showPromotionDialog}
+              promotionState={promotionState}
               onPromotionPieceSelect={onPromotionPieceSelect}
             />
           </div>
