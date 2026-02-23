@@ -31,6 +31,17 @@ export function normalizeFen(fen: string): string {
 }
 
 /**
+ * Resolve side-to-move from FEN (true = white, false = black)
+ */
+export function fenStartsWithWhite(fen: string, fallback = true): boolean {
+  const normalized = normalizeFen(fen);
+  const side = normalized.trim().split(/\s+/)[1];
+  if (side === "w") return true;
+  if (side === "b") return false;
+  return fallback;
+}
+
+/**
  * Safely load a game from FEN with fallbacks
  */
 export function safeLoadGame(

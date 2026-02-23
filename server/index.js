@@ -1772,6 +1772,22 @@ io.on("connection", (socket) => {
     forfeitFourPlayerSocket(socket, "player_left");
   });
 
+  socket.on("fourPlayerResync", ({ gameId } = {}) => {
+    const resolvedGameId = gameId || socket.data.fourPlayerGameId;
+    if (!resolvedGameId) return;
+
+    const game = fourPlayerGames.get(resolvedGameId);
+    if (!game) return;
+
+    const moverColor = game.socketToColor[socket.id];
+    if (!moverColor) {
+      socket.emit("fourPlayerMoveRejected", { reason: "Not part of this game." });
+      return;
+    }
+
+    emitFourPlayerState(game, { systemMessage: "Resynced game state." });
+  });
+
   socket.on("sendFriendChallenge", async (payload = {}, ack) => {
     try {
       const fromUserId = normalizeId(socket.data.userId);

@@ -51,7 +51,7 @@ export default function Community() {
       );
     }
     return posts;
-  }, [activeTab, searchQuery]);
+  }, [searchQuery]);
 
   // Reset to page 1 when filters change
   useEffect(() => {

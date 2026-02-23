@@ -23,6 +23,7 @@ export default function PuzzleTrainer() {
     solutionMoves,
     puzzleElo,
     customSquareStyles,
+    puzzleStartsWithWhite,
     onDrop,
     handleSquareClick,
     handleSquareRightClick,
@@ -97,7 +98,7 @@ export default function PuzzleTrainer() {
               onPieceDrop={onDrop}
               onSquareClick={handleSquareClick}
               onSquareRightClick={handleSquareRightClick}
-              boardOrientation={currentPuzzle.isWhiteToMove ? "white" : "black"}
+              boardOrientation={puzzleStartsWithWhite ? "white" : "black"}
               customSquareStyles={customSquareStyles}
               arePiecesDraggable={status === "solving"}
               customDarkSquareStyle={{ backgroundColor: "#779952" }}
@@ -111,7 +112,10 @@ export default function PuzzleTrainer() {
         {/* Right Panel */}
         <div className="flex-1 min-w-[360px] bg-[#111521] flex flex-col h-full">
           <PuzzlePanelHeader onBack={() => navigate("/puzzles")} />
-          <PuzzleInfoCard puzzle={currentPuzzle} />
+          <PuzzleInfoCard
+            puzzle={currentPuzzle}
+            isWhiteToMove={puzzleStartsWithWhite}
+          />
           <PuzzleProgressBar streak={streak} puzzleElo={puzzleElo} />
 
           {/* Status Area */}

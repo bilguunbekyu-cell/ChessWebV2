@@ -1,9 +1,31 @@
 import { Router } from "express";
-import { History } from "../models/index.js";
+import mongoose from "mongoose";
+import { History, History960 } from "../models/index.js";
 import { authMiddleware } from "../middleware/index.js";
 
 const router = Router();
 const MIN_STORED_MOVES = 3;
+const { ObjectId } = mongoose.Types;
+const CHESS960_STRIPPED_FIELDS = [
+  "ratingBefore",
+  "ratingAfter",
+  "ratingDelta",
+  "ratingDeviationBefore",
+  "ratingDeviationAfter",
+  "ratingDeviationDelta",
+  "volatilityBefore",
+  "volatilityAfter",
+  "volatilityDelta",
+  "opponentRatingBefore",
+  "opponentRatingAfter",
+  "opponentRatingDelta",
+  "opponentRatingDeviationBefore",
+  "opponentRatingDeviationAfter",
+  "opponentRatingDeviationDelta",
+  "opponentVolatilityBefore",
+  "opponentVolatilityAfter",
+  "opponentVolatilityDelta",
+];
 
 function normalizeVariant(value) {
   const normalized = String(value || "")
@@ -19,14 +41,38 @@ function detectVariantFromEvent(event) {
 
 function normalizeMoves(moves) {
   if (!Array.isArray(moves)) return [];
-  return moves
-    .map((move) => String(move || "").trim())
-    .filter(Boolean);
+  return moves.map((move) => String(move || "").trim()).filter(Boolean);
+}
+
+function normalizeObjectId(value) {
+  const text = String(value || "").trim();
+  return ObjectId.isValid(text) ? text : null;
+}
+
+function normalizeHistoryDocForVariant(historyDoc) {
+  if (historyDoc?.variant !== "chess960") return historyDoc;
+
+  // Chess960 is stored as unrated history without opening metadata.
+  historyDoc.rated = false;
+  historyDoc.isProvisional = false;
+  historyDoc.opponentIsProvisional = false;
+  historyDoc.ratingPool = undefined;
+  historyDoc.eco = "";
+  historyDoc.ecoUrl = "";
+  for (const field of CHESS960_STRIPPED_FIELDS) {
+    historyDoc[field] = undefined;
+  }
+  return historyDoc;
 }
 
 // Save game history
 router.post("/", authMiddleware, async (req, res) => {
   try {
+    const requestUserId = normalizeObjectId(req.user?.userId);
+    if (!requestUserId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
     const {
       event = "NeonGambit Game",
       site = "NeonGambit",
@@ -37,6 +83,7 @@ router.post("/", authMiddleware, async (req, res) => {
       result,
       variant,
       currentPosition,
+      startingFen = "",
       timeControl,
       utcDate,
       utcTime,
@@ -103,8 +150,14 @@ router.post("/", authMiddleware, async (req, res) => {
       });
     }
 
-    const history = await History.create({
-      userId: req.user.userId,
+    const resolvedVariant = variant
+      ? normalizeVariant(variant)
+      : detectVariantFromEvent(event);
+    const preferredModel =
+      resolvedVariant === "chess960" ? History960 : History;
+
+    const historyDoc = {
+      userId: requestUserId,
       event,
       site,
       date,
@@ -112,8 +165,9 @@ router.post("/", authMiddleware, async (req, res) => {
       white,
       black,
       result,
-      variant: variant ? normalizeVariant(variant) : detectVariantFromEvent(event),
+      variant: resolvedVariant,
       currentPosition,
+      startingFen,
       timeControl,
       utcDate,
       utcTime,
@@ -164,7 +218,28 @@ router.post("/", authMiddleware, async (req, res) => {
       durationMs,
       analysis,
       moveTimes,
-    });
+    };
+    normalizeHistoryDocForVariant(historyDoc);
+
+    let history;
+    try {
+      history = await preferredModel.create(historyDoc);
+    } catch (primaryError) {
+      const shouldRetryInStandard =
+        resolvedVariant === "chess960" &&
+        preferredModel === History960 &&
+        primaryError?.name !== "ValidationError";
+
+      if (!shouldRetryInStandard) {
+        throw primaryError;
+      }
+
+      console.error(
+        "History960 save failed; retrying in History collection:",
+        primaryError,
+      );
+      history = await History.create(historyDoc);
+    }
 
     res.json({ success: true, historyId: history._id });
   } catch (err) {
@@ -179,18 +254,25 @@ router.post("/", authMiddleware, async (req, res) => {
 // Get game history for a specific user (public)
 router.get("/user/:userId", authMiddleware, async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = normalizeObjectId(req.params.userId);
+    if (!userId) {
+      return res.status(400).json({ error: "Invalid userId" });
+    }
+
     const { limit = 50, skip = 0 } = req.query;
 
-    const games = await History.find({ userId })
-      .sort({ createdAt: -1 })
-      .skip(Number(skip))
-      .limit(Number(limit))
-      .lean();
+    const [standardGames, chess960Games] = await Promise.all([
+      History.find({ userId }).sort({ createdAt: -1 }).lean(),
+      History960.find({ userId }).sort({ createdAt: -1 }).lean(),
+    ]);
 
-    const total = await History.countDocuments({ userId });
+    const allGames = [...standardGames, ...chess960Games]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(Number(skip), Number(skip) + Number(limit));
 
-    res.json({ games, total });
+    const total = standardGames.length + chess960Games.length;
+
+    res.json({ games: allGames, total });
   } catch (err) {
     console.error("Get user history error:", err);
     res.status(500).json({ error: "Server error" });
@@ -201,16 +283,23 @@ router.get("/user/:userId", authMiddleware, async (req, res) => {
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const { limit = 50, skip = 0 } = req.query;
+    const userId = normalizeObjectId(req.user?.userId);
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
 
-    const games = await History.find({ userId: req.user.userId })
-      .sort({ createdAt: -1 })
-      .skip(Number(skip))
-      .limit(Number(limit))
-      .lean();
+    const [standardGames, chess960Games] = await Promise.all([
+      History.find({ userId }).sort({ createdAt: -1 }).lean(),
+      History960.find({ userId }).sort({ createdAt: -1 }).lean(),
+    ]);
 
-    const total = await History.countDocuments({ userId: req.user.userId });
+    const allGames = [...standardGames, ...chess960Games]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(Number(skip), Number(skip) + Number(limit));
 
-    res.json({ games, total });
+    const total = standardGames.length + chess960Games.length;
+
+    res.json({ games: allGames, total });
   } catch (err) {
     console.error("Get history error:", err);
     res.status(500).json({ error: "Server error" });
@@ -220,10 +309,21 @@ router.get("/", authMiddleware, async (req, res) => {
 // Get single game by ID
 router.get("/:id", authMiddleware, async (req, res) => {
   try {
-    const game = await History.findOne({
-      _id: req.params.id,
-      userId: req.user.userId,
-    }).lean();
+    const gameId = normalizeObjectId(req.params.id);
+    if (!gameId) {
+      return res.status(400).json({ error: "Invalid game id" });
+    }
+    const userId = normalizeObjectId(req.user?.userId);
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    const query = { _id: gameId, userId };
+
+    let game = await History.findOne(query).lean();
+    if (!game) {
+      game = await History960.findOne(query).lean();
+    }
 
     if (!game) {
       return res.status(404).json({ error: "Game not found" });

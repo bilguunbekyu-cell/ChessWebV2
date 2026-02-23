@@ -4,6 +4,7 @@ import {
   applyMove,
   createInitialFourPlayerState,
   getLegalMoves,
+  isColorInCheck,
   isPlayableSquare,
 } from "./engine";
 import {
@@ -77,6 +78,18 @@ export function useOnlineFourPlayerMatch() {
   const gameIdRef = useRef<string | null>(null);
   const playerNameRef = useRef("Player");
   const lastSoundMoveKeyRef = useRef<string>("");
+  const lastResyncAtRef = useRef(0);
+  const moveInFlightRef = useRef(false);
+
+  const requestResync = useCallback(() => {
+    const socket = socketRef.current;
+    if (!socket) return;
+    if (!gameIdRef.current) return;
+    const now = Date.now();
+    if (now - lastResyncAtRef.current < 500) return; // throttle spam
+    lastResyncAtRef.current = now;
+    socket.emit("fourPlayerResync", { gameId: gameIdRef.current });
+  }, []);
 
   const legalMoves = useMemo(() => {
     if (!selected) return [];
@@ -101,6 +114,7 @@ export function useOnlineFourPlayerMatch() {
     setGameOverReason(null);
     setForfeitedColor(null);
     lastSoundMoveKeyRef.current = "";
+    moveInFlightRef.current = false;
   }, []);
 
   useEffect(() => {
@@ -112,6 +126,9 @@ export function useOnlineFourPlayerMatch() {
     socket.on("connect", () => {
       setIsConnected(true);
       setQueueStatus(null);
+      if (gameIdRef.current) {
+        requestResync();
+      }
     });
 
     socket.on("disconnect", () => {
@@ -158,6 +175,7 @@ export function useOnlineFourPlayerMatch() {
 
     socket.on("fourPlayerState", (payload: StatePayload) => {
       if (!payload?.gameId || payload.gameId !== gameIdRef.current) return;
+      moveInFlightRef.current = false;
       setGameState(payload.state);
       if (payload.players) {
         setPlayers(payload.players);
@@ -171,7 +189,13 @@ export function useOnlineFourPlayerMatch() {
         const moveKey = `${payload.gameId}:${moveCount}:${payload.lastMove.from.row},${payload.lastMove.from.col}->${payload.lastMove.to.row},${payload.lastMove.to.col}`;
         if (moveKey !== lastSoundMoveKeyRef.current) {
           lastSoundMoveKeyRef.current = moveKey;
-          playChessMoveSound(payload.lastMove);
+          const nextPlayerInCheck = payload.state
+            ? isColorInCheck(payload.state, payload.state.turn)
+            : false;
+          playChessMoveSound({
+            ...payload.lastMove,
+            check: nextPlayerInCheck,
+          });
         }
       }
       if (payload.systemMessage) {
@@ -181,9 +205,11 @@ export function useOnlineFourPlayerMatch() {
     });
 
     socket.on("fourPlayerMoveRejected", (payload: { reason?: string }) => {
+      moveInFlightRef.current = false;
       setQueueStatus(payload?.reason || "Move rejected.");
       setSelected(null);
       playGameplaySound("illegal");
+      requestResync();
     });
 
     socket.on(
@@ -195,6 +221,7 @@ export function useOnlineFourPlayerMatch() {
         forfeitedColor?: FourPlayerColor;
       }) => {
         if (!payload?.gameId || payload.gameId !== gameIdRef.current) return;
+        moveInFlightRef.current = false;
         if (payload.state) {
           setGameState(payload.state);
         }
@@ -263,6 +290,7 @@ export function useOnlineFourPlayerMatch() {
 
   const tryMove = useCallback(
     (from: Square, to: Square) => {
+      if (moveInFlightRef.current) return false;
       if (!gameStarted || gameState.winner) return false;
       if (!isPlayableSquare(from.row, from.col) || !isPlayableSquare(to.row, to.col)) {
         return false;
@@ -289,6 +317,7 @@ export function useOnlineFourPlayerMatch() {
         from,
         to,
       });
+      moveInFlightRef.current = true;
       setSelected(null);
       return true;
     },

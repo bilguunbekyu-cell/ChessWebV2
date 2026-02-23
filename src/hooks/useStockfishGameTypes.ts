@@ -14,6 +14,7 @@ export interface GameHistoryPayload {
   black: string;
   result: string;
   currentPosition?: string;
+  startingFen?: string;
   timeControl?: string;
   utcDate?: string;
   utcTime?: string;

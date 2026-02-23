@@ -99,8 +99,7 @@ interface PreMove {
   promotion?: string;
 }
 
-const PREMOVE_SOURCE_STYLE = {
-};
+const PREMOVE_SOURCE_STYLE = {};
 
 function buildPreMoveSquares(preMove: PreMove | null): OptionSquares {
   if (!preMove) return {};
@@ -134,7 +133,9 @@ function isChess960CastlingDropForColor(
   if (sourceSquare[1] !== targetSquare[1]) return false;
 
   const targetPiece = currentGame.get(targetSquare);
-  return !!targetPiece && targetPiece.color === color && targetPiece.type === "r";
+  return (
+    !!targetPiece && targetPiece.color === color && targetPiece.type === "r"
+  );
 }
 
 function normalizeMatchVariant(value: unknown): MatchVariant {
@@ -183,6 +184,7 @@ export function useOnlineQuickMatch() {
   const matchVariantRef = useRef<MatchVariant>("standard");
   const pendingPreMoveRef = useRef<PreMove | null>(null);
   const startTimeRef = useRef<number | null>(null);
+  const startingFenRef = useRef<string>("");
   const historySavedRef = useRef(false);
   const [lastGameOver, setLastGameOver] = useState<GameOverPayload | null>(
     null,
@@ -293,6 +295,7 @@ export function useOnlineQuickMatch() {
     setMatchVariant("standard");
     matchVariantRef.current = "standard";
     startTimeRef.current = null;
+    startingFenRef.current = "";
     historySavedRef.current = false;
     setLastGameOver(null);
   }, [resetStoredMoves]);
@@ -354,8 +357,12 @@ export function useOnlineQuickMatch() {
 
     socket.on(
       "queued",
-      (payload?: { ratingRange?: number; pool?: string; playerRating?: number }) => {
-      setIsSearching(true);
+      (payload?: {
+        ratingRange?: number;
+        pool?: string;
+        playerRating?: number;
+      }) => {
+        setIsSearching(true);
         const range = Number(payload?.ratingRange);
         if (Number.isFinite(range) && range > 0) {
           setQueueStatus(`Searching for opponent (±${Math.round(range)})...`);
@@ -377,6 +384,7 @@ export function useOnlineQuickMatch() {
       const normalizedVariant = normalizeMatchVariant(payload.variant);
       setMatchVariant(normalizedVariant);
       matchVariantRef.current = normalizedVariant;
+      startingFenRef.current = payload.fen || nextGame.fen();
       resetStoredMoves();
       setLastMove(null);
       setMoveFrom(null);
@@ -505,19 +513,22 @@ export function useOnlineQuickMatch() {
         gamesPlayed: sideUpdate.gamesPlayed,
         gamesWon: sideUpdate.gamesWon,
       };
-      if (payload.elo.pool === "bullet") nextUser.bulletRating = sideUpdate.newRating;
+      if (payload.elo.pool === "bullet")
+        nextUser.bulletRating = sideUpdate.newRating;
       if (payload.elo.pool === "bullet") {
         nextUser.bulletGames = sideUpdate.poolGamesPlayed;
         nextUser.bulletRd = sideUpdate.newRd;
         nextUser.bulletVolatility = sideUpdate.newVolatility;
       }
-      if (payload.elo.pool === "blitz") nextUser.blitzRating = sideUpdate.newRating;
+      if (payload.elo.pool === "blitz")
+        nextUser.blitzRating = sideUpdate.newRating;
       if (payload.elo.pool === "blitz") {
         nextUser.blitzGames = sideUpdate.poolGamesPlayed;
         nextUser.blitzRd = sideUpdate.newRd;
         nextUser.blitzVolatility = sideUpdate.newVolatility;
       }
-      if (payload.elo.pool === "rapid") nextUser.rapidRating = sideUpdate.newRating;
+      if (payload.elo.pool === "rapid")
+        nextUser.rapidRating = sideUpdate.newRating;
       if (payload.elo.pool === "rapid") {
         nextUser.rapidGames = sideUpdate.poolGamesPlayed;
         nextUser.rapidRd = sideUpdate.newRd;
@@ -629,7 +640,8 @@ export function useOnlineQuickMatch() {
       playerColorRef.current === "w" ? blackPostRating : whitePostRating;
     const whitePreRd = Number(lastGameOver.elo?.white?.oldRd);
     const blackPreRd = Number(lastGameOver.elo?.black?.oldRd);
-    const playerPreRd = playerColorRef.current === "w" ? whitePreRd : blackPreRd;
+    const playerPreRd =
+      playerColorRef.current === "w" ? whitePreRd : blackPreRd;
     const opponentPreRd =
       playerColorRef.current === "w" ? blackPreRd : whitePreRd;
     const whitePostRd = Number(lastGameOver.elo?.white?.newRd);
@@ -643,9 +655,7 @@ export function useOnlineQuickMatch() {
     const playerPreVolatility =
       playerColorRef.current === "w" ? whitePreVolatility : blackPreVolatility;
     const opponentPreVolatility =
-      playerColorRef.current === "w"
-        ? blackPreVolatility
-        : whitePreVolatility;
+      playerColorRef.current === "w" ? blackPreVolatility : whitePreVolatility;
     const whitePostVolatility = Number(lastGameOver.elo?.white?.newVolatility);
     const blackPostVolatility = Number(lastGameOver.elo?.black?.newVolatility);
     const playerPostVolatility =
@@ -706,6 +716,7 @@ export function useOnlineQuickMatch() {
       black: blackName,
       result: pgnResult,
       currentPosition: currentGame.fen(),
+      startingFen: startingFenRef.current || undefined,
       timeControl: timeControlStr,
       utcDate: formatDate(startDate),
       utcTime: formatTime(startDate),
@@ -1036,9 +1047,17 @@ export function useOnlineQuickMatch() {
           return;
         }
 
-        const isChess960Castle = isChess960CastlingDrop(currentGame, moveFrom, square);
+        const isChess960Castle = isChess960CastlingDrop(
+          currentGame,
+          moveFrom,
+          square,
+        );
         const targetPiece = currentGame.get(square);
-        if (targetPiece && targetPiece.color === playerColor && !isChess960Castle) {
+        if (
+          targetPiece &&
+          targetPiece.color === playerColor &&
+          !isChess960Castle
+        ) {
           selectPreMoveSource(square);
           return;
         }
@@ -1148,14 +1167,21 @@ export function useOnlineQuickMatch() {
           targetSquare,
         );
         const targetPiece = currentGame.get(targetSquare);
-        if (targetPiece && targetPiece.color === playerColor && !isChess960Castle) {
+        if (
+          targetPiece &&
+          targetPiece.color === playerColor &&
+          !isChess960Castle
+        ) {
           selectPreMoveSource(sourceSquare);
           return false;
         }
 
         const isPromo =
           sourcePiece.type === "p" &&
-          isPromotionTargetSquare(sourcePiece.color as PlayerColor, targetSquare);
+          isPromotionTargetSquare(
+            sourcePiece.color as PlayerColor,
+            targetSquare,
+          );
         if (isPromo) {
           setPendingPromoFrom(sourceSquare);
           setPromotionToSquare(targetSquare);
@@ -1243,11 +1269,9 @@ export function useOnlineQuickMatch() {
     to: promotionToSquare,
     color:
       (pendingPromoFrom
-        ? gameRef.current.get(pendingPromoFrom)?.color ?? null
+        ? (gameRef.current.get(pendingPromoFrom)?.color ?? null)
         : null) ??
-      (promotionToSquare
-        ? (promotionToSquare[1] === "8" ? "w" : "b")
-        : null),
+      (promotionToSquare ? (promotionToSquare[1] === "8" ? "w" : "b") : null),
   };
 
   const cancelSelectionOrPreMove = useCallback(() => {

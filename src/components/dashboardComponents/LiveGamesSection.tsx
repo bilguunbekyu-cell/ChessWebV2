@@ -77,7 +77,7 @@ export function LiveGamesSection({
             ))
           : games.slice(0, 5).map((game, index) => (
               <motion.div
-                key={game.id}
+                key={`${game.id}-${index}`}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.35, delay: index * 0.06 }}

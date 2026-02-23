@@ -91,24 +91,42 @@ const defaultFormData: PuzzleFormData = {
 
 type SelectedTool = Piece | "eraser" | null;
 
-// Piece image URLs from the same source react-chessboard uses
-const PIECE_IMAGES: Record<Piece, string> = {
-  wK: "https://react-chessboard.com/img/chesspieces/wikipedia/wK.png",
-  wQ: "https://react-chessboard.com/img/chesspieces/wikipedia/wQ.png",
-  wR: "https://react-chessboard.com/img/chesspieces/wikipedia/wR.png",
-  wB: "https://react-chessboard.com/img/chesspieces/wikipedia/wB.png",
-  wN: "https://react-chessboard.com/img/chesspieces/wikipedia/wN.png",
-  wP: "https://react-chessboard.com/img/chesspieces/wikipedia/wP.png",
-  bK: "https://react-chessboard.com/img/chesspieces/wikipedia/bK.png",
-  bQ: "https://react-chessboard.com/img/chesspieces/wikipedia/bQ.png",
-  bR: "https://react-chessboard.com/img/chesspieces/wikipedia/bR.png",
-  bB: "https://react-chessboard.com/img/chesspieces/wikipedia/bB.png",
-  bN: "https://react-chessboard.com/img/chesspieces/wikipedia/bN.png",
-  bP: "https://react-chessboard.com/img/chesspieces/wikipedia/bP.png",
+const EMPTY_BOARD_FEN = "8/8/8/8/8/8/8/8";
+
+const PIECE_SYMBOLS: Record<Piece, string> = {
+  wK: "♔",
+  wQ: "♕",
+  wR: "♖",
+  wB: "♗",
+  wN: "♘",
+  wP: "♙",
+  bK: "♚",
+  bQ: "♛",
+  bR: "♜",
+  bB: "♝",
+  bN: "♞",
+  bP: "♟",
 };
 
 const WHITE_PIECES: Piece[] = ["wK", "wQ", "wR", "wB", "wN", "wP"];
 const BLACK_PIECES: Piece[] = ["bK", "bQ", "bR", "bB", "bN", "bP"];
+
+function getFenSideToMove(fen: string, fallback = true): boolean {
+  const parts = fen.trim().split(/\s+/).filter(Boolean);
+  if (parts[1] === "w") return true;
+  if (parts[1] === "b") return false;
+  return fallback;
+}
+
+function withFenSideToMove(fen: string, isWhiteToMove: boolean): string {
+  const parts = fen.trim().split(/\s+/).filter(Boolean);
+  const board = parts[0] || EMPTY_BOARD_FEN;
+  const castling = parts[2] || "-";
+  const enPassant = parts[3] || "-";
+  const halfmove = parts[4] || "0";
+  const fullmove = parts[5] || "1";
+  return `${board} ${isWhiteToMove ? "w" : "b"} ${castling} ${enPassant} ${halfmove} ${fullmove}`;
+}
 
 export default function AdminPuzzles() {
   const navigate = useNavigate();
@@ -267,7 +285,8 @@ export default function AdminPuzzles() {
   // Start recording solution
   const startRecordingSolution = () => {
     try {
-      const game = new Chess(formData.fen);
+      const fenWithSide = withFenSideToMove(formData.fen, formData.isWhiteToMove);
+      const game = new Chess(fenWithSide);
       setSolutionGame(game);
       setSolutionMoves([]);
       setIsRecordingSolution(true);
@@ -315,7 +334,7 @@ export default function AdminPuzzles() {
     setFormData((prev) => ({
       ...prev,
       isWhiteToMove: isWhite,
-      fen: positionToFen(fenToPosition(prev.fen), isWhite),
+      fen: withFenSideToMove(prev.fen, isWhite),
     }));
   };
 
@@ -331,6 +350,8 @@ export default function AdminPuzzles() {
     setIsRecordingSolution(false);
     setSolutionMoves([]);
     setSolutionGame(null);
+    const isWhiteToMove = getFenSideToMove(puzzle.fen, puzzle.isWhiteToMove);
+    const normalizedFen = withFenSideToMove(puzzle.fen, isWhiteToMove);
 
     // Determine puzzle type from themes
     let puzzleType: PuzzleFormData["puzzleType"] = "Tactics";
@@ -345,10 +366,10 @@ export default function AdminPuzzles() {
       themes: puzzle.themes.join(", "),
       description: puzzle.description,
       icon: puzzle.icon,
-      fen: puzzle.fen,
+      fen: normalizedFen,
       solution: puzzle.solution.join(", "),
       rating: puzzle.rating,
-      isWhiteToMove: puzzle.isWhiteToMove,
+      isWhiteToMove,
       mateIn: puzzle.mateIn || 2,
       puzzleType,
     });
@@ -375,6 +396,8 @@ export default function AdminPuzzles() {
     setSaving(true);
 
     try {
+      const isWhiteToMove = getFenSideToMove(formData.fen, formData.isWhiteToMove);
+      const normalizedFen = withFenSideToMove(formData.fen, isWhiteToMove);
       const payload = {
         title: formData.title,
         difficulty: formData.difficulty,
@@ -384,13 +407,13 @@ export default function AdminPuzzles() {
           .filter(Boolean),
         description: formData.description,
         icon: formData.icon,
-        fen: formData.fen,
+        fen: normalizedFen,
         solution: formData.solution
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
         rating: formData.rating,
-        isWhiteToMove: formData.isWhiteToMove,
+        isWhiteToMove,
         mateIn: formData.mateIn,
       };
 
@@ -786,11 +809,16 @@ export default function AdminPuzzles() {
                                   : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
                               }`}
                             >
-                              <img
-                                src={PIECE_IMAGES[piece]}
-                                alt={piece}
-                                className="w-7 h-7"
-                              />
+                              <span
+                                aria-hidden="true"
+                                className={`text-2xl leading-none select-none ${
+                                  piece.startsWith("w")
+                                    ? "text-white drop-shadow-[0_0_1px_rgba(0,0,0,0.9)]"
+                                    : "text-gray-900 drop-shadow-[0_0_1px_rgba(255,255,255,0.8)]"
+                                }`}
+                              >
+                                {PIECE_SYMBOLS[piece]}
+                              </span>
                             </button>
                           ))}
                         </div>
@@ -816,11 +844,16 @@ export default function AdminPuzzles() {
                                   : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
                               }`}
                             >
-                              <img
-                                src={PIECE_IMAGES[piece]}
-                                alt={piece}
-                                className="w-7 h-7"
-                              />
+                              <span
+                                aria-hidden="true"
+                                className={`text-2xl leading-none select-none ${
+                                  piece.startsWith("w")
+                                    ? "text-white drop-shadow-[0_0_1px_rgba(0,0,0,0.9)]"
+                                    : "text-gray-900 drop-shadow-[0_0_1px_rgba(255,255,255,0.8)]"
+                                }`}
+                              >
+                                {PIECE_SYMBOLS[piece]}
+                              </span>
                             </button>
                           ))}
                         </div>
@@ -1124,10 +1157,15 @@ export default function AdminPuzzles() {
                       type="text"
                       value={formData.fen}
                       onChange={(e) => {
-                        setFormData({ ...formData, fen: e.target.value });
-                        try {
-                          setBoardPosition(fenToPosition(e.target.value));
-                        } catch {}
+                        const nextFen = e.target.value;
+                        setFormData((prev) => ({
+                          ...prev,
+                          fen: nextFen,
+                          isWhiteToMove: getFenSideToMove(
+                            nextFen,
+                            prev.isWhiteToMove,
+                          ),
+                        }));
                       }}
                       placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
                       className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono text-xs"

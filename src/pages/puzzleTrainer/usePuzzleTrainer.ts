@@ -5,6 +5,7 @@ import { useAuthStore } from "../../store/authStore";
 import { playChessMoveSound, playUiSound } from "../../utils/moveSounds";
 import { PuzzleItem, PuzzleStatus, API_URL } from "./types";
 import {
+  fenStartsWithWhite,
   normalizeFen,
   safeLoadGame,
   normalizeSolution,
@@ -76,6 +77,14 @@ export function usePuzzleTrainer() {
 
   const puzzleFen = useMemo(
     () => (currentPuzzle ? normalizeFen(currentPuzzle.fen) : ""),
+    [currentPuzzle],
+  );
+
+  const puzzleStartsWithWhite = useMemo(
+    () =>
+      currentPuzzle
+        ? fenStartsWithWhite(currentPuzzle.fen, currentPuzzle.isWhiteToMove)
+        : true,
     [currentPuzzle],
   );
 
@@ -391,6 +400,7 @@ export function usePuzzleTrainer() {
     solutionMoves,
     puzzleElo,
     customSquareStyles,
+    puzzleStartsWithWhite,
     // Actions
     onDrop,
     handleSquareClick,

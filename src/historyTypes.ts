@@ -1,6 +1,6 @@
 export interface AnalysisEntry {
   ply: number;
-  cp?: number;   // centipawn evaluation (positive favors White)
+  cp?: number; // centipawn evaluation (positive favors White)
   mate?: number; // mate in N; sign indicates side to move wins
 }
 
@@ -15,6 +15,7 @@ export interface GameHistory {
   result: string; // "1-0" | "0-1" | "1/2-1/2"
   variant?: "standard" | "chess960";
   currentPosition: string;
+  startingFen?: string;
   timeControl: string;
   utcDate: string;
   utcTime: string;

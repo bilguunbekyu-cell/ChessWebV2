@@ -2,9 +2,10 @@ import { PuzzleItem } from "./types";
 
 interface PuzzleInfoCardProps {
   puzzle: PuzzleItem;
+  isWhiteToMove: boolean;
 }
 
-export function PuzzleInfoCard({ puzzle }: PuzzleInfoCardProps) {
+export function PuzzleInfoCard({ puzzle, isWhiteToMove }: PuzzleInfoCardProps) {
   return (
     <div className="p-3">
       <div className="bg-[#161b25] rounded-lg p-3">
@@ -16,13 +17,13 @@ export function PuzzleInfoCard({ puzzle }: PuzzleInfoCardProps) {
             <div className="flex items-center gap-2 mb-1">
               <div
                 className={`w-3 h-3 rounded border-2 ${
-                  puzzle.isWhiteToMove
+                  isWhiteToMove
                     ? "bg-white border-gray-300"
                     : "bg-gray-800 border-gray-500"
                 }`}
               />
               <span className="font-semibold text-xs">
-                {puzzle.isWhiteToMove ? "White" : "Black"} to move
+                {isWhiteToMove ? "White" : "Black"} to move
               </span>
             </div>
             <p className="text-gray-300 text-xs leading-relaxed line-clamp-2">

@@ -24,6 +24,7 @@ const HistorySchema = new mongoose.Schema(
 
     // Position
     currentPosition: { type: String },
+    startingFen: { type: String, default: "" },
 
     // Time
     timeControl: { type: String },

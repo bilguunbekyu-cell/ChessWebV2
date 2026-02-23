@@ -4,6 +4,15 @@ import { adminAuthMiddleware } from "../middleware/index.js";
 
 const router = Router();
 
+function resolveIsWhiteToMove(fen, fallback = true) {
+  const side = String(fen || "")
+    .trim()
+    .split(/\s+/)[1];
+  if (side === "w") return true;
+  if (side === "b") return false;
+  return fallback;
+}
+
 // Create puzzle
 router.post("/", adminAuthMiddleware, async (req, res) => {
   try {
@@ -19,6 +28,7 @@ router.post("/", adminAuthMiddleware, async (req, res) => {
       isWhiteToMove,
       mateIn,
     } = req.body;
+    const normalizedIsWhiteToMove = resolveIsWhiteToMove(fen, isWhiteToMove);
 
     const puzzle = new Puzzle({
       title,
@@ -29,7 +39,7 @@ router.post("/", adminAuthMiddleware, async (req, res) => {
       fen,
       solution,
       rating: rating || 1200,
-      isWhiteToMove,
+      isWhiteToMove: normalizedIsWhiteToMove,
       mateIn: mateIn || 2,
     });
 
@@ -55,6 +65,7 @@ router.put("/:id", adminAuthMiddleware, async (req, res) => {
       isWhiteToMove,
       mateIn,
     } = req.body;
+    const normalizedIsWhiteToMove = resolveIsWhiteToMove(fen, isWhiteToMove);
 
     const puzzle = await Puzzle.findByIdAndUpdate(
       req.params.id,
@@ -67,7 +78,7 @@ router.put("/:id", adminAuthMiddleware, async (req, res) => {
         fen,
         solution,
         rating,
-        isWhiteToMove,
+        isWhiteToMove: normalizedIsWhiteToMove,
         mateIn,
       },
       { new: true },

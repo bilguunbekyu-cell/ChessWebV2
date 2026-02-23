@@ -1,8 +1,23 @@
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { History, Trophy } from "lucide-react";
+import { ChevronLeft, ChevronRight, History, Trophy } from "lucide-react";
 import { GameHistory } from "../../historyTypes";
 import { GameCard } from "../profile";
 import { FilterType } from "./types";
+
+const GAMES_PER_PAGE = 10;
+
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [1];
+  const left = Math.max(2, current - 1);
+  const right = Math.min(total - 1, current + 1);
+  if (left > 2) pages.push("...");
+  for (let i = left; i <= right; i++) pages.push(i);
+  if (right < total - 1) pages.push("...");
+  pages.push(total);
+  return pages;
+}
 
 interface GamesTabContentProps {
   filteredGames: GameHistory[];
@@ -21,6 +36,31 @@ export function GamesTabContent({
   setExpandedId,
   analyzeBaseUrl,
 }: GamesTabContentProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset to page 1 when filter changes
+  const handleSetFilter = (f: FilterType) => {
+    setFilter(f);
+    setCurrentPage(1);
+  };
+
+  const totalPages = Math.max(1, Math.ceil(filteredGames.length / GAMES_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedGames = useMemo(() => {
+    const start = (safePage - 1) * GAMES_PER_PAGE;
+    return filteredGames.slice(start, start + GAMES_PER_PAGE);
+  }, [filteredGames, safePage]);
+  const pageNums = getPageNumbers(safePage, totalPages);
+  const rangeStart = filteredGames.length === 0 ? 0 : (safePage - 1) * GAMES_PER_PAGE + 1;
+  const rangeEnd = Math.min(safePage * GAMES_PER_PAGE, filteredGames.length);
+
+  const btnBase =
+    "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus:outline-none disabled:pointer-events-none disabled:opacity-40";
+  const btnPage = (active: boolean) =>
+    active
+      ? `${btnBase} w-9 h-9 bg-teal-500 text-white shadow-md shadow-teal-500/25`
+      : `${btnBase} w-9 h-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400`;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -37,7 +77,7 @@ export function GamesTabContent({
           {(["all", "wins", "losses", "draws"] as const).map((f) => (
             <button
               key={f}
-              onClick={() => setFilter(f)}
+              onClick={() => handleSetFilter(f)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 filter === f
                   ? "bg-teal-500 text-white shadow-sm"
@@ -50,9 +90,16 @@ export function GamesTabContent({
         </div>
       </div>
 
+      {/* Range info */}
+      {filteredGames.length > 0 && (
+        <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          {rangeStart}–{rangeEnd} of {filteredGames.length} games
+        </div>
+      )}
+
       <div className="space-y-3">
-        {filteredGames.length > 0 ? (
-          filteredGames.map((game) => (
+        {paginatedGames.length > 0 ? (
+          paginatedGames.map((game) => (
             <GameCard
               key={game._id}
               game={game}
@@ -78,6 +125,44 @@ export function GamesTabContent({
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1.5 pt-6">
+          <button
+            disabled={safePage <= 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            className={`${btnBase} w-9 h-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400`}
+          >
+            <ChevronLeft size={16} />
+          </button>
+          {pageNums.map((p, i) =>
+            p === "..." ? (
+              <span
+                key={`dots-${i}`}
+                className="w-9 h-9 flex items-center justify-center text-gray-400 dark:text-gray-600 text-sm select-none"
+              >
+                …
+              </span>
+            ) : (
+              <button
+                key={p}
+                onClick={() => setCurrentPage(p as number)}
+                className={btnPage(p === safePage)}
+              >
+                {p}
+              </button>
+            ),
+          )}
+          <button
+            disabled={safePage >= totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            className={`${btnBase} w-9 h-9 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-teal-400 dark:hover:border-teal-600 hover:text-teal-600 dark:hover:text-teal-400`}
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 }

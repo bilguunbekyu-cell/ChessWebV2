@@ -409,6 +409,13 @@ function isKingInCheck(state: FourPlayerState, color: FourPlayerColor): boolean 
   return isSquareAttacked(state, kingSquare, color);
 }
 
+export function isColorInCheck(
+  state: FourPlayerState,
+  color: FourPlayerColor,
+): boolean {
+  return isKingInCheck(state, color);
+}
+
 function addSlidingMoves(
   state: FourPlayerState,
   from: Square,

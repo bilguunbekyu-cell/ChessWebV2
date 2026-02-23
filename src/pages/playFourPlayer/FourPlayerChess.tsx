@@ -87,6 +87,7 @@ function FourPlayerBoard({
   canDragFrom,
   boardWidth,
   interactive,
+  allowDrag = false,
 }: {
   state: FourPlayerState;
   selected: string | null;
@@ -104,6 +105,7 @@ function FourPlayerBoard({
   canDragFrom: (row: number, col: number) => boolean;
   boardWidth: number;
   interactive: boolean;
+  allowDrag?: boolean;
 }) {
   const gridRef = useRef<HTMLDivElement>(null);
   const suppressClickRef = useRef(false);
@@ -168,6 +170,28 @@ function FourPlayerBoard({
     return { row, col };
   }, []);
 
+  const squareFromPoint = useCallback(
+    (clientX: number, clientY: number) => {
+      const target = document.elementFromPoint(clientX, clientY);
+      const cell = target?.closest("[data-four-cell]");
+      if (cell && cell instanceof HTMLElement) {
+        const rowAttr = cell.dataset.row;
+        const colAttr = cell.dataset.col;
+        const row = Number(rowAttr);
+        const col = Number(colAttr);
+        if (
+          Number.isInteger(row) &&
+          Number.isInteger(col) &&
+          isPlayableSquare(row, col)
+        ) {
+          return { row, col };
+        }
+      }
+      return squareFromClient(clientX, clientY);
+    },
+    [squareFromClient],
+  );
+
   const finalizeDrag = useCallback(
     (clientX: number, clientY: number) => {
       dragPointerIdRef.current = null;
@@ -175,7 +199,7 @@ function FourPlayerBoard({
         if (!current) return null;
         if (!current.moved) return null;
 
-        const destination = squareFromClient(clientX, clientY);
+        const destination = squareFromPoint(clientX, clientY);
         if (destination) {
           suppressClickRef.current = true;
           onPieceDrop(
@@ -191,7 +215,7 @@ function FourPlayerBoard({
         return null;
       });
     },
-    [onPieceDrop, onCancelSelection, squareFromClient],
+    [onPieceDrop, onCancelSelection, squareFromPoint],
   );
 
   useEffect(() => {
@@ -319,7 +343,7 @@ function FourPlayerBoard({
                   onSquareClick(row, col);
                 }}
                 onPointerDown={(event) => {
-                  if (!interactive || event.button !== 0) return;
+                  if (!interactive || !allowDrag || event.button !== 0) return;
                   if (!canDragFrom(row, col)) return;
                   if (!piece) return;
 
@@ -345,6 +369,9 @@ function FourPlayerBoard({
                   });
                 }}
                 disabled={!interactive}
+                data-four-cell
+                data-row={row}
+                data-col={col}
                 className={`relative aspect-square flex items-center justify-center transition-colors touch-none ${
                   isDark ? "bg-[#a6a7ab]" : "bg-[#d6d7d9]"
                 } ${
@@ -623,6 +650,7 @@ export default function FourPlayerChess() {
               canDragFrom={() => false}
               boardWidth={boardWidth}
               interactive={false}
+              allowDrag={false}
             />
           </div>
 
@@ -730,8 +758,8 @@ export default function FourPlayerChess() {
   return (
     <div className="relative h-screen w-full bg-slate-100 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 overflow-hidden">
       {gameState.winner && (
-        <div className="absolute inset-0 z-30 bg-black/45 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-900/95 text-white p-6 shadow-2xl">
+        <div className="fixed inset-0 z-[60] bg-black/45 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-slate-900/95 text-white p-6 shadow-2xl text-center">
             <h3 className="text-xl font-bold">
               {youWin ? "You Win" : `${gameState.winner.toUpperCase()} Wins`}
             </h3>
@@ -809,6 +837,7 @@ export default function FourPlayerChess() {
               canDragFrom={canDragFrom}
               boardWidth={boardWidth}
               interactive
+              allowDrag={false}
             />
           </div>
         </div>
