@@ -44,14 +44,18 @@ export function GamesTabContent({
     setCurrentPage(1);
   };
 
-  const totalPages = Math.max(1, Math.ceil(filteredGames.length / GAMES_PER_PAGE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredGames.length / GAMES_PER_PAGE),
+  );
   const safePage = Math.min(currentPage, totalPages);
   const paginatedGames = useMemo(() => {
     const start = (safePage - 1) * GAMES_PER_PAGE;
     return filteredGames.slice(start, start + GAMES_PER_PAGE);
   }, [filteredGames, safePage]);
   const pageNums = getPageNumbers(safePage, totalPages);
-  const rangeStart = filteredGames.length === 0 ? 0 : (safePage - 1) * GAMES_PER_PAGE + 1;
+  const rangeStart =
+    filteredGames.length === 0 ? 0 : (safePage - 1) * GAMES_PER_PAGE + 1;
   const rangeEnd = Math.min(safePage * GAMES_PER_PAGE, filteredGames.length);
 
   const btnBase =
