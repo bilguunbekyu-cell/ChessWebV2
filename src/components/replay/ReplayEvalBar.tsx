@@ -9,7 +9,10 @@ export function ReplayEvalBar({
   evalLabel,
   orientation = "horizontal",
 }: ReplayEvalBarProps) {
-  const isWhiteAdvantage = evalPercent > 50;
+  const safeEvalPercent = Number.isFinite(evalPercent)
+    ? Math.max(0, Math.min(100, evalPercent))
+    : 50;
+  const isWhiteAdvantage = safeEvalPercent > 50;
   const displayLabel = evalLabel === "—" ? "0.00" : evalLabel;
 
   if (orientation === "vertical") {
@@ -24,14 +27,14 @@ export function ReplayEvalBar({
         >
           {displayLabel}
         </div>
-        <div className="relative w-4 flex-1 rounded overflow-hidden border border-gray-300 dark:border-gray-600">
+        <div className="relative w-5 flex-1 rounded overflow-hidden border border-gray-400 dark:border-gray-500 bg-slate-200 dark:bg-slate-700">
           <div
-            className="absolute left-0 right-0 bottom-0 bg-white transition-all duration-300 ease-out"
-            style={{ height: `${evalPercent}%` }}
+            className="absolute left-0 right-0 bottom-0 bg-white"
+            style={{ height: `${safeEvalPercent}%` }}
           />
           <div
-            className="absolute left-0 right-0 top-0 bg-gray-900 transition-all duration-300 ease-out"
-            style={{ height: `${100 - evalPercent}%` }}
+            className="absolute left-0 right-0 top-0 bg-gray-950"
+            style={{ height: `${100 - safeEvalPercent}%` }}
           />
           <div className="absolute left-0 right-0 top-1/2 h-px bg-gray-400/70" />
         </div>
@@ -54,11 +57,11 @@ export function ReplayEvalBar({
       <div className="flex-1 relative h-4 rounded overflow-hidden border border-gray-300 dark:border-gray-600">
         <div
           className="absolute top-0 bottom-0 left-0 bg-gray-900 transition-all duration-300 ease-out"
-          style={{ width: `${100 - evalPercent}%` }}
+          style={{ width: `${100 - safeEvalPercent}%` }}
         />
         <div
           className="absolute top-0 bottom-0 right-0 bg-white transition-all duration-300 ease-out"
-          style={{ width: `${evalPercent}%` }}
+          style={{ width: `${safeEvalPercent}%` }}
         />
         <div className="absolute top-0 bottom-0 left-1/2 w-px bg-gray-400/70 -translate-x-1/2" />
       </div>

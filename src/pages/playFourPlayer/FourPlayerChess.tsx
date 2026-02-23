@@ -7,6 +7,7 @@ import {
   createInitialFourPlayerState,
   formatMoveText,
   FOUR_PLAYER_BOARD_SIZE,
+  getLegalMoves,
   isPlayableSquare,
 } from "./engine";
 import { PieceIcon } from "./PieceIcon";

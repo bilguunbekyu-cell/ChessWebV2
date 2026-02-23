@@ -14,6 +14,25 @@ interface PgnHeadersParams {
   ecoCode: string;
   ecoUrl: string;
   currentFen: string;
+  moves?: string[];
+}
+
+export function buildSanMoveText(moves: string[], pgnResult?: string): string {
+  if (!Array.isArray(moves) || moves.length === 0) {
+    return pgnResult || "";
+  }
+
+  const chunks: string[] = [];
+  for (let i = 0; i < moves.length; i += 2) {
+    const moveNumber = Math.floor(i / 2) + 1;
+    const whiteMove = moves[i];
+    const blackMove = moves[i + 1];
+    chunks.push(`${moveNumber}. ${whiteMove}`);
+    if (blackMove) chunks.push(blackMove);
+  }
+
+  if (pgnResult) chunks.push(pgnResult);
+  return chunks.join(" ").trim();
 }
 
 /**
@@ -36,6 +55,7 @@ export function buildFullPgn(
     ecoCode,
     ecoUrl,
     currentFen,
+    moves,
   } = params;
 
   const pgnHeaders = [
@@ -68,6 +88,9 @@ export function buildFullPgn(
     `[BlackTitle ""]`,
   ].join("\n");
 
-  const moveText = currentGame.pgn();
-  return `${pgnHeaders}\n\n${moveText} ${pgnResult}`;
+  const moveText =
+    Array.isArray(moves) && moves.length > 0
+      ? buildSanMoveText(moves, pgnResult)
+      : `${currentGame.pgn()} ${pgnResult}`.trim();
+  return `${pgnHeaders}\n\n${moveText}`;
 }

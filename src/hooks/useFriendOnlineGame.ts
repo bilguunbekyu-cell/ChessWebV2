@@ -4,7 +4,7 @@ import type { GameSettings, PromotionState } from "../components/game";
 import { defaultGameSettings, OptionSquares } from "./useStockfishGameTypes";
 import { useMoveOptions } from "./useMoveOptions";
 import { useSaveGameHistory } from "./useSaveGameHistory";
-import { buildFullPgn } from "./gameHistorySaver/buildPgn";
+import { buildFullPgn, buildSanMoveText } from "./gameHistorySaver/buildPgn";
 import {
   formatDate,
   formatTime,
@@ -143,6 +143,7 @@ export function useFriendOnlineGame() {
   const [game, setGame] = useState(() => new Chess());
   const gameRef = useRef(game);
   const [moves, setMoves] = useState<string[]>([]);
+  const movesRef = useRef<string[]>([]);
   const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(
     null,
   );
@@ -154,6 +155,7 @@ export function useFriendOnlineGame() {
   const [showGameOverModal, setShowGameOverModal] = useState(false);
   const [savedGameId, setSavedGameId] = useState<string | null>(null);
   const [playerColor, setPlayerColor] = useState<PlayerColor>("w");
+  const [currentTurn, setCurrentTurn] = useState<PlayerColor>("w");
   const [gameId, setGameId] = useState<string | null>(null);
   const [opponentName, setOpponentName] = useState("Friend");
   const [opponentUserId, setOpponentUserId] = useState<string | null>(null);
@@ -173,6 +175,7 @@ export function useFriendOnlineGame() {
 
   const gameIdRef = useRef<string | null>(null);
   const playerColorRef = useRef<PlayerColor>("w");
+  const currentTurnRef = useRef<PlayerColor>("w");
   const matchVariantRef = useRef<MatchVariant>("standard");
   const pendingPreMoveRef = useRef<PreMove | null>(null);
   const playerNameRef = useRef<string>("Player");
@@ -184,8 +187,21 @@ export function useFriendOnlineGame() {
   const saveGameHistory = useSaveGameHistory();
 
   const getMoveOptions = useMoveOptions(gameRef, setOptionSquares);
-  const isPlayerTurn = game.turn() === playerColor;
+  const isPlayerTurn = currentTurn === playerColor;
   const preMoveSquares = buildPreMoveSquares(pendingPreMove);
+
+  const resetStoredMoves = useCallback(() => {
+    movesRef.current = [];
+    setMoves([]);
+  }, []);
+
+  const appendStoredMove = useCallback((san?: string) => {
+    const normalized = typeof san === "string" ? san.trim() : "";
+    if (!normalized) return;
+    const nextMoves = [...movesRef.current, normalized];
+    movesRef.current = nextMoves;
+    setMoves(nextMoves);
+  }, []);
 
   const clearPreMove = useCallback(() => {
     pendingPreMoveRef.current = null;
@@ -213,7 +229,7 @@ export function useFriendOnlineGame() {
     if (!socket || !gameIdRef.current) return false;
 
     const currentGame = gameRef.current;
-    if (currentGame.turn() !== playerColorRef.current) return false;
+    if (currentTurnRef.current !== playerColorRef.current) return false;
 
     const validationGame = new Chess(currentGame.fen());
     const isChess960Castle = isChess960CastlingDropForColor(
@@ -285,7 +301,7 @@ export function useFriendOnlineGame() {
     const nextGame = new Chess();
     gameRef.current = nextGame;
     setGame(nextGame);
-    setMoves([]);
+    resetStoredMoves();
     setLastMove(null);
     setGameStarted(false);
     setGameOver(false);
@@ -293,8 +309,13 @@ export function useFriendOnlineGame() {
     setShowGameOverModal(false);
     setMoveFrom(null);
     setOptionSquares({});
+    setShowPromotionDialog(false);
+    setPromotionToSquare(null);
+    setPendingPromoFrom(null);
     setPendingPreMove(null);
     pendingPreMoveRef.current = null;
+    setCurrentTurn("w");
+    currentTurnRef.current = "w";
     setGameId(null);
     setSavedGameId(null);
     gameIdRef.current = null;
@@ -310,7 +331,7 @@ export function useFriendOnlineGame() {
     startTimeRef.current = null;
     historySavedRef.current = false;
     setLastGameOver(null);
-  }, []);
+  }, [resetStoredMoves]);
 
   const applyFriendGameStart = useCallback(
     (payload: FriendGameStartedPayload) => {
@@ -319,8 +340,16 @@ export function useFriendOnlineGame() {
       const nextGame = new Chess(payload.fen);
       gameRef.current = nextGame;
       setGame(nextGame);
-      setMoves([]);
+      const startingTurn = nextGame.turn() as PlayerColor;
+      currentTurnRef.current = startingTurn;
+      setCurrentTurn(startingTurn);
+      resetStoredMoves();
       setLastMove(null);
+      setMoveFrom(null);
+      setOptionSquares({});
+      setShowPromotionDialog(false);
+      setPromotionToSquare(null);
+      setPendingPromoFrom(null);
       setGameId(payload.gameId);
       gameIdRef.current = payload.gameId;
       setPendingPreMove(null);
@@ -360,7 +389,7 @@ export function useFriendOnlineGame() {
       setPlayerTime(timeControl.initial);
       setOpponentTime(timeControl.initial);
     },
-    [gameStarted],
+    [gameStarted, resetStoredMoves],
   );
 
   useEffect(() => {
@@ -385,7 +414,7 @@ export function useFriendOnlineGame() {
         const nextGame = new Chess(payload.fen);
         gameRef.current = nextGame;
         setGame(nextGame);
-        setMoves((prev) => [...prev, payload.move.san]);
+        appendStoredMove(payload.move.san);
         if (isOpponentMove) {
           playChessMoveSound(
             { ...payload.move, castlingSide: "k" },
@@ -403,7 +432,7 @@ export function useFriendOnlineGame() {
         if (applied) {
           gameRef.current = currentGame;
           setGame(new Chess(currentGame.fen()));
-          setMoves(currentGame.history());
+          appendStoredMove(payload.move.san || applied.san);
           if (isOpponentMove) {
             playChessMoveSound(applied, { isOpponentMove: true });
           }
@@ -411,7 +440,7 @@ export function useFriendOnlineGame() {
           const nextGame = new Chess(payload.fen);
           gameRef.current = nextGame;
           setGame(nextGame);
-          setMoves((prev) => [...prev, payload.move.san]);
+          appendStoredMove(payload.move.san);
           if (isOpponentMove) {
             playChessMoveSound(payload.move, { isOpponentMove: true });
           }
@@ -419,8 +448,13 @@ export function useFriendOnlineGame() {
       }
 
       setLastMove({ from: payload.move.from, to: payload.move.to });
+      currentTurnRef.current = payload.turn;
+      setCurrentTurn(payload.turn);
       setMoveFrom(null);
       setOptionSquares({});
+      setShowPromotionDialog(false);
+      setPromotionToSquare(null);
+      setPendingPromoFrom(null);
 
       // Opponent just moved and it may now be our turn.
       trySubmitQueuedPreMove();
@@ -429,6 +463,9 @@ export function useFriendOnlineGame() {
     const handleMoveRejected = (payload: { reason?: string }) => {
       setStatusMessage(payload?.reason || "Move rejected.");
       playGameplaySound("illegal");
+      const turn = gameRef.current.turn() as PlayerColor;
+      currentTurnRef.current = turn;
+      setCurrentTurn(turn);
     };
 
     const handleGameOver = (payload: GameOverPayload) => {
@@ -437,6 +474,9 @@ export function useFriendOnlineGame() {
       setShowGameOverModal(true);
       setGameResult(formatResult(payload));
       setLastGameOver(payload);
+      setShowPromotionDialog(false);
+      setPromotionToSquare(null);
+      setPendingPromoFrom(null);
       setPendingPreMove(null);
       pendingPreMoveRef.current = null;
       playGameplaySound("gameEnd");
@@ -499,7 +539,14 @@ export function useFriendOnlineGame() {
       socket.off("moveRejected", handleMoveRejected);
       socket.off("gameOver", handleGameOver);
     };
-  }, [socket, applyFriendGameStart, clearActiveGame, setUser, trySubmitQueuedPreMove]);
+  }, [
+    socket,
+    applyFriendGameStart,
+    appendStoredMove,
+    clearActiveGame,
+    setUser,
+    trySubmitQueuedPreMove,
+  ]);
 
   // Fallback for tight timing races: submit queued premove as soon as our turn starts.
   useEffect(() => {
@@ -526,8 +573,12 @@ export function useFriendOnlineGame() {
     const durationMs = startTimeRef.current
       ? Date.now() - startTimeRef.current
       : undefined;
+    const persistedMoves =
+      movesRef.current.length > 0
+        ? [...movesRef.current]
+        : currentGame.history();
 
-    const opening = detectOpeningFromSan(currentGame.history());
+    const opening = detectOpeningFromSan(persistedMoves);
     const ecoCode = opening?.eco || "";
     const openingName = opening
       ? opening.variation
@@ -645,6 +696,7 @@ export function useFriendOnlineGame() {
       ecoCode,
       ecoUrl,
       currentFen: currentGame.fen(),
+      moves: persistedMoves,
     });
 
     saveGameHistory({
@@ -734,8 +786,8 @@ export function useFriendOnlineGame() {
       eco: ecoCode,
       ecoUrl,
       termination: terminationText,
-      moves: currentGame.history(),
-      moveText: currentGame.pgn(),
+      moves: persistedMoves,
+      moveText: buildSanMoveText(persistedMoves, pgnResult),
       pgn: fullPgn,
       playAs: gameSettings.playAs,
       opponent,
@@ -894,6 +946,9 @@ export function useFriendOnlineGame() {
         to,
         promotion,
       });
+      const nextTurn = playerColor === "w" ? "b" : "w";
+      currentTurnRef.current = nextTurn;
+      setCurrentTurn(nextTurn);
       clearSelection();
       return true;
     },
@@ -995,6 +1050,9 @@ export function useFriendOnlineGame() {
           to: square,
           promotion: "q",
         });
+        const nextTurn = playerColor === "w" ? "b" : "w";
+        currentTurnRef.current = nextTurn;
+        setCurrentTurn(nextTurn);
         clearSelection();
         return;
       }
@@ -1109,6 +1167,9 @@ export function useFriendOnlineGame() {
         to: targetSquare,
         promotion,
       });
+      const nextTurn = playerColor === "w" ? "b" : "w";
+      currentTurnRef.current = nextTurn;
+      setCurrentTurn(nextTurn);
       playLocalMoveSound(sourceSquare, targetSquare, promotion);
       clearSelection();
       return true;

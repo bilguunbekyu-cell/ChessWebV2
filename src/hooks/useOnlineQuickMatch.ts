@@ -5,7 +5,7 @@ import type { GameSettings, PromotionState } from "../components/game";
 import { defaultGameSettings, OptionSquares } from "./useStockfishGameTypes";
 import { useMoveOptions } from "./useMoveOptions";
 import { useSaveGameHistory } from "./useSaveGameHistory";
-import { buildFullPgn } from "./gameHistorySaver/buildPgn";
+import { buildFullPgn, buildSanMoveText } from "./gameHistorySaver/buildPgn";
 import {
   formatDate,
   formatTime,
@@ -148,6 +148,7 @@ export function useOnlineQuickMatch() {
   const [game, setGame] = useState(() => new Chess());
   const gameRef = useRef(game);
   const [moves, setMoves] = useState<string[]>([]);
+  const movesRef = useRef<string[]>([]);
   const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(
     null,
   );
@@ -191,6 +192,19 @@ export function useOnlineQuickMatch() {
   const getMoveOptions = useMoveOptions(gameRef, setOptionSquares);
   const isPlayerTurn = game.turn() === playerColor;
   const preMoveSquares = buildPreMoveSquares(pendingPreMove);
+
+  const resetStoredMoves = useCallback(() => {
+    movesRef.current = [];
+    setMoves([]);
+  }, []);
+
+  const appendStoredMove = useCallback((san?: string) => {
+    const normalized = typeof san === "string" ? san.trim() : "";
+    if (!normalized) return;
+    const nextMoves = [...movesRef.current, normalized];
+    movesRef.current = nextMoves;
+    setMoves(nextMoves);
+  }, []);
 
   const clearPreMove = useCallback(() => {
     pendingPreMoveRef.current = null;
@@ -257,7 +271,7 @@ export function useOnlineQuickMatch() {
     const nextGame = new Chess();
     gameRef.current = nextGame;
     setGame(nextGame);
-    setMoves([]);
+    resetStoredMoves();
     setLastMove(null);
     setGameStarted(false);
     setGameOver(false);
@@ -265,6 +279,9 @@ export function useOnlineQuickMatch() {
     setShowGameOverModal(false);
     setMoveFrom(null);
     setOptionSquares({});
+    setShowPromotionDialog(false);
+    setPromotionToSquare(null);
+    setPendingPromoFrom(null);
     setPendingPreMove(null);
     pendingPreMoveRef.current = null;
     setGameId(null);
@@ -278,7 +295,7 @@ export function useOnlineQuickMatch() {
     startTimeRef.current = null;
     historySavedRef.current = false;
     setLastGameOver(null);
-  }, []);
+  }, [resetStoredMoves]);
 
   const formatResult = (payload: GameOverPayload) => {
     if (payload.reason === "draw" || !payload.winner) {
@@ -360,8 +377,13 @@ export function useOnlineQuickMatch() {
       const normalizedVariant = normalizeMatchVariant(payload.variant);
       setMatchVariant(normalizedVariant);
       matchVariantRef.current = normalizedVariant;
-      setMoves([]);
+      resetStoredMoves();
       setLastMove(null);
+      setMoveFrom(null);
+      setOptionSquares({});
+      setShowPromotionDialog(false);
+      setPromotionToSquare(null);
+      setPendingPromoFrom(null);
       setGameId(payload.gameId);
       gameIdRef.current = payload.gameId;
       setPendingPreMove(null);
@@ -401,7 +423,7 @@ export function useOnlineQuickMatch() {
         const nextGame = new Chess(payload.fen);
         gameRef.current = nextGame;
         setGame(nextGame);
-        setMoves((prev) => [...prev, payload.move.san]);
+        appendStoredMove(payload.move.san);
         if (isOpponentMove) {
           playChessMoveSound(
             { ...payload.move, castlingSide: "k" },
@@ -419,7 +441,7 @@ export function useOnlineQuickMatch() {
         if (applied) {
           gameRef.current = currentGame;
           setGame(new Chess(currentGame.fen()));
-          setMoves((prev) => [...prev, payload.move.san || applied.san]);
+          appendStoredMove(payload.move.san || applied.san);
           if (isOpponentMove) {
             playChessMoveSound(applied, { isOpponentMove: true });
           }
@@ -427,7 +449,7 @@ export function useOnlineQuickMatch() {
           const nextGame = new Chess(payload.fen);
           gameRef.current = nextGame;
           setGame(nextGame);
-          setMoves((prev) => [...prev, payload.move.san]);
+          appendStoredMove(payload.move.san);
           if (isOpponentMove) {
             playChessMoveSound(payload.move, { isOpponentMove: true });
           }
@@ -437,6 +459,9 @@ export function useOnlineQuickMatch() {
       setLastMove({ from: payload.move.from, to: payload.move.to });
       setMoveFrom(null);
       setOptionSquares({});
+      setShowPromotionDialog(false);
+      setPromotionToSquare(null);
+      setPendingPromoFrom(null);
 
       // Opponent just moved and it may now be our turn.
       trySubmitQueuedPreMove();
@@ -453,6 +478,9 @@ export function useOnlineQuickMatch() {
       setShowGameOverModal(true);
       setGameResult(formatResult(payload));
       setLastGameOver(payload);
+      setShowPromotionDialog(false);
+      setPromotionToSquare(null);
+      setPendingPromoFrom(null);
       setPendingPreMove(null);
       pendingPreMoveRef.current = null;
       playGameplaySound("gameEnd");
@@ -515,7 +543,7 @@ export function useOnlineQuickMatch() {
       socket.removeAllListeners();
       socket.disconnect();
     };
-  }, [setUser, trySubmitQueuedPreMove]);
+  }, [appendStoredMove, resetStoredMoves, setUser, trySubmitQueuedPreMove]);
 
   // Fallback for tight timing races: submit queued premove as soon as our turn starts.
   useEffect(() => {
@@ -542,8 +570,12 @@ export function useOnlineQuickMatch() {
     const durationMs = startTimeRef.current
       ? Date.now() - startTimeRef.current
       : undefined;
+    const persistedMoves =
+      movesRef.current.length > 0
+        ? [...movesRef.current]
+        : currentGame.history();
 
-    const opening = detectOpeningFromSan(currentGame.history());
+    const opening = detectOpeningFromSan(persistedMoves);
     const ecoCode = opening?.eco || "";
     const openingName = opening
       ? opening.variation
@@ -661,6 +693,7 @@ export function useOnlineQuickMatch() {
       ecoCode,
       ecoUrl,
       currentFen: currentGame.fen(),
+      moves: persistedMoves,
     });
 
     saveGameHistory({
@@ -747,8 +780,8 @@ export function useOnlineQuickMatch() {
       eco: ecoCode,
       ecoUrl,
       termination: terminationText,
-      moves: currentGame.history(),
-      moveText: currentGame.pgn(),
+      moves: persistedMoves,
+      moveText: buildSanMoveText(persistedMoves, pgnResult),
       pgn: fullPgn,
       playAs: gameSettings.playAs,
       opponent,

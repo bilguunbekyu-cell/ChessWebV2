@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Chessboard } from "react-chessboard";
 
 interface ReplayBoardProps {
@@ -18,31 +18,25 @@ export function ReplayBoard({
   isCheckmate,
   isStalemate,
 }: ReplayBoardProps) {
-  const [boardWidth, setBoardWidth] = useState<number>(480);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const getViewport = () => ({
+    width: typeof window !== "undefined" ? window.innerWidth : 1280,
+    height: typeof window !== "undefined" ? window.innerHeight : 800,
+  });
+
+  const [viewport, setViewport] = useState(getViewport);
 
   useEffect(() => {
-    const calc = () => {
-      const available = (containerRef.current?.offsetWidth ?? window.innerWidth) - 32; // padding guard
-      const size = Math.min(Math.max(available, 260), 520);
-      setBoardWidth(size);
-    };
-
-    const resizeObserver =
-      typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(calc)
-        : null;
-
-    calc();
-    if (resizeObserver && containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-    window.addEventListener("resize", calc);
-    return () => {
-      resizeObserver?.disconnect();
-      window.removeEventListener("resize", calc);
-    };
+    const updateViewport = () => setViewport(getViewport());
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
   }, []);
+
+  // Keep board size stable and derived from viewport only to avoid mount-time grow/shrink flicker.
+  const boardWidth = useMemo(() => {
+    const byWidth = Math.floor(viewport.width * 0.38);
+    const byHeight = Math.floor(viewport.height * 0.68);
+    return Math.max(280, Math.min(640, byWidth, byHeight));
+  }, [viewport.height, viewport.width]);
 
   const squareStyles = lastMove
     ? {
@@ -52,13 +46,13 @@ export function ReplayBoard({
     : {};
 
   return (
-    <div className="relative w-full flex justify-center" ref={containerRef}>
+    <div className="relative h-full w-full flex items-center justify-center">
       <div className="bg-white dark:bg-gray-900 rounded-2xl p-3 border border-gray-200 dark:border-gray-800 shadow-lg">
         <Chessboard
           id="replay-board"
           position={position}
           boardOrientation={orientation}
-          animationDuration={200}
+          animationDuration={0}
           boardWidth={boardWidth}
           customSquareStyles={squareStyles}
           arePiecesDraggable={false}

@@ -36,7 +36,7 @@ import {
   Modal,
   Toast,
   useToast,
-} from "../components/settings/SettingsUI";
+} from "../components/settings";
 
 /* ═══════════════════════════════════════════════════════
    SETTINGS PAGE — Premium Redesign

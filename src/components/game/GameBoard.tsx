@@ -47,7 +47,12 @@ export function GameBoard({
   promotionState = CLOSED_PROMOTION_STATE,
   onPromotionPieceSelect,
 }: GameBoardProps) {
-  const isPromotionOpen = promotionState.isOpen;
+  const isPromotionOpen = Boolean(
+    promotionState.isOpen &&
+      promotionState.from &&
+      promotionState.to &&
+      promotionState.color,
+  );
 
   useEffect(() => {
     if (!onCancelSelection && !onPromotionPieceSelect) return;

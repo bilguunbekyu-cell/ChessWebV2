@@ -25,8 +25,8 @@ export function ReplayContent960({ game }: ReplayContent960Props) {
   }
 
   return (
-    <div className="h-screen bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex flex-col overflow-hidden pt-4">
-      <div className="flex-shrink-0 px-4 sm:px-6 mb-2">
+    <div className="h-[100dvh] bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex flex-col overflow-hidden">
+      <div className="flex-shrink-0 px-4 sm:px-6 pt-4 mb-2">
         <button
           onClick={() => navigate("/profile")}
           className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -36,7 +36,7 @@ export function ReplayContent960({ game }: ReplayContent960Props) {
         </button>
       </div>
 
-      <div className="flex-1 min-h-0 w-full px-4 sm:px-6 py-2">
+      <div className="flex-1 min-h-0 w-full px-4 sm:px-6 pb-3">
         <div className="flex gap-3 w-full h-full min-h-0">
           <div
             className="flex-shrink-0 flex flex-col gap-2 h-full overflow-hidden pr-1"
@@ -62,8 +62,8 @@ export function ReplayContent960({ game }: ReplayContent960Props) {
               />
             </div>
 
-            <div className="flex-1 min-h-0 flex items-center gap-2 overflow-hidden">
-              <div className="flex-1 flex items-center justify-center min-h-0">
+            <div className="flex-1 min-h-0 min-w-0 flex items-center gap-2 overflow-hidden">
+              <div className="flex-1 min-w-0 flex items-center justify-center min-h-0">
                 <ReplayBoard
                   position={replay.currentFen}
                   orientation={replay.orientation}
@@ -73,7 +73,7 @@ export function ReplayContent960({ game }: ReplayContent960Props) {
                   isStalemate={replay.isStalemate}
                 />
               </div>
-              <div className="w-8 md:w-10 h-full flex items-stretch">
+              <div className="w-8 md:w-10 h-full flex items-stretch flex-shrink-0">
                 <ReplayEvalBar
                   orientation="vertical"
                   evalPercent={replay.evalPercent}
@@ -81,8 +81,6 @@ export function ReplayContent960({ game }: ReplayContent960Props) {
                 />
               </div>
             </div>
-
-
           </div>
 
           <div

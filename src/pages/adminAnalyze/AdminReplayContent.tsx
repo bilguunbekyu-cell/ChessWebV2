@@ -93,8 +93,6 @@ export function AdminReplayContent({ game }: AdminReplayContentProps) {
                   />
                 </div>
               </div>
-
-
             </div>
 
             {/* Right - Move Explanation + Move List */}

@@ -35,9 +35,7 @@ router.get("/search", authMiddleware, async (req, res) => {
     const query = (req.query.q || "").toString().trim();
     if (!query) return res.json({ results: [] });
 
-    const existing = await Friend.find({ userId })
-      .select("friendId")
-      .lean();
+    const existing = await Friend.find({ userId }).select("friendId").lean();
     const existingIds = new Set(existing.map((f) => f.friendId.toString()));
 
     const regex = new RegExp(query, "i");
@@ -89,8 +87,12 @@ router.post("/", authMiddleware, async (req, res) => {
       return res.json({ success: true, already: true });
     }
 
-    await Friend.create({ userId, friendId });
-    await Friend.create({ userId: friendId, friendId: userId }).catch(() => {});
+    await Friend.create({ userId, friendId }).catch((e) => {
+      if (e.code !== 11000) throw e;
+    });
+    await Friend.create({ userId: friendId, friendId: userId }).catch((e) => {
+      if (e.code !== 11000) throw e;
+    });
 
     res.json({ success: true });
   } catch (err) {
