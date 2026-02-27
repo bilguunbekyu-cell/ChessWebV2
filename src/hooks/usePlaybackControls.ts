@@ -12,14 +12,13 @@ export function usePlaybackControls(game: GameHistory, totalPlies: number) {
 
   const atEnd = ply >= totalPlies;
 
-  // Autoplay effect
   useEffect(() => {
     if (!isPlaying || atEnd) {
       if (atEnd && isPlaying) setIsPlaying(false);
       return;
     }
 
-    const delay = 1000 / speed; // adjustable speed
+    const delay = 1000 / speed; 
     const handle = setTimeout(() => {
       setPly((p) => Math.min(p + 1, totalPlies));
     }, delay);

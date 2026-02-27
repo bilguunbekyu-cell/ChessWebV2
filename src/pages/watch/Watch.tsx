@@ -14,7 +14,6 @@ export default function Watch() {
   const liveError = liveGames.error;
   const streamError = streamers.error;
 
-  // Filter games by search query
   const filteredGames = liveGames.games.filter((game) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
@@ -30,7 +29,7 @@ export default function Watch() {
       <Sidebar />
 
       <main className="flex-1 ml-72 p-8">
-        {/* Header */}
+        {}
         <header className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -58,14 +57,14 @@ export default function Watch() {
           </div>
         </header>
 
-        {/* Featured Game - Admin content or Lichess fallback */}
+        {}
         <FeaturedMatch
           event={featured.featuredEvent}
           fallbackGame={liveGames.games[0]}
           loading={isLoading && !featured.featuredEvent}
         />
 
-        {/* Live Games Grid - From Lichess */}
+        {}
         <LiveGamesGrid
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -80,7 +79,7 @@ export default function Watch() {
           </div>
         )}
 
-        {/* Streamers Section - From Lichess */}
+        {}
         <StreamersSection
           streamers={streamers.streamers}
           loading={streamers.loading}

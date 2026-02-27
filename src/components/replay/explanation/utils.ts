@@ -1,8 +1,5 @@
 import { Chess } from "chess.js";
 
-/**
- * Convert UCI move notation to SAN using chess.js
- */
 export function uciToSan(fen: string, uci: string): string {
   try {
     const chess = new Chess(fen);
@@ -16,9 +13,6 @@ export function uciToSan(fen: string, uci: string): string {
   }
 }
 
-/**
- * Pick a random item from an array
- */
 export function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }

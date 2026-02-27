@@ -120,7 +120,7 @@ export function GameBoard({
           borderRadius: "8px",
           boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
         }}
-        customSquareStyles={{ ...customSquareStyles, ...lastMoveStyles }}
+        customSquareStyles={{ ...lastMoveStyles, ...customSquareStyles }}
         customDarkSquareStyle={{ backgroundColor: "#779556" }}
         customLightSquareStyle={{ backgroundColor: "#ebecd0" }}
       />

@@ -1,6 +1,3 @@
-/* ═══════════════════════════════════════════════════════
-   Post Composer — Premium glass card
-   ═══════════════════════════════════════════════════════ */
 import { useState, useRef, useEffect } from "react";
 import {
   Image as ImageIcon,
@@ -30,7 +27,6 @@ export function PostComposer({ onPost }: ComposerProps) {
   const [attachments, setAttachments] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize textarea
   useEffect(() => {
     const el = textareaRef.current;
     if (el) {
@@ -91,7 +87,7 @@ export function PostComposer({ onPost }: ComposerProps) {
           : "border-gray-200/50 dark:border-gray-800/60 bg-white/60 dark:bg-gray-900/50"
       } backdrop-blur-xl`}
     >
-      {/* Glow accent when focused */}
+      {}
       {focused && (
         <div className="absolute inset-0 bg-gradient-to-br from-teal-500/[0.03] via-transparent to-purple-500/[0.02] pointer-events-none" />
       )}
@@ -100,7 +96,7 @@ export function PostComposer({ onPost }: ComposerProps) {
         <div className="flex gap-4">
           <Avatar initials={initials} src={user?.avatar} size="md" online />
           <div className="flex-1 min-w-0">
-            {/* Textarea */}
+            {}
             <textarea
               ref={textareaRef}
               value={content}
@@ -112,7 +108,7 @@ export function PostComposer({ onPost }: ComposerProps) {
               rows={2}
             />
 
-            {/* Action Bar */}
+            {}
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-800/50">
               <div className="flex items-center gap-0.5">
                 {actionButtons.map(({ icon: Icon, label, color }) => (
@@ -128,7 +124,7 @@ export function PostComposer({ onPost }: ComposerProps) {
               </div>
 
               <div className="flex items-center gap-3">
-                {/* Character counter */}
+                {}
                 {content.length > 0 && (
                   <div className="flex items-center gap-2">
                     <div className="relative w-6 h-6">
@@ -172,7 +168,7 @@ export function PostComposer({ onPost }: ComposerProps) {
                   </div>
                 )}
 
-                {/* Post button */}
+                {}
                 <button
                   onClick={handlePost}
                   disabled={!content.trim() || isOverLimit}

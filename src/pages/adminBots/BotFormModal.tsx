@@ -134,7 +134,7 @@ export function BotFormModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             {editingBot ? "Edit Bot" : "Create New Bot"}
@@ -147,15 +147,15 @@ export function BotFormModal({
           </button>
         </div>
 
-        {/* Form */}
+        {}
         <form
           onSubmit={handleSubmit}
           className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left Column */}
+            {}
             <div className="space-y-4">
-              {/* Name */}
+              {}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Bot Name *
@@ -174,7 +174,7 @@ export function BotFormModal({
                 )}
               </div>
 
-              {/* Avatar Selection */}
+              {}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Avatar Emoji
@@ -199,7 +199,7 @@ export function BotFormModal({
                 </div>
               </div>
 
-              {/* Avatar Image Upload */}
+              {}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Avatar Image (optional)
@@ -247,7 +247,7 @@ export function BotFormModal({
                 )}
               </div>
 
-              {/* ELO Rating */}
+              {}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   ELO Rating *
@@ -272,7 +272,7 @@ export function BotFormModal({
                 )}
               </div>
 
-              {/* Difficulty */}
+              {}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Difficulty *
@@ -295,7 +295,7 @@ export function BotFormModal({
                 </select>
               </div>
 
-              {/* Category */}
+              {}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Category
@@ -311,7 +311,7 @@ export function BotFormModal({
                 />
               </div>
 
-              {/* Title */}
+              {}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Title (GM, IM, etc.)
@@ -328,9 +328,9 @@ export function BotFormModal({
               </div>
             </div>
 
-            {/* Right Column */}
+            {}
             <div className="space-y-4">
-              {/* Quote */}
+              {}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Quote/Tagline
@@ -350,7 +350,7 @@ export function BotFormModal({
                 </p>
               </div>
 
-              {/* Description */}
+              {}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Description
@@ -366,7 +366,7 @@ export function BotFormModal({
                 />
               </div>
 
-              {/* Play Style */}
+              {}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Play Style
@@ -389,7 +389,7 @@ export function BotFormModal({
                 </select>
               </div>
 
-              {/* Skill Level Slider */}
+              {}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Skill Level: {formData.skillLevel}
@@ -413,7 +413,7 @@ export function BotFormModal({
                 </div>
               </div>
 
-              {/* Blunder Chance */}
+              {}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Blunder Chance: {Math.round(formData.blunderChance * 100)}%
@@ -433,7 +433,7 @@ export function BotFormModal({
                 />
               </div>
 
-              {/* Options Row */}
+              {}
               <div className="flex items-center gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -468,7 +468,7 @@ export function BotFormModal({
             </div>
           </div>
 
-          {/* Actions */}
+          {}
           <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"

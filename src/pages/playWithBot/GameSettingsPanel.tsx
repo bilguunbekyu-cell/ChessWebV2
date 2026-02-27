@@ -21,11 +21,19 @@ export function GameSettingsPanel({
   return (
     <div className="lg:col-span-1">
       <div className="rounded-2xl border border-gray-200/60 dark:border-white/10 bg-white/80 dark:bg-slate-800/80 p-5 sticky top-6">
-        {/* Selected Bot Preview */}
+        {}
         {selectedBot ? (
           <div className="mb-6 pb-4 border-b border-gray-200/60 dark:border-white/10">
             <div className="flex items-center gap-3">
-              <div className="text-4xl">{selectedBot.avatar}</div>
+              <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-700 flex-shrink-0">
+                {selectedBot.avatarUrl ? (
+                  <img src={selectedBot.avatarUrl} alt={selectedBot.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
+                    <span className="text-white font-bold">{selectedBot.name.substring(0, 2).toUpperCase()}</span>
+                  </div>
+                )}
+              </div>
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-gray-900 dark:text-white">
@@ -52,7 +60,7 @@ export function GameSettingsPanel({
           </div>
         )}
 
-        {/* Play As */}
+        {}
         <div className="mb-5">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Play as
@@ -74,7 +82,7 @@ export function GameSettingsPanel({
           </div>
         </div>
 
-        {/* Time Control */}
+        {}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Time Control
@@ -103,7 +111,7 @@ export function GameSettingsPanel({
           </div>
         </div>
 
-        {/* Start Button */}
+        {}
         <button
           onClick={onStart}
           disabled={!selectedBot}

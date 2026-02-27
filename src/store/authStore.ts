@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { createApiError, parseApiError } from "../utils/apiError";
 
 export interface User {
   id: string;
@@ -35,6 +36,7 @@ export interface User {
   puzzleFailed?: number;
   puzzleSkipped?: number;
   puzzleLastAttemptAt?: string | null;
+  language?: "en" | "mn";
 }
 
 interface AuthState {
@@ -89,7 +91,6 @@ export const useAuthStore = create<AuthState>()(
   ),
 );
 
-// API Functions
 export const authApi = {
   async login(email: string, password: string, rememberMe = false) {
     const res = await fetch(`${API_URL}/api/login`, {
@@ -98,8 +99,11 @@ export const authApi = {
       credentials: "include",
       body: JSON.stringify({ email, password, rememberMe }),
     });
+    if (!res.ok) {
+      const parsed = await parseApiError(res, "Login failed");
+      throw createApiError(parsed);
+    }
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Login failed");
     return data;
   },
 
@@ -110,8 +114,11 @@ export const authApi = {
       credentials: "include",
       body: JSON.stringify({ fullName, email, password }),
     });
+    if (!res.ok) {
+      const parsed = await parseApiError(res, "Registration failed");
+      throw createApiError(parsed);
+    }
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Registration failed");
     return data;
   },
 
@@ -120,8 +127,11 @@ export const authApi = {
       method: "POST",
       credentials: "include",
     });
+    if (!res.ok) {
+      const parsed = await parseApiError(res, "Logout failed");
+      throw createApiError(parsed);
+    }
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Logout failed");
     return data;
   },
 
@@ -130,11 +140,11 @@ export const authApi = {
       credentials: "include",
     });
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      if (data.banned) {
+      const parsed = await parseApiError(res, "Failed to load user");
+      if (parsed.banned) {
         throw {
           banned: true,
-          banReason: data.banReason || "No reason provided",
+          banReason: parsed.banReason || "No reason provided",
         };
       }
       return null;
@@ -143,15 +153,22 @@ export const authApi = {
     return data.user;
   },
 
-  async updateProfile(data: { fullName?: string; avatar?: string }) {
+  async updateProfile(data: {
+    fullName?: string;
+    avatar?: string;
+    language?: "en" | "mn";
+  }) {
     const res = await fetch(`${API_URL}/api/profile`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify(data),
     });
+    if (!res.ok) {
+      const parsed = await parseApiError(res, "Failed to update profile");
+      throw createApiError(parsed);
+    }
     const result = await res.json();
-    if (!res.ok) throw new Error(result.error || "Failed to update profile");
     return result.user;
   },
 };

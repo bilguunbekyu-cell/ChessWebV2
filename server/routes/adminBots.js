@@ -11,7 +11,6 @@ const __dirname = path.dirname(__filename);
 
 const router = Router();
 
-// Setup multer for file uploads
 const uploadDir = path.join(__dirname, "../uploads/bot-avatars");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -42,10 +41,9 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  limits: { fileSize: 5 * 1024 * 1024 }, 
 });
 
-// GET /api/admin/bots - List all bots with pagination, search, filter
 router.get("/", adminAuthMiddleware, async (req, res) => {
   try {
     const {
@@ -61,7 +59,6 @@ router.get("/", adminAuthMiddleware, async (req, res) => {
 
     const query = {};
 
-    // Search filter
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: "i" } },
@@ -70,17 +67,14 @@ router.get("/", adminAuthMiddleware, async (req, res) => {
       ];
     }
 
-    // Difficulty filter
     if (difficulty) {
       query.difficulty = difficulty;
     }
 
-    // Category filter
     if (category) {
       query.category = { $regex: category, $options: "i" };
     }
 
-    // Active status filter
     if (isActive !== "") {
       query.isActive = isActive === "true";
     }
@@ -97,7 +91,6 @@ router.get("/", adminAuthMiddleware, async (req, res) => {
       Bot.countDocuments(query),
     ]);
 
-    // Get unique categories for filter dropdown
     const categories = await Bot.distinct("category");
 
     res.json({
@@ -116,7 +109,6 @@ router.get("/", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/admin/bots/stats - Get bot statistics
 router.get("/stats", adminAuthMiddleware, async (req, res) => {
   try {
     const [total, active, byDifficulty] = await Promise.all([
@@ -142,7 +134,6 @@ router.get("/stats", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/admin/bots/:id - Get single bot
 router.get("/:id", adminAuthMiddleware, async (req, res) => {
   try {
     const bot = await Bot.findById(req.params.id).lean();
@@ -156,7 +147,6 @@ router.get("/:id", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/admin/bots - Create new bot
 router.post(
   "/",
   adminAuthMiddleware,
@@ -185,7 +175,6 @@ router.post(
         sortOrder,
       } = req.body;
 
-      // Validate required fields
       if (!name || name.length < 2 || name.length > 50) {
         return res
           .status(400)
@@ -199,7 +188,6 @@ router.post(
           .json({ error: "ELO rating must be between 100-3000" });
       }
 
-      // Check for duplicate name
       const existing = await Bot.findOne({
         name: { $regex: `^${name}$`, $options: "i" },
       });
@@ -248,7 +236,6 @@ router.post(
   },
 );
 
-// PUT /api/admin/bots/:id - Update bot
 router.put(
   "/:id",
   adminAuthMiddleware,
@@ -277,7 +264,6 @@ router.put(
         sortOrder,
       } = req.body;
 
-      // Validate required fields
       if (name && (name.length < 2 || name.length > 50)) {
         return res
           .status(400)
@@ -293,7 +279,6 @@ router.put(
         }
       }
 
-      // Check for duplicate name (excluding current bot)
       if (name) {
         const existing = await Bot.findOne({
           name: { $regex: `^${name}$`, $options: "i" },
@@ -356,7 +341,6 @@ router.put(
   },
 );
 
-// DELETE /api/admin/bots/:id - Delete bot
 router.delete("/:id", adminAuthMiddleware, async (req, res) => {
   try {
     const bot = await Bot.findById(req.params.id);
@@ -364,7 +348,6 @@ router.delete("/:id", adminAuthMiddleware, async (req, res) => {
       return res.status(404).json({ error: "Bot not found" });
     }
 
-    // Delete avatar file if exists
     if (bot.avatarUrl) {
       const filePath = path.join(__dirname, "..", bot.avatarUrl);
       if (fs.existsSync(filePath)) {
@@ -380,7 +363,6 @@ router.delete("/:id", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/admin/bots/bulk-update - Bulk update bots (activate/deactivate)
 router.post("/bulk-update", adminAuthMiddleware, async (req, res) => {
   try {
     const { botIds, action } = req.body;
@@ -411,10 +393,9 @@ router.post("/bulk-update", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/admin/bots/reorder - Reorder bots
 router.post("/reorder", adminAuthMiddleware, async (req, res) => {
   try {
-    const { orders } = req.body; // Array of { id, sortOrder }
+    const { orders } = req.body; 
 
     if (!Array.isArray(orders)) {
       return res.status(400).json({ error: "Invalid order data" });
@@ -435,7 +416,6 @@ router.post("/reorder", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/admin/bots/export/csv - Export bots to CSV
 router.get("/export/csv", adminAuthMiddleware, async (req, res) => {
   try {
     const bots = await Bot.find().sort({ sortOrder: 1 }).lean();

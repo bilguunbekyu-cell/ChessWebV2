@@ -10,7 +10,7 @@ export function AnalysisLoadingOverlay({
   return (
     <div className="h-screen bg-[#f5f5f7] dark:bg-gray-950 flex items-center justify-center">
       <div className="text-center">
-        {/* Animated chess analysis icon */}
+        {}
         <div className="relative mb-8">
           <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-2xl shadow-teal-500/30">
             <Brain className="w-12 h-12 text-white animate-pulse" />
@@ -20,7 +20,7 @@ export function AnalysisLoadingOverlay({
           </div>
         </div>
 
-        {/* Title */}
+        {}
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           Analyzing Your Game
         </h2>
@@ -29,7 +29,7 @@ export function AnalysisLoadingOverlay({
           quality
         </p>
 
-        {/* Progress bar */}
+        {}
         <div className="w-80 mx-auto mb-4">
           <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-2">
             <span>Progress</span>
@@ -43,7 +43,7 @@ export function AnalysisLoadingOverlay({
           </div>
         </div>
 
-        {/* Analysis steps */}
+        {}
         <div className="flex items-center justify-center gap-6 text-sm text-gray-500 dark:text-gray-400">
           <div className="flex items-center gap-2">
             <BarChart3

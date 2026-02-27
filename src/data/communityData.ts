@@ -1,22 +1,18 @@
-/* ═══════════════════════════════════════════════════════
-   Community Mock Data — NeonGambit
-   ═══════════════════════════════════════════════════════ */
-
 export interface CommunityPost {
   id: number;
   user: {
     name: string;
     handle: string;
-    avatar: string; // initials or url
+    avatar: string; 
     rating: number;
-    title?: "GM" | "IM" | "FM" | "WGM" | "CM"; // FIDE title
+    title?: "GM" | "IM" | "FM" | "WGM" | "CM"; 
     verified?: boolean;
     online?: boolean;
   };
   content: string;
-  pgn?: string; // optional PGN for mini board
-  fen?: string; // optional FEN for position preview
-  image?: string; // placeholder flag
+  pgn?: string; 
+  fen?: string; 
+  image?: string; 
   poll?: { question: string; options: { label: string; votes: number }[] };
   tags?: string[];
   likes: number;
@@ -167,7 +163,6 @@ export const COMMUNITY_POSTS: CommunityPost[] = [
   },
 ];
 
-/* ─── Trending Topics ─── */
 export interface TrendingTopic {
   tag: string;
   posts: string;
@@ -182,7 +177,6 @@ export const TRENDING_TOPICS: TrendingTopic[] = [
   { tag: "#TitledTuesday", posts: "6.1k", category: "Event" },
 ];
 
-/* ─── Live Games ─── */
 export interface LiveGame {
   white: { name: string; rating: number; title?: string };
   black: { name: string; rating: number; title?: string };
@@ -211,7 +205,6 @@ export const LIVE_GAMES: LiveGame[] = [
   },
 ];
 
-/* ─── Top Players Online ─── */
 export interface OnlinePlayer {
   name: string;
   rating: number;
@@ -258,7 +251,6 @@ export const TOP_PLAYERS_ONLINE: OnlinePlayer[] = [
   },
 ];
 
-/* ─── Puzzle Leaderboard ─── */
 export interface PuzzleLeader {
   rank: number;
   name: string;
@@ -275,7 +267,6 @@ export const PUZZLE_LEADERBOARD: PuzzleLeader[] = [
   { rank: 5, name: "BlitzDemon", rating: 2810, solved: 8400, avatar: "BD" },
 ];
 
-/* ─── Who to Follow ─── */
 export interface SuggestedUser {
   name: string;
   handle: string;
@@ -316,7 +307,6 @@ export const SUGGESTED_USERS: SuggestedUser[] = [
   },
 ];
 
-/* ─── Upcoming Events ─── */
 export interface ChessEvent {
   name: string;
   date: string;
@@ -351,7 +341,6 @@ export const UPCOMING_EVENTS: ChessEvent[] = [
   },
 ];
 
-/* ─── Filter Tabs ─── */
 export const COMMUNITY_TABS = [
   "For You",
   "Following",

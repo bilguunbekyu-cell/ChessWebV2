@@ -2,14 +2,11 @@ export type OpeningLine = {
   eco: string;
   name: string;
   variation?: string;
-  moves: string[]; // SAN moves from the initial position
+  moves: string[]; 
 };
 
-// Curated, license-friendly opening lines (mix of Lichess ECO + common practice).
-// Each line is short (4–12 plies) to keep bundle size modest while covering the
-// openings players actually encounter against Stockfish or in casual play.
 export const OPENING_BOOK: OpeningLine[] = [
-  // A‑series (Flank / English / Reti)
+
   { eco: "A00", name: "Polish Opening", moves: ["b4"] },
   { eco: "A00", name: "Saragossa Opening", moves: ["c3"] },
   { eco: "A00", name: "Mieses Opening", moves: ["d3"] },
@@ -40,7 +37,6 @@ export const OPENING_BOOK: OpeningLine[] = [
   { eco: "A60", name: "Modern Benoni", moves: ["d4", "Nf6", "c4", "c5", "d5", "e6"] },
   { eco: "A68", name: "Benoni, Fianchetto", moves: ["d4", "Nf6", "c4", "c5", "d5", "e6", "g3"] },
 
-  // B‑series (1.e4 defenses)
   { eco: "B00", name: "St. George Defense", moves: ["e4", "a6"] },
   { eco: "B00", name: "Nimzowitsch Defense", moves: ["e4", "Nc6"] },
   { eco: "B01", name: "Scandinavian Defense", moves: ["e4", "d5"] },
@@ -68,7 +64,6 @@ export const OPENING_BOOK: OpeningLine[] = [
   { eco: "B90", name: "Sicilian", variation: "Najdorf", moves: ["e4", "c5", "Nf3", "d6", "d4", "cxd4", "Nxd4", "Nf6", "Nc3", "a6"] },
   { eco: "B96", name: "Sicilian Najdorf", variation: "English Attack", moves: ["e4", "c5", "Nf3", "d6", "d4", "cxd4", "Nxd4", "Nf6", "Nc3", "a6", "Be3", "e6", "f3"] },
 
-  // C‑series (French + 1.e4 e5 systems)
   { eco: "C00", name: "French Defense", moves: ["e4", "e6"] },
   { eco: "C01", name: "French", variation: "Exchange", moves: ["e4", "e6", "d4", "d5", "exd5", "exd5"] },
   { eco: "C02", name: "French", variation: "Advance", moves: ["e4", "e6", "d4", "d5", "e5"] },
@@ -103,7 +98,6 @@ export const OPENING_BOOK: OpeningLine[] = [
   { eco: "C80", name: "Ruy Lopez", variation: "Open", moves: ["e4", "e5", "Nf3", "Nc6", "Bb5", "a6", "Ba4", "Nf6", "O-O", "Nxe4"] },
   { eco: "C84", name: "Ruy Lopez", variation: "Closed", moves: ["e4", "e5", "Nf3", "Nc6", "Bb5", "a6", "Ba4", "Nf6", "O-O", "Be7"] },
 
-  // D‑series (Queen's Gambits / Slav)
   { eco: "D00", name: "Queen's Pawn Game", moves: ["d4", "d5"] },
   { eco: "D02", name: "London System", variation: "d4 d5 setup", moves: ["d4", "d5", "Nf3", "Nf6", "Bf4"] },
   { eco: "D04", name: "Colle System", moves: ["d4", "d5", "Nf3", "Nf6", "e3"] },
@@ -124,7 +118,6 @@ export const OPENING_BOOK: OpeningLine[] = [
   { eco: "D70", name: "Neo-Grünfeld Defense", moves: ["d4", "Nf6", "c4", "g6", "Nc3", "d5", "Nf3"] },
   { eco: "D85", name: "Grünfeld Defense", variation: "Exchange", moves: ["d4", "Nf6", "c4", "g6", "Nc3", "d5", "cxd5", "Nxd5", "e4", "Nxc3", "bxc3", "Bg7"] },
 
-  // E‑series (Indian Defenses / Catalan)
   { eco: "E00", name: "Catalan Opening", moves: ["d4", "Nf6", "c4", "e6", "g3"] },
   { eco: "E04", name: "Catalan", variation: "Open", moves: ["d4", "Nf6", "c4", "e6", "g3", "d5", "Bg2", "dxc4"] },
   { eco: "E11", name: "Bogo-Indian Defense", moves: ["d4", "Nf6", "c4", "e6", "Nf3", "Bb4+"] },

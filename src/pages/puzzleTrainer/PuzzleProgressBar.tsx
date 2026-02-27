@@ -9,7 +9,7 @@ export function PuzzleProgressBar({
 }: PuzzleProgressBarProps) {
   return (
     <>
-      {/* Progress Bar */}
+      {}
       <div className="px-3 py-1">
         <div className="flex items-center justify-between">
           <span className="text-xl font-bold text-white">{streak}</span>
@@ -26,7 +26,7 @@ export function PuzzleProgressBar({
         </div>
       </div>
 
-      {/* Puzzle Elo */}
+      {}
       <div className="px-3 pb-2 text-sm text-gray-300 flex items-center gap-2">
         <span className="text-gray-400">Puzzle Elo</span>
         <span className="font-semibold text-amber-300 font-mono">

@@ -8,31 +8,19 @@ export interface MoveExplanation {
   evalChange: string;
 }
 
-/**
- * Convert centipawn to human-readable eval string
- */
 function cpToString(cp: number): string {
   const sign = cp >= 0 ? "+" : "";
   return `${sign}${(cp / 100).toFixed(2)}`;
 }
 
-/**
- * Convert expected points to percentage for display
- */
 function epToPercent(ep: number): number {
   return Math.round(ep * 100);
 }
 
-/**
- * Get color name from mover
- */
 function colorName(mover: "w" | "b"): string {
   return mover === "w" ? "White" : "Black";
 }
 
-/**
- * Generate explanations based on move quality
- */
 const qualityExplanations: Record<
   MoveQuality,
   {
@@ -140,9 +128,6 @@ const qualityExplanations: Record<
   },
 };
 
-/**
- * Generate a complete move explanation
- */
 export function generateMoveExplanation(
   qualityInfo: MoveQualityInfo | undefined,
   san: string,
@@ -160,7 +145,6 @@ export function generateMoveExplanation(
 
   const template = qualityExplanations[qualityInfo.label];
 
-  // Build eval change string
   let evalChange = "";
   if (cpBefore !== undefined && cpAfter !== undefined) {
     evalChange = `${cpToString(cpBefore)} → ${cpToString(cpAfter)}`;
@@ -179,9 +163,6 @@ export function generateMoveExplanation(
   };
 }
 
-/**
- * Get color for quality badge
- */
 export function getQualityColor(quality: MoveQuality): string {
   const colors: Record<MoveQuality, string> = {
     Brilliant: "text-cyan-400",
@@ -199,9 +180,6 @@ export function getQualityColor(quality: MoveQuality): string {
   return colors[quality] || "text-gray-400";
 }
 
-/**
- * Get background color for quality
- */
 export function getQualityBgColor(quality: MoveQuality): string {
   const colors: Record<MoveQuality, string> = {
     Brilliant: "bg-cyan-500/20 border-cyan-500/50",

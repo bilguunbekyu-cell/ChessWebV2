@@ -21,7 +21,7 @@ export function DeleteConfirmModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-6">
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
@@ -39,7 +39,7 @@ export function DeleteConfirmModal({
           </button>
         </div>
 
-        {/* Content */}
+        {}
         <div className="mb-6">
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             Are you sure you want to delete{" "}
@@ -49,9 +49,17 @@ export function DeleteConfirmModal({
             ?
           </p>
 
-          {/* Bot Preview */}
+          {}
           <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-100 dark:bg-slate-800">
-            <div className="text-3xl">{bot.avatar}</div>
+            <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-700 flex-shrink-0">
+              {bot.avatarUrl ? (
+                <img src={bot.avatarUrl} alt={bot.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">{bot.name.substring(0, 2).toUpperCase()}</span>
+                </div>
+              )}
+            </div>
             <div>
               <div className="font-semibold text-gray-900 dark:text-white">
                 {bot.name}
@@ -77,7 +85,7 @@ export function DeleteConfirmModal({
           </p>
         </div>
 
-        {/* Actions */}
+        {}
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}

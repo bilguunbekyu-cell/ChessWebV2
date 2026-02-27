@@ -36,7 +36,6 @@ function parseRangeStart(rangeRaw) {
 function downsampleTimeline(events, maxPoints = 500) {
   if (events.length <= maxPoints) return events;
 
-  // Keep one point per day (the last rating of that day) first.
   const byDay = new Map();
   for (const event of events) {
     const key = new Date(event.ts).toISOString().slice(0, 10);
@@ -48,7 +47,6 @@ function downsampleTimeline(events, maxPoints = 500) {
 
   if (points.length <= maxPoints) return points;
 
-  // Fall back to deterministic interval sampling.
   const stride = Math.ceil(points.length / maxPoints);
   points = points.filter((_, index) => index % stride === 0);
   return points.slice(-maxPoints);

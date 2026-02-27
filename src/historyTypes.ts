@@ -1,18 +1,18 @@
 export interface AnalysisEntry {
   ply: number;
-  cp?: number; // centipawn evaluation (positive favors White)
-  mate?: number; // mate in N; sign indicates side to move wins
+  cp?: number; 
+  mate?: number; 
 }
 
 export interface GameHistory {
   _id: string;
   event: string;
   site: string;
-  date: string; // "YYYY.MM.DD"
+  date: string; 
   round: string;
   white: string;
   black: string;
-  result: string; // "1-0" | "0-1" | "1/2-1/2"
+  result: string; 
   variant?: "standard" | "chess960";
   currentPosition: string;
   startingFen?: string;
@@ -66,5 +66,5 @@ export interface GameHistory {
   durationMs?: number;
   createdAt: string;
   analysis?: AnalysisEntry[];
-  moveTimes?: number[]; // milliseconds per move or elapsed; interpretation handled in UI
+  moveTimes?: number[]; 
 }

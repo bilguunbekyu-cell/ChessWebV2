@@ -14,6 +14,14 @@ const PUZZLE_STABLE_K = 10;
 const PROVISIONAL_WINDOW = 20;
 const MIN_RATING = 100;
 
+function sendError(res, status, code, message, extra = {}) {
+  return res.status(status).json({
+    errorCode: code,
+    error: message,
+    ...extra,
+  });
+}
+
 function normalizeResult(value) {
   const normalized = String(value || "")
     .trim()
@@ -92,10 +100,22 @@ async function recordPuzzleAttempt({
   ]);
 
   if (!puzzle) {
-    return { error: { status: 404, message: "Puzzle not found" } };
+    return {
+      error: {
+        status: 404,
+        code: "PUZZLE_NOT_FOUND",
+        message: "Puzzle not found",
+      },
+    };
   }
   if (!user) {
-    return { error: { status: 404, message: "User not found" } };
+    return {
+      error: {
+        status: 404,
+        code: "USER_NOT_FOUND",
+        message: "User not found",
+      },
+    };
   }
 
   const userRatingBefore = Number(user.puzzleElo ?? DEFAULT_USER_PUZZLE_RATING);
@@ -194,17 +214,15 @@ async function recordPuzzleAttempt({
   };
 }
 
-// Get all puzzles
 router.get("/", async (_req, res) => {
   try {
     const puzzles = await Puzzle.find().sort({ rating: 1 });
     res.json(puzzles);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch puzzles" });
+    sendError(res, 500, "PUZZLES_FETCH_FAILED", "Failed to fetch puzzles");
   }
 });
 
-// Puzzle user stats (for /puzzles page)
 router.get("/me/stats", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -212,7 +230,7 @@ router.get("/me/stats", authMiddleware, async (req, res) => {
       "puzzleElo puzzleBestElo puzzleAttempts puzzleSolved puzzleFailed puzzleSkipped",
     );
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return sendError(res, 404, "USER_NOT_FOUND", "User not found");
     }
 
     const now = new Date();
@@ -253,11 +271,15 @@ router.get("/me/stats", authMiddleware, async (req, res) => {
     });
   } catch (error) {
     console.error("Puzzle stats error:", error);
-    res.status(500).json({ error: "Failed to fetch puzzle stats" });
+    sendError(
+      res,
+      500,
+      "PUZZLE_STATS_FETCH_FAILED",
+      "Failed to fetch puzzle stats",
+    );
   }
 });
 
-// Get featured puzzles for dashboard
 router.get("/featured", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 6;
@@ -266,11 +288,15 @@ router.get("/featured", async (req, res) => {
       .limit(limit);
     res.json(puzzles);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch featured puzzles" });
+    sendError(
+      res,
+      500,
+      "PUZZLE_FEATURED_FETCH_FAILED",
+      "Failed to fetch featured puzzles",
+    );
   }
 });
 
-// Toggle puzzle featured status
 router.patch("/:id/featured", async (req, res) => {
   try {
     const { featured } = req.body;
@@ -280,28 +306,26 @@ router.patch("/:id/featured", async (req, res) => {
       { new: true },
     );
     if (!puzzle) {
-      return res.status(404).json({ error: "Puzzle not found" });
+      return sendError(res, 404, "PUZZLE_NOT_FOUND", "Puzzle not found");
     }
     res.json(puzzle);
   } catch (error) {
-    res.status(500).json({ error: "Failed to update puzzle" });
+    sendError(res, 500, "PUZZLE_UPDATE_FAILED", "Failed to update puzzle");
   }
 });
 
-// Get single puzzle by ID
 router.get("/:id", async (req, res) => {
   try {
     const puzzle = await Puzzle.findById(req.params.id);
     if (!puzzle) {
-      return res.status(404).json({ error: "Puzzle not found" });
+      return sendError(res, 404, "PUZZLE_NOT_FOUND", "Puzzle not found");
     }
     res.json(puzzle);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch puzzle" });
+    sendError(res, 500, "PUZZLE_FETCH_FAILED", "Failed to fetch puzzle");
   }
 });
 
-// Backward-compatible stats updater
 router.patch("/:id/stats", async (req, res) => {
   try {
     const { solved } = req.body;
@@ -313,22 +337,29 @@ router.patch("/:id/stats", async (req, res) => {
       new: true,
     });
     if (!puzzle) {
-      return res.status(404).json({ error: "Puzzle not found" });
+      return sendError(res, 404, "PUZZLE_NOT_FOUND", "Puzzle not found");
     }
     res.json(puzzle);
   } catch (error) {
-    res.status(500).json({ error: "Failed to update puzzle stats" });
+    sendError(
+      res,
+      500,
+      "PUZZLE_STATS_UPDATE_FAILED",
+      "Failed to update puzzle stats",
+    );
   }
 });
 
-// Primary attempt endpoint (SOLVED | FAILED | SKIPPED)
 router.post("/:id/attempt", authMiddleware, async (req, res) => {
   try {
     const result = normalizeResult(req.body?.result);
     if (!result) {
-      return res.status(400).json({
-        error: "Invalid result. Expected SOLVED, FAILED, or SKIPPED.",
-      });
+      return sendError(
+        res,
+        400,
+        "PUZZLE_INVALID_RESULT",
+        "Invalid result. Expected SOLVED, FAILED, or SKIPPED.",
+      );
     }
 
     const outcome = await recordPuzzleAttempt({
@@ -341,17 +372,26 @@ router.post("/:id/attempt", authMiddleware, async (req, res) => {
     });
 
     if (outcome.error) {
-      return res.status(outcome.error.status).json({ error: outcome.error.message });
+      return sendError(
+        res,
+        outcome.error.status,
+        outcome.error.code,
+        outcome.error.message,
+      );
     }
 
     res.json({ success: true, ...outcome });
   } catch (error) {
     console.error("Puzzle attempt error:", error);
-    res.status(500).json({ error: "Failed to record puzzle attempt" });
+    sendError(
+      res,
+      500,
+      "PUZZLE_ATTEMPT_RECORD_FAILED",
+      "Failed to record puzzle attempt",
+    );
   }
 });
 
-// Compatibility endpoint: treat as solved attempt
 router.post("/:id/solve", authMiddleware, async (req, res) => {
   try {
     const outcome = await recordPuzzleAttempt({
@@ -364,7 +404,12 @@ router.post("/:id/solve", authMiddleware, async (req, res) => {
     });
 
     if (outcome.error) {
-      return res.status(outcome.error.status).json({ error: outcome.error.message });
+      return sendError(
+        res,
+        outcome.error.status,
+        outcome.error.code,
+        outcome.error.message,
+      );
     }
 
     const gain = outcome.user.delta;
@@ -377,7 +422,12 @@ router.post("/:id/solve", authMiddleware, async (req, res) => {
     });
   } catch (error) {
     console.error("Solve error:", error);
-    res.status(500).json({ error: "Failed to record puzzle solve" });
+    sendError(
+      res,
+      500,
+      "PUZZLE_SOLVE_RECORD_FAILED",
+      "Failed to record puzzle solve",
+    );
   }
 });
 

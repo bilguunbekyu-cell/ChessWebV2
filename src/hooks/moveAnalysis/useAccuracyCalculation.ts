@@ -4,9 +4,6 @@ import { MoveRow, MoveQuality, QualityCounts } from "../useGameReplayTypes";
 import { calculateMoveScore, calculatePositionWeight } from "./utils";
 import { AccuracyResult, QualityCountsResult } from "./types";
 
-/**
- * Hook to add quality labels to move rows
- */
 export function useMoveRowsWithQuality(
   moveRows: MoveRow[],
   moveQualities: MoveQualityInfo[],
@@ -25,9 +22,6 @@ export function useMoveRowsWithQuality(
   }, [moveRows, moveQualities]);
 }
 
-/**
- * Hook to count move qualities for each side
- */
 export function useQualityCounts(
   moveQualities: MoveQualityInfo[],
 ): QualityCountsResult {
@@ -59,13 +53,10 @@ export function useQualityCounts(
   }, [moveQualities]);
 }
 
-/**
- * Hook to calculate accuracy percentage for each side
- */
 export function useAccuracy(moveQualities: MoveQualityInfo[]): AccuracyResult {
   return useMemo(() => {
     const calc = (mover: "w" | "b") => {
-      // Exclude Book moves from accuracy calculation
+
       const subset = moveQualities.filter(
         (q) => q.mover === mover && q.label !== "Book",
       );

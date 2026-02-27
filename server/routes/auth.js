@@ -12,12 +12,28 @@ const VALID_PRESENCE = new Set([
   "in_game",
   "away",
 ]);
+const VALID_LANGUAGES = new Set(["en", "mn"]);
 
 function normalizePresenceStatus(value) {
   const status = String(value || "offline")
     .trim()
     .toLowerCase();
   return VALID_PRESENCE.has(status) ? status : "offline";
+}
+
+function normalizeLanguage(value) {
+  const normalized = String(value || "en")
+    .trim()
+    .toLowerCase();
+  return VALID_LANGUAGES.has(normalized) ? normalized : "en";
+}
+
+function sendError(res, status, code, message, extra = {}) {
+  return res.status(status).json({
+    errorCode: code,
+    error: message,
+    ...extra,
+  });
 }
 
 function toPublicUser(user) {
@@ -57,29 +73,49 @@ function toPublicUser(user) {
     puzzleFailed: user.puzzleFailed ?? 0,
     puzzleSkipped: user.puzzleSkipped ?? 0,
     puzzleLastAttemptAt: user.puzzleLastAttemptAt ?? null,
+    language: normalizeLanguage(user.language),
   };
 }
 
-// Register
 router.post("/register", async (req, res) => {
   try {
-    const { fullName, email, password } = req.body;
+    const { fullName, email, password, language } = req.body;
 
     if (!fullName || !email || !password) {
-      return res.status(400).json({ error: "All fields are required" });
+      return sendError(
+        res,
+        400,
+        "AUTH_REQUIRED_FIELDS",
+        "All fields are required",
+      );
     }
 
     const exists = await User.findOne({ email });
     if (exists) {
-      return res.status(400).json({ error: "Email already in use" });
+      return sendError(res, 400, "AUTH_EMAIL_IN_USE", "Email already in use");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    let normalizedLanguage = "en";
+    if (language !== undefined) {
+      const requestedLanguage = String(language).trim().toLowerCase();
+      if (!VALID_LANGUAGES.has(requestedLanguage)) {
+        return sendError(
+          res,
+          400,
+          "AUTH_INVALID_LANGUAGE",
+          "Invalid language setting",
+        );
+      }
+      normalizedLanguage = requestedLanguage;
+    }
 
     const user = await User.create({
       fullName,
       email,
       password: hashedPassword,
+      language: normalizedLanguage,
     });
 
     const tokenData = {
@@ -103,27 +139,35 @@ router.post("/register", async (req, res) => {
     });
   } catch (err) {
     console.error("Register error:", err);
-    res.status(500).json({ error: "Server error" });
+    sendError(res, 500, "AUTH_REGISTER_FAILED", "Server error");
   }
 });
 
-// Login
 router.post("/login", async (req, res) => {
   try {
     const { email, password, rememberMe } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
+      return sendError(
+        res,
+        400,
+        "AUTH_EMAIL_PASSWORD_REQUIRED",
+        "Email and password are required",
+      );
     }
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return sendError(
+        res,
+        401,
+        "AUTH_INVALID_CREDENTIALS",
+        "Invalid email or password",
+      );
     }
 
     if (user.banned) {
-      return res.status(403).json({
-        error: "Your account has been banned",
+      return sendError(res, 403, "AUTH_ACCOUNT_BANNED", "Your account has been banned", {
         banned: true,
         banReason: user.banReason || "No reason provided",
       });
@@ -131,7 +175,12 @@ router.post("/login", async (req, res) => {
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return sendError(
+        res,
+        401,
+        "AUTH_INVALID_CREDENTIALS",
+        "Invalid email or password",
+      );
     }
 
     const tokenData = {
@@ -159,11 +208,10 @@ router.post("/login", async (req, res) => {
     });
   } catch (err) {
     console.error("Login error:", err);
-    res.status(500).json({ error: "Server error" });
+    sendError(res, 500, "AUTH_LOGIN_FAILED", "Server error");
   }
 });
 
-// Logout
 router.post("/logout", (req, res) => {
   res.cookie("authToken", "", {
     httpOnly: true,
@@ -175,18 +223,16 @@ router.post("/logout", (req, res) => {
   res.json({ success: true, message: "Logged out successfully" });
 });
 
-// Get current user
 router.get("/me", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select("-password");
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return sendError(res, 404, "USER_NOT_FOUND", "User not found");
     }
 
     if (user.banned) {
       res.clearCookie("authToken", { path: "/" });
-      return res.status(403).json({
-        error: "Your account has been banned",
+      return sendError(res, 403, "AUTH_ACCOUNT_BANNED", "Your account has been banned", {
         banned: true,
         banReason: user.banReason || "No reason provided",
       });
@@ -195,21 +241,19 @@ router.get("/me", authMiddleware, async (req, res) => {
     res.json({ user: toPublicUser(user) });
   } catch (err) {
     console.error("Get user error:", err);
-    res.status(500).json({ error: "Server error" });
+    sendError(res, 500, "AUTH_ME_FAILED", "Server error");
   }
 });
 
-// Get public profile of any user by ID
 router.get("/users/:userId", authMiddleware, async (req, res) => {
   try {
     const { userId } = req.params;
     const viewerId = req.user.userId;
     const user = await User.findById(userId).select("-password");
     if (!user || user.banned) {
-      return res.status(404).json({ error: "User not found" });
+      return sendError(res, 404, "USER_NOT_FOUND", "User not found");
     }
 
-    // Determine relationship
     let relationship = "none";
     if (String(user._id) === String(viewerId)) {
       relationship = "self";
@@ -222,7 +266,6 @@ router.get("/users/:userId", authMiddleware, async (req, res) => {
       if (isFriend) relationship = "friends";
     }
 
-    // Fetch game history count
     const { default: HistoryModel } = await import("../models/History.js");
     const totalGames = await HistoryModel.countDocuments({ userId: user._id });
     const totalWins = await HistoryModel.countDocuments({
@@ -243,21 +286,20 @@ router.get("/users/:userId", authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.error("Public profile error:", err);
-    res.status(500).json({ error: "Server error" });
+    sendError(res, 500, "AUTH_PUBLIC_PROFILE_FAILED", "Server error");
   }
 });
 
-// Update profile
 router.put("/profile", authMiddleware, async (req, res) => {
   try {
-    const { fullName, avatar, userId: targetUserId } = req.body || {};
+    const { fullName, avatar, language, userId: targetUserId } = req.body || {};
 
     if (
       targetUserId &&
       String(targetUserId).trim() &&
       String(targetUserId) !== String(req.user.userId)
     ) {
-      return res.status(403).json({ error: "Forbidden" });
+      return sendError(res, 403, "AUTH_FORBIDDEN", "Forbidden");
     }
 
     const update = {};
@@ -267,9 +309,26 @@ router.put("/profile", authMiddleware, async (req, res) => {
     if (typeof avatar === "string") {
       update.avatar = avatar;
     }
+    if (language !== undefined) {
+      const requestedLanguage = String(language).trim().toLowerCase();
+      if (!VALID_LANGUAGES.has(requestedLanguage)) {
+        return sendError(
+          res,
+          400,
+          "AUTH_INVALID_LANGUAGE",
+          "Invalid language setting",
+        );
+      }
+      update.language = requestedLanguage;
+    }
 
     if (Object.keys(update).length === 0) {
-      return res.status(400).json({ error: "No valid profile fields provided" });
+      return sendError(
+        res,
+        400,
+        "AUTH_INVALID_PROFILE_UPDATE",
+        "No valid profile fields provided",
+      );
     }
 
     const user = await User.findByIdAndUpdate(
@@ -280,22 +339,21 @@ router.put("/profile", authMiddleware, async (req, res) => {
     res.json({ success: true, user: toPublicUser(user) });
   } catch (err) {
     console.error("Update profile error:", err);
-    res.status(500).json({ error: "Server error" });
+    sendError(res, 500, "AUTH_PROFILE_UPDATE_FAILED", "Server error");
   }
 });
 
-// Explicit avatar update endpoint with ownership check
 router.put("/users/:userId/avatar", authMiddleware, async (req, res) => {
   try {
     const targetUserId = String(req.params.userId || "");
     const requesterId = String(req.user.userId || "");
     if (!targetUserId || targetUserId !== requesterId) {
-      return res.status(403).json({ error: "Forbidden" });
+      return sendError(res, 403, "AUTH_FORBIDDEN", "Forbidden");
     }
 
     const avatar = req.body?.avatar;
     if (typeof avatar !== "string") {
-      return res.status(400).json({ error: "Avatar is required" });
+      return sendError(res, 400, "AUTH_AVATAR_REQUIRED", "Avatar is required");
     }
 
     const user = await User.findByIdAndUpdate(
@@ -307,7 +365,7 @@ router.put("/users/:userId/avatar", authMiddleware, async (req, res) => {
     res.json({ success: true, user: toPublicUser(user) });
   } catch (err) {
     console.error("Update avatar error:", err);
-    res.status(500).json({ error: "Server error" });
+    sendError(res, 500, "AUTH_AVATAR_UPDATE_FAILED", "Server error");
   }
 });
 

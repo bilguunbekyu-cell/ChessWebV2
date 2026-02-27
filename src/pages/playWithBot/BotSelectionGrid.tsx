@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   BotPersonality,
   botPersonalities,
@@ -21,6 +22,8 @@ export function BotSelectionGrid({
   selectedBot,
   onSelectBot,
 }: BotSelectionGridProps) {
+  const { t } = useTranslation();
+  const tr = (value: string) => t(value, { defaultValue: value });
   const navigate = useNavigate();
   const filteredBots =
     categoryFilter === "all"
@@ -29,7 +32,7 @@ export function BotSelectionGrid({
 
   return (
     <div className="lg:col-span-2">
-      {/* Header */}
+      {}
       <div className="flex items-center gap-4 mb-6">
         <button
           onClick={() => navigate("/play")}
@@ -39,15 +42,15 @@ export function BotSelectionGrid({
         </button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Play with Bot
+            {tr("Play with Bot")}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Choose your opponent and start playing
+            {tr("Choose your opponent and start playing")}
           </p>
         </div>
       </div>
 
-      {/* Category Filter */}
+      {}
       <div className="flex flex-wrap gap-2 mb-4">
         {CATEGORIES.map((cat) => (
           <button
@@ -59,12 +62,12 @@ export function BotSelectionGrid({
                 : "bg-white/80 dark:bg-slate-800/80 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
             }`}
           >
-            {cat.label}
+            {tr(cat.label)}
           </button>
         ))}
       </div>
 
-      {/* Bot Grid */}
+      {}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-auto pr-2">
         {filteredBots.map((bot) => (
           <button
@@ -77,7 +80,15 @@ export function BotSelectionGrid({
             }`}
           >
             <div className="flex items-start gap-3">
-              <div className="text-3xl">{bot.avatar}</div>
+              <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-700 flex-shrink-0">
+                {bot.avatarUrl ? (
+                  <img src={bot.avatarUrl} alt={bot.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">{bot.name.substring(0, 2).toUpperCase()}</span>
+                  </div>
+                )}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-gray-900 dark:text-white">

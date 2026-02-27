@@ -19,7 +19,6 @@ export function useBestMove({
   return useMemo(() => {
     if (currentPly === 0) return null;
 
-    // Best move is what engine recommended BEFORE this move
     const beforeAnalysis = analysisByPly.get(currentPly - 1);
     if (!beforeAnalysis?.bestMove) return null;
 

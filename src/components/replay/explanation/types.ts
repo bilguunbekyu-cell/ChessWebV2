@@ -6,7 +6,7 @@ export interface MoveExplanationPanelProps {
   currentMoveSan: string;
   moveQualities: MoveQualityInfo[];
   analysisByPly: Map<number, AnalysisEntry>;
-  positions: string[]; // FEN positions to convert UCI to SAN
+  positions: string[]; 
   sanMoves: string[];
   gameId?: string;
 }

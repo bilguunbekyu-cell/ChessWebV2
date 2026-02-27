@@ -1,5 +1,5 @@
 interface ReplayEvalBarProps {
-  evalPercent: number; // 0 = black wins, 100 = white wins
+  evalPercent: number; 
   evalLabel: string;
   orientation?: "horizontal" | "vertical";
 }

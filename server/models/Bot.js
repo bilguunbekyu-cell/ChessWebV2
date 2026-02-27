@@ -112,7 +112,6 @@ const BotSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// Index for faster queries
 BotSchema.index({ difficulty: 1, isActive: 1 });
 BotSchema.index({ category: 1 });
 BotSchema.index({ name: "text" });

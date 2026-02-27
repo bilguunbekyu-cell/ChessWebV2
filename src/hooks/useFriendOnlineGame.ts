@@ -92,7 +92,13 @@ interface PreMove {
   promotion?: string;
 }
 
-const PREMOVE_SOURCE_STYLE = {};
+const PREMOVE_SOURCE_STYLE = {
+  boxShadow: "inset 0 0 0 3px rgba(249, 115, 22, 0.82)",
+};
+const CHESS960_CASTLING_TARGET_STYLE = {
+  boxShadow:
+    "inset 0 0 0 2px rgba(20, 184, 166, 0.72), inset 0 0 0 5px rgba(20, 184, 166, 0.22)",
+};
 
 function buildPreMoveSquares(preMove: PreMove | null): OptionSquares {
   if (!preMove) return {};
@@ -460,7 +466,6 @@ export function useFriendOnlineGame() {
       setPromotionToSquare(null);
       setPendingPromoFrom(null);
 
-      // Opponent just moved and it may now be our turn.
       trySubmitQueuedPreMove();
     };
 
@@ -555,7 +560,6 @@ export function useFriendOnlineGame() {
     trySubmitQueuedPreMove,
   ]);
 
-  // Fallback for tight timing races: submit queued premove as soon as our turn starts.
   useEffect(() => {
     if (!gameStarted || gameOver || !isPlayerTurn || !pendingPreMove) return;
     trySubmitQueuedPreMove();
@@ -845,7 +849,7 @@ export function useFriendOnlineGame() {
           candidatePiece.color === playerColor &&
           candidatePiece.type === "r"
         ) {
-          extraSquares[candidateSquare] = {};
+          extraSquares[candidateSquare] = CHESS960_CASTLING_TARGET_STYLE;
         }
       });
 
@@ -880,14 +884,12 @@ export function useFriendOnlineGame() {
     [matchVariant, playerColor],
   );
 
-  // ---------- promotion dialog state (click-to-move) ----------
   const [promotionToSquare, setPromotionToSquare] = useState<Square | null>(
     null,
   );
   const [showPromotionDialog, setShowPromotionDialog] = useState(false);
   const [pendingPromoFrom, setPendingPromoFrom] = useState<Square | null>(null);
 
-  /** Extract promotion char from react-chessboard piece string ("wQ" → "q") */
   const extractPromo = (piece?: string): string => {
     if (!piece) return "q";
     const ch =
@@ -1043,7 +1045,7 @@ export function useFriendOnlineGame() {
       }
 
       if (optionSquares[square]) {
-        // Check for promotion
+
         const srcPiece = currentGame.get(moveFrom);
         const isPromo =
           srcPiece?.type === "p" &&

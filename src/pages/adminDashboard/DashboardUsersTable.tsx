@@ -162,7 +162,7 @@ export function DashboardUsersTable({
         </div>
       )}
 
-      {/* Pagination */}
+      {}
       {totalPages > 1 && (
         <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
           <span className="text-sm text-gray-500 dark:text-gray-400">

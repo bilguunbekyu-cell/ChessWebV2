@@ -3,24 +3,24 @@ import { PlayStyle } from "../chess/StockfishEngine";
 export interface BotPersonality {
   id: string;
   name: string;
-  avatar: string; // emoji or image path
-  avatarUrl?: string; // actual image URL
+  avatar: string; 
+  avatarUrl?: string; 
   rating: number;
-  title?: string; // GM, IM, etc.
+  title?: string; 
   description: string;
-  personality: string; // short tagline
+  personality: string; 
   playStyle: PlayStyle;
-  skillLevel: number; // Stockfish skill level 0-20
-  depth: number; // search depth
-  thinkTimeMs: number; // min think time
-  blunderChance: number; // 0-1, chance to make a random move instead
-  aggressiveness: number; // -100 to 100 (contempt)
-  openingBook: boolean; // whether to use opening book
+  skillLevel: number; 
+  depth: number; 
+  thinkTimeMs: number; 
+  blunderChance: number; 
+  aggressiveness: number; 
+  openingBook: boolean; 
   category: "beginner" | "casual" | "intermediate" | "advanced" | "master";
 }
 
 export const botPersonalities: BotPersonality[] = [
-  // ===== BEGINNER BOTS (Rating 250-600) =====
+
   {
     id: "nelson",
     name: "Nelson",
@@ -88,7 +88,6 @@ export const botPersonalities: BotPersonality[] = [
     category: "beginner",
   },
 
-  // ===== CASUAL BOTS (Rating 600-1000) =====
   {
     id: "elena",
     name: "Elena",
@@ -154,7 +153,6 @@ export const botPersonalities: BotPersonality[] = [
     category: "casual",
   },
 
-  // ===== INTERMEDIATE BOTS (Rating 1000-1400) =====
   {
     id: "lin",
     name: "Lin",
@@ -220,7 +218,6 @@ export const botPersonalities: BotPersonality[] = [
     category: "intermediate",
   },
 
-  // ===== ADVANCED BOTS (Rating 1400-1800) =====
   {
     id: "chen",
     name: "Chen",
@@ -289,7 +286,6 @@ export const botPersonalities: BotPersonality[] = [
     category: "advanced",
   },
 
-  // ===== MASTER BOTS (Rating 1800-2500+) =====
   {
     id: "igor",
     name: "Igor",
@@ -360,24 +356,20 @@ export const botPersonalities: BotPersonality[] = [
   },
 ];
 
-// Get bots by category
 export function getBotsByCategory(category: BotPersonality["category"]) {
   return botPersonalities.filter((bot) => bot.category === category);
 }
 
-// Get bot by ID
 export function getBotById(id: string) {
   return botPersonalities.find((bot) => bot.id === id);
 }
 
-// Get bots within rating range
 export function getBotsByRating(minRating: number, maxRating: number) {
   return botPersonalities.filter(
     (bot) => bot.rating >= minRating && bot.rating <= maxRating,
   );
 }
 
-// Get a random bot from a category
 export function getRandomBot(category?: BotPersonality["category"]) {
   const bots = category ? getBotsByCategory(category) : botPersonalities;
   return bots[Math.floor(Math.random() * bots.length)];

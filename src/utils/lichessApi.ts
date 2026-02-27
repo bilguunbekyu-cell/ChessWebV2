@@ -1,6 +1,3 @@
-// Lichess API Service - Free, no authentication required
-// Documentation: https://lichess.org/api
-
 export interface LichessTvGame {
   user: {
     id: string;
@@ -104,12 +101,10 @@ export interface TransformedStreamer {
 
 const LICHESS_API_BASE = "https://lichess.org/api";
 
-// Standard chess categories we want to show
 const STANDARD_CHANNELS = ["bullet", "blitz", "rapid", "classical"];
 
-// Map Lichess channels to our category system
 const CHANNEL_TO_CATEGORY: Record<string, string> = {
-  bullet: "Blitz", // bullet is ultra-fast blitz
+  bullet: "Blitz", 
   ultraBullet: "Blitz",
   blitz: "Blitz",
   rapid: "Rapid",
@@ -117,7 +112,6 @@ const CHANNEL_TO_CATEGORY: Record<string, string> = {
   correspondence: "Classical",
 };
 
-// Fetch current TV channels (top games being played)
 export async function fetchLichessTvChannels(): Promise<LichessTvChannel | null> {
   try {
     const response = await fetch(`${LICHESS_API_BASE}/tv/channels`);
@@ -129,7 +123,6 @@ export async function fetchLichessTvChannels(): Promise<LichessTvChannel | null>
   }
 }
 
-// Fetch a single game's export data (includes both players)
 export async function fetchGameExport(gameId: string): Promise<any | null> {
   try {
     const response = await fetch(
@@ -148,7 +141,6 @@ export async function fetchGameExport(gameId: string): Promise<any | null> {
   }
 }
 
-// Fetch live streamers
 export async function fetchLichessStreamers(): Promise<LichessStreamer[]> {
   try {
     const response = await fetch(`${LICHESS_API_BASE}/streamer/live`);
@@ -160,7 +152,6 @@ export async function fetchLichessStreamers(): Promise<LichessStreamer[]> {
   }
 }
 
-// Fetch top ongoing games (with both players)
 export async function fetchTopGames(
   nb: number = 10,
 ): Promise<LichessTopGame[]> {
@@ -171,12 +162,10 @@ export async function fetchTopGames(
     const channels = await response.json();
     const games: LichessTopGame[] = [];
 
-    // Only get standard chess channels
     const standardChannels = Object.entries(channels).filter(([channel]) =>
       STANDARD_CHANNELS.includes(channel.toLowerCase()),
     );
 
-    // Fetch game details for each channel to get both players
     for (const [channel, data] of standardChannels) {
       const gameData = data as LichessTvGame;
       if (gameData.gameId) {
@@ -215,7 +204,7 @@ export async function fetchTopGames(
             },
           });
         } else {
-          // Fallback if game details not available
+
           games.push({
             id: gameData.gameId,
             rated: true,
@@ -254,7 +243,6 @@ export async function fetchTopGames(
   }
 }
 
-// Transform Lichess TV data to our format with full player info
 export async function transformTvChannelsToLiveGames(
   channels: LichessTvChannel,
 ): Promise<TransformedLiveGame[]> {
@@ -267,12 +255,10 @@ export async function transformTvChannelsToLiveGames(
     correspondence: "Unlimited",
   };
 
-  // Filter to only standard chess categories
   const standardEntries = Object.entries(channels).filter(([channel]) =>
     STANDARD_CHANNELS.includes(channel.toLowerCase()),
   );
 
-  // Fetch full game details for each channel (to get both players)
   const gamesWithDetails = await Promise.all(
     standardEntries.map(async ([channel, data]) => {
       const gameDetails = await fetchGameExport(data.gameId);
@@ -280,7 +266,7 @@ export async function transformTvChannelsToLiveGames(
       const category = CHANNEL_TO_CATEGORY[speed] || "Blitz";
 
       if (gameDetails && gameDetails.players) {
-        // We have full game details with both players
+
         const white = gameDetails.players.white;
         const black = gameDetails.players.black;
 
@@ -301,7 +287,6 @@ export async function transformTvChannelsToLiveGames(
         };
       }
 
-      // Fallback if game details not available
       return {
         id: data.gameId,
         white: data.user?.name || "Unknown",
@@ -323,7 +308,6 @@ export async function transformTvChannelsToLiveGames(
   return gamesWithDetails;
 }
 
-// Transform streamers to our format
 export function transformStreamers(
   streamers: LichessStreamer[],
 ): TransformedStreamer[] {
@@ -331,7 +315,7 @@ export function transformStreamers(
     id: streamer.id,
     name: streamer.name,
     title: streamer.title,
-    viewers: `${Math.floor(Math.random() * 5000) + 500}`, // Actual viewer count not exposed
+    viewers: `${Math.floor(Math.random() * 5000) + 500}`, 
     streamTitle: `${streamer.name} is streaming chess!`,
     avatar: streamer.name.charAt(0).toUpperCase(),
     platform: streamer.streamer?.twitch ? "twitch" : "youtube",
@@ -343,7 +327,6 @@ export function transformStreamers(
   }));
 }
 
-// Fetch detailed game info
 export async function fetchGameDetails(
   gameId: string,
 ): Promise<LichessTopGame | null> {
@@ -357,7 +340,6 @@ export async function fetchGameDetails(
   }
 }
 
-// Watch a game stream (for live updates)
 export function watchGameStream(
   gameId: string,
   onMove: (data: any) => void,
@@ -371,7 +353,7 @@ export function watchGameStream(
       const data = JSON.parse(event.data);
       onMove(data);
     } catch (e) {
-      // Ignore parse errors
+
     }
   };
 

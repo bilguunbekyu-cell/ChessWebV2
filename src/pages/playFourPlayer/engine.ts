@@ -303,7 +303,6 @@ function canCaptureTarget(
   if (!target) return true;
   if (target.color === moverColor) return false;
 
-  // Alive kings cannot be captured directly; they must be checkmated/stalemated.
   if (target.type === "k" && isAliveColor(state, target.color)) {
     return false;
   }
@@ -486,7 +485,6 @@ function getCastlingCandidates(
       return;
     }
 
-    // Squares between king and rook must be empty.
     for (let coord = kingCoord + dir; coord !== rookCoord; coord += dir) {
       const sq = shiftSquare(meta.kingStart, meta.axis, coord - kingCoord);
       if (state.board[sq.row][sq.col] && !squareEquals(sq, rookStart)) {
@@ -494,7 +492,6 @@ function getCastlingCandidates(
       }
     }
 
-    // King path squares must be safe and clear.
     for (let step = 1; step <= 2; step += 1) {
       const sq = shiftSquare(meta.kingStart, meta.axis, step * dir);
       if (state.board[sq.row][sq.col]) return;
@@ -845,7 +842,6 @@ function resolveTurnEliminations(state: FourPlayerState) {
       break;
     }
 
-    // No legal moves => eliminate (checkmate or stalemate in FFA mode).
     nextState = eliminateColorKeepPieces(nextState, nextTurn);
     eliminatedNow.push(nextTurn);
     if (nextState.winner) break;

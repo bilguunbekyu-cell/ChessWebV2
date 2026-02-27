@@ -139,12 +139,12 @@ export function FriendGameView({
           analyzeBasePath={variant === "chess960" ? "/analyze960" : "/analyze"}
         />
 
-        {/* Main Board Area */}
+        {}
         <div
           ref={leftRef}
           className="min-w-0 flex flex-col items-center justify-center gap-2 h-full overflow-hidden"
         >
-          {/* Opponent Info */}
+          {}
           <div
             ref={topRef}
             className="flex-shrink-0 z-10"
@@ -168,7 +168,7 @@ export function FriendGameView({
             />
           </div>
 
-          {/* Chessboard */}
+          {}
           <div
             className="rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-gray-200/60 dark:border-white/5 shadow-xl"
             style={{ width: boardWidth + BOARD_FRAME }}
@@ -193,7 +193,7 @@ export function FriendGameView({
             />
           </div>
 
-          {/* Player Info */}
+          {}
           <div
             ref={bottomRef}
             className="flex-shrink-0 z-10"
@@ -221,10 +221,10 @@ export function FriendGameView({
           </div>
         </div>
 
-        {/* Sidebar */}
+        {}
         <div className="min-w-0 w-full lg:flex-1 lg:self-stretch min-h-0 flex flex-col">
           <div className="flex-1 rounded-3xl border border-white/10 bg-white/70 dark:bg-slate-900/80 shadow-2xl backdrop-blur-xl px-4 py-4 flex flex-col overflow-hidden">
-            {/* Header */}
+            {}
             <div className="flex items-center justify-center mb-3 pb-3 border-b border-gray-200/60 dark:border-white/10">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-teal-500" />
@@ -232,7 +232,7 @@ export function FriendGameView({
               </h2>
             </div>
 
-            {/* Turn Indicator */}
+            {}
             <div className="mb-3 p-2.5 rounded-xl bg-teal-500/10 border border-teal-500/20 text-center">
               <p className="text-xs font-medium text-teal-600 dark:text-teal-400">
                 {isPlayerTurn ? "Your turn" : `${friendName}'s turn`}
@@ -242,7 +242,7 @@ export function FriendGameView({
               </p>
             </div>
 
-            {/* Move List */}
+            {}
             <div className="flex-1 mb-3 rounded-xl bg-gray-50/50 dark:bg-slate-800/50 border border-gray-200/60 dark:border-white/5 overflow-hidden">
               <div className="p-2.5">
                 {moves.length === 0 ? (
@@ -277,7 +277,7 @@ export function FriendGameView({
               </div>
             </div>
 
-            {/* Actions */}
+            {}
             <div className="flex flex-col gap-2">
               <button
                 onClick={onResign}

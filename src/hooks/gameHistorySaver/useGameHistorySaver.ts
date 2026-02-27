@@ -36,7 +36,6 @@ export function useGameHistorySaver(
       ? Date.now() - startTimeRef.current
       : undefined;
 
-    // Detect opening
     const opening = detectOpeningFromSan(currentGame.history());
     const ecoCode = opening?.eco || "";
     const openingName = opening
@@ -54,7 +53,6 @@ export function useGameHistorySaver(
         ? `https://lichess.org/opening/${openingSlug}`
         : "";
 
-    // Get termination and player info
     const termination = getTerminationInfo(
       currentGame,
       gameResult,
@@ -63,7 +61,6 @@ export function useGameHistorySaver(
     const playerInfo = getPlayerInfo(gameSettings);
     const timeControlStr = formatTimeControl(gameSettings.timeControl);
 
-    // Build full PGN
     const fullPgn = buildFullPgn(currentGame, {
       startDate,
       endDate: now,
@@ -79,7 +76,6 @@ export function useGameHistorySaver(
       currentFen: currentGame.fen(),
     });
 
-    // Save to backend
     saveGameHistory({
       event: "Live Chess",
       variant: "standard",

@@ -1,6 +1,3 @@
-// Prepared short phrases for non-AI move types (all <= 60 chars)
-// AI only explains: Blunder, Mistake, Brilliant
-
 export const preparedTexts: Record<string, string[]> = {
   Best: [
     "That's the right idea.",
@@ -93,7 +90,7 @@ export const preparedTexts: Record<string, string[]> = {
     "The knockout was there.",
     "Hesitation cost you.",
   ],
-  // Fallback texts for AI-explained moves (shown if AI is disabled or fails)
+
   Blunder: [
     "A serious error that changes the game.",
     "This move loses significant material or position.",
@@ -123,5 +120,4 @@ export const preparedTexts: Record<string, string[]> = {
   ],
 };
 
-// AI-explainable move types
 export const AI_EXPLAINABLE_TYPES = ["Blunder", "Mistake", "Brilliant"];

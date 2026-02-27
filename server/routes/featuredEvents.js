@@ -3,7 +3,6 @@ import FeaturedEvent from "../models/FeaturedEvent.js";
 
 const router = express.Router();
 
-// GET all active featured events (public)
 router.get("/", async (req, res) => {
   try {
     const { status, featured, limit = 10 } = req.query;
@@ -23,7 +22,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET single event (public)
 router.get("/:id", async (req, res) => {
   try {
     const event = await FeaturedEvent.findById(req.params.id);

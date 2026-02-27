@@ -65,7 +65,7 @@ export const useAdminStore = create<AdminState>()(
             credentials: "include",
           });
         } catch {
-          // Ignore errors
+
         }
         set({ admin: null, isAuthenticated: false, error: null });
       },

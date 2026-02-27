@@ -1,10 +1,6 @@
-/* ═══════════════════════════════════════════════════════
-   Community — Shared small components
-   ═══════════════════════════════════════════════════════ */
 import type { ReactNode } from "react";
 import { Crown, CheckCircle2, Circle, Wifi } from "lucide-react";
 
-/* ─── Title Badge (GM, IM, etc.) ─── */
 export function TitleBadge({ title }: { title: string }) {
   const colors: Record<string, string> = {
     GM: "bg-amber-500/15 text-amber-500 border-amber-500/20",
@@ -24,14 +20,12 @@ export function TitleBadge({ title }: { title: string }) {
   );
 }
 
-/* ─── Verified Check ─── */
 export function VerifiedBadge() {
   return (
     <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 fill-teal-400/20 shrink-0" />
   );
 }
 
-/* ─── Rating Pill ─── */
 export function RatingPill({ rating }: { rating: number }) {
   if (!rating) return null;
   return (
@@ -42,7 +36,6 @@ export function RatingPill({ rating }: { rating: number }) {
   );
 }
 
-/* ─── Avatar ─── */
 interface AvatarProps {
   initials: string;
   src?: string;
@@ -78,7 +71,6 @@ export function Avatar({ initials, src, size = "md", online }: AvatarProps) {
   );
 }
 
-/* ─── Tag Chip ─── */
 export function TagChip({ tag }: { tag: string }) {
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-teal-500/10 text-teal-500 hover:bg-teal-500/20 transition-colors cursor-pointer">
@@ -87,7 +79,6 @@ export function TagChip({ tag }: { tag: string }) {
   );
 }
 
-/* ─── Sidebar Card Shell ─── */
 interface SidebarCardProps {
   title: string;
   icon?: ReactNode;
@@ -117,7 +108,6 @@ export function SidebarCard({
   );
 }
 
-/* ─── Online Status Dot ─── */
 export function StatusDot({
   status,
 }: {
@@ -143,7 +133,6 @@ export function StatusDot({
   );
 }
 
-/* ─── Follow Button ─── */
 export function FollowButton({
   compact = false,
   following = false,
@@ -167,7 +156,6 @@ export function FollowButton({
   );
 }
 
-/* ─── Format number (1500 → 1.5k) ─── */
 export function formatCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;

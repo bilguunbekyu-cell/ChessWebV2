@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Chessboard } from "react-chessboard";
 import { Bot, ChevronDown, Crown, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
 import type { BotPersonality } from "../../data/botPersonalities";
 import { BOARD_FRAME } from "./types";
+import { parseApiError } from "../../utils/apiError";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -19,14 +21,13 @@ const CATEGORY_INFO: {
   { key: "master", label: "Master" },
 ];
 
-// Map database bot to BotPersonality interface
 function mapDbBotToPersonality(dbBot: any): BotPersonality {
-  // Construct full avatar URL - uploaded images are stored on server
+
   let avatarUrl = dbBot.avatarUrl || "";
-  if (avatarUrl && !avatarUrl.startsWith("http")) {
+  if (avatarUrl && !avatarUrl.startsWith("http") && !avatarUrl.startsWith("/images/")) {
     avatarUrl = `${API_URL}${avatarUrl.startsWith("/") ? "" : "/"}${avatarUrl}`;
   }
-  
+
   return {
     id: dbBot._id,
     name: dbBot.name,
@@ -48,10 +49,11 @@ function mapDbBotToPersonality(dbBot: any): BotPersonality {
 }
 
 export default function PlayWithBot() {
+  const { t } = useTranslation();
+  const tr = (value: string) => t(value, { defaultValue: value });
   const navigate = useNavigate();
   const { user } = useAuthStore();
 
-  // Bot data state
   const [bots, setBots] = useState<BotPersonality[]>([]);
   const [groupedBots, setGroupedBots] = useState<
     Record<string, BotPersonality[]>
@@ -64,12 +66,10 @@ export default function PlayWithBot() {
     BotPersonality["category"] | null
   >("beginner");
 
-  // Responsive board width
   const [boardWidth, setBoardWidth] = useState(620);
   const containerRef = useRef<HTMLDivElement>(null);
   const leftRef = useRef<HTMLDivElement>(null);
 
-  // Fetch bots from API
   useEffect(() => {
     async function fetchBots() {
       try {
@@ -79,16 +79,15 @@ export default function PlayWithBot() {
         });
 
         if (!res.ok) {
-          throw new Error("Failed to fetch bots");
+          const parsed = await parseApiError(res, "Failed to fetch bots");
+          throw new Error(parsed.message);
         }
 
         const data = await res.json();
 
-        // Map database bots to BotPersonality interface
         const mappedBots = data.bots.map(mapDbBotToPersonality);
         setBots(mappedBots);
 
-        // Group bots by category
         const grouped: Record<string, BotPersonality[]> = {};
         mappedBots.forEach((bot: BotPersonality) => {
           if (!grouped[bot.category]) {
@@ -98,17 +97,18 @@ export default function PlayWithBot() {
         });
         setGroupedBots(grouped);
 
-        // Select first bot from first available category
         if (mappedBots.length > 0) {
           setSelectedBot(mappedBots[0]);
-          // Expand the category of the first bot
+
           setExpandedCategory(mappedBots[0].category);
         }
 
         setError(null);
       } catch (err) {
         console.error("Error fetching bots:", err);
-        setError("Failed to load bots");
+        setError(
+          err instanceof Error ? err.message : tr("Failed to load bots"),
+        );
       } finally {
         setLoading(false);
       }
@@ -144,7 +144,7 @@ export default function PlayWithBot() {
 
   const handleStartMatch = () => {
     if (!selectedBot) return;
-    // Navigate to the bot game page
+
     navigate(`/play/bot/${selectedBot.id}`);
   };
 
@@ -152,19 +152,18 @@ export default function PlayWithBot() {
     setExpandedCategory(expandedCategory === cat ? null : cat);
   };
 
-  // Bot selection screen - Chess.com inspired layout
   return (
     <div
       ref={containerRef}
       className="relative h-screen w-full bg-slate-100 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 overflow-hidden"
     >
       <div className="h-full min-h-0 grid grid-cols-1 lg:grid-cols-2">
-        {/* Left Side - Board Preview with Bot Info */}
+        {}
         <div
           ref={leftRef}
           className="flex flex-col items-center justify-center p-4 gap-4 h-full min-h-0"
         >
-          {/* Top Bot Info Bar */}
+          {}
           <div className="w-full max-w-[900px] flex items-center gap-3 px-2">
             <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-700 flex-shrink-0">
               {selectedBot?.avatarUrl ? (
@@ -175,10 +174,8 @@ export default function PlayWithBot() {
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
-                  <span className="text-white text-lg leading-none">
-                    {selectedBot?.avatar ||
-                      selectedBot?.name?.substring(0, 2).toUpperCase() ||
-                      "?"}
+                  <span className="text-white font-bold text-sm">
+                    {selectedBot?.name?.substring(0, 2).toUpperCase() || "?"}
                   </span>
                 </div>
               )}
@@ -186,7 +183,7 @@ export default function PlayWithBot() {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-gray-900 dark:text-white">
-                  {selectedBot?.name || "Select Bot"}
+                  {selectedBot?.name || tr("Select Bot")}
                 </span>
                 {selectedBot?.title && (
                   <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded">
@@ -200,7 +197,7 @@ export default function PlayWithBot() {
             </div>
           </div>
 
-          {/* Chess Board Preview */}
+          {}
           <div
             className="rounded-2xl overflow-hidden shadow-2xl border border-gray-200/60 dark:border-white/10"
             style={{ width: boardWidth }}
@@ -214,7 +211,7 @@ export default function PlayWithBot() {
             />
           </div>
 
-          {/* Bottom Player Info Bar */}
+          {}
           <div className="w-full max-w-[900px] flex items-center gap-3 px-2 justify-start">
             <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-700 flex-shrink-0">
               {user?.avatar ? (
@@ -231,25 +228,25 @@ export default function PlayWithBot() {
             </div>
             <div className="flex-1">
               <span className="font-bold text-gray-900 dark:text-white">
-                {user?.fullName || "You"}
+                {user?.fullName || tr("You")}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Right Side - Bot Selection Panel */}
+        {}
         <div className="w-full bg-white/90 dark:bg-slate-900/95 border-l border-gray-200/60 dark:border-white/10 flex flex-col h-full min-h-0">
-          {/* Panel Header */}
+          {}
           <div className="p-4 border-b border-gray-200/60 dark:border-white/10">
             <div className="flex items-center gap-2">
               <Bot className="w-5 h-5 text-teal-500" />
               <h2 className="font-bold text-lg text-gray-900 dark:text-white">
-                Play Bots
+                {tr("Play Bots")}
               </h2>
             </div>
           </div>
 
-          {/* Selected Bot Hero */}
+          {}
           {selectedBot && (
             <div
               className="p-3 border-b border-gray-200/60 dark:border-white/10 space-y-2"
@@ -265,9 +262,8 @@ export default function PlayWithBot() {
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
-                      <span className="text-white text-2xl leading-none">
-                        {selectedBot.avatar ||
-                          selectedBot.name.substring(0, 2).toUpperCase()}
+                      <span className="text-white font-bold text-lg">
+                        {selectedBot.name.substring(0, 2).toUpperCase()}
                       </span>
                     </div>
                   )}
@@ -295,12 +291,12 @@ export default function PlayWithBot() {
             </div>
           )}
 
-          {/* Category Sections */}
+          {}
           <div className="flex-1 min-h-0 overflow-y-auto pr-1 pb-3 [scrollbar-width:thin] [scrollbar-color:#334155_transparent]">
             {loading ? (
               <div className="flex items-center justify-center py-10">
                 <Loader2 className="w-6 h-6 text-teal-500 animate-spin" />
-                <span className="ml-2 text-gray-500">Loading bots...</span>
+                <span className="ml-2 text-gray-500">{tr("Loading bots...")}</span>
               </div>
             ) : error ? (
               <div className="flex items-center justify-center py-10">
@@ -311,7 +307,6 @@ export default function PlayWithBot() {
                 const categoryBots = groupedBots[cat.key] || [];
                 const isExpanded = expandedCategory === cat.key;
 
-                // Only show categories that have bots
                 if (categoryBots.length === 0) return null;
 
                 return (
@@ -319,20 +314,20 @@ export default function PlayWithBot() {
                     key={cat.key}
                     className="border-b border-gray-200/60 dark:border-white/10 py-1"
                   >
-                    {/* Category Header */}
+                    {}
                     <button
                       onClick={() => toggleCategory(cat.key)}
                       className="w-full px-3 py-2 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors"
                     >
                       <div className="flex items-center">
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {cat.label}
+                          {tr(cat.label)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-500 dark:text-gray-400">
                           {categoryBots.length}{" "}
-                          {categoryBots.length === 1 ? "bot" : "bots"}
+                          {categoryBots.length === 1 ? tr("bot") : tr("bots")}
                         </span>
                         <ChevronDown
                           className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
@@ -340,7 +335,7 @@ export default function PlayWithBot() {
                       </div>
                     </button>
 
-                    {/* Bot Avatars Grid */}
+                    {}
                     {isExpanded && (
                       <div className="px-3 pb-3 grid grid-cols-3 sm:grid-cols-4 xl:grid-cols-5 gap-2.5">
                         {categoryBots.map((bot) => (
@@ -365,12 +360,8 @@ export default function PlayWithBot() {
                                 />
                               ) : (
                                 <div className="w-full h-full bg-gradient-to-br from-rose-500 to-pink-600 flex flex-col items-center justify-center">
-                                  <span className="text-2xl leading-none text-white">
-                                    {bot.avatar || "🤖"}
-                                  </span>
-                                  <span className="mt-1 text-[10px] font-semibold text-white/90">
-                                    {bot.name.match(/\d+/)?.[0] ||
-                                      bot.name.substring(0, 2).toUpperCase()}
+                                  <span className="text-lg font-bold text-white">
+                                    {bot.name.substring(0, 2).toUpperCase()}
                                   </span>
                                 </div>
                               )}
@@ -400,14 +391,14 @@ export default function PlayWithBot() {
             )}
           </div>
 
-          {/* Play Button */}
+          {}
           <div className="p-3 border-t border-gray-200/60 dark:border-white/10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
             <button
               onClick={handleStartMatch}
               disabled={!selectedBot}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl active:scale-[0.98]"
             >
-              Play
+              {tr("Play")}
             </button>
           </div>
         </div>

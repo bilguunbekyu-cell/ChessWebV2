@@ -25,12 +25,11 @@ export default function Learn() {
     }
   };
 
-  // Fallback if courses is undefined
   const safeCourses = courses || [];
 
   return (
     <div className="space-y-8">
-      {/* Hero Section */}
+      {}
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-teal-600 dark:from-teal-900 to-gray-700 dark:to-gray-900 border border-teal-500 dark:border-teal-900/50 shadow-2xl">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-10 mix-blend-overlay"></div>
         <div className="relative z-10 p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8">
@@ -65,7 +64,7 @@ export default function Learn() {
         </div>
       </div>
 
-      {/* Categories */}
+      {}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {["Openings", "Middlegame", "Endgame", "Strategy"].map((cat, i) => (
           <motion.button
@@ -97,7 +96,7 @@ export default function Learn() {
         ))}
       </div>
 
-      {/* Featured Courses */}
+      {}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -118,7 +117,7 @@ export default function Learn() {
                 transition={{ delay: idx * 0.1 }}
                 className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:border-gray-300 dark:hover:border-gray-700 transition-all group hover:shadow-xl shadow-sm flex flex-col"
               >
-                {/* Course Image Placeholder */}
+                {}
                 <div className="h-32 bg-gradient-to-br from-gray-100 dark:from-gray-800 to-gray-200 dark:to-gray-900 flex items-center justify-center relative overflow-hidden">
                   <div className="absolute inset-0 bg-teal-500/5 group-hover:bg-teal-500/10 transition-colors"></div>
                   <span className="text-4xl transform group-hover:scale-110 transition-transform duration-500">
@@ -145,7 +144,7 @@ export default function Learn() {
                   </p>
 
                   <div className="mt-auto space-y-3">
-                    {/* Progress Bar */}
+                    {}
                     <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-1.5">
                       <div
                         className="bg-teal-500 h-1.5 rounded-full transition-all duration-1000"

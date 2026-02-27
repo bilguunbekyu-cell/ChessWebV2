@@ -4,7 +4,6 @@ import { liveGames as mockLiveGames } from "../data/mockData";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
-// Types for featured events from our backend
 export interface FeaturedEvent {
   _id: string;
   title: string;
@@ -28,7 +27,6 @@ export interface FeaturedEvent {
   tags?: string[];
 }
 
-// Hook for fetching live games from Lichess
 export function useLichessLiveGames() {
   const [games, setGames] = useState<TransformedLiveGame[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,13 +83,12 @@ export function useLichessLiveGames() {
 
   useEffect(() => {
     fetchGames();
-    // No polling to avoid repeated errors when offline.
+
   }, [fetchGames]);
 
   return { games, loading, error, refetch: fetchGames };
 }
 
-// Hook for fetching streamers from Lichess
 export function useLichessStreamers() {
   const [streamers, setStreamers] = useState<TransformedStreamer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,13 +137,12 @@ export function useLichessStreamers() {
 
   useEffect(() => {
     fetchStreamersData();
-    // No polling to avoid repeated errors when offline.
+
   }, [fetchStreamersData]);
 
   return { streamers, loading, error, refetch: fetchStreamersData };
 }
 
-// Hook for fetching featured events from our backend
 export function useFeaturedEvents() {
   const [events, setEvents] = useState<FeaturedEvent[]>([]);
   const [featuredEvent, setFeaturedEvent] = useState<FeaturedEvent | null>(
@@ -166,7 +162,6 @@ export function useFeaturedEvents() {
       const data = await response.json();
       setEvents(data);
 
-      // Find the main featured event (highest priority with featured=true)
       const mainFeatured =
         data.find((e: FeaturedEvent) => e.featured && e.status === "live") ||
         data.find((e: FeaturedEvent) => e.featured) ||
@@ -188,7 +183,6 @@ export function useFeaturedEvents() {
   return { events, featuredEvent, loading, error, refetch: fetchEvents };
 }
 
-// Combined hook for all watch page data
 export function useWatchPageData() {
   const lichessGames = useLichessLiveGames();
   const lichessStreamers = useLichessStreamers();

@@ -4,7 +4,6 @@ import { Friend, User } from "../models/index.js";
 
 const router = Router();
 
-// List friends for current user
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -28,7 +27,6 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
-// Search users to add
 router.get("/search", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -64,7 +62,6 @@ router.get("/search", authMiddleware, async (req, res) => {
   }
 });
 
-// Add friend (mutual)
 router.post("/", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -101,7 +98,6 @@ router.post("/", authMiddleware, async (req, res) => {
   }
 });
 
-// Remove friend (mutual)
 router.delete("/:friendId", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;

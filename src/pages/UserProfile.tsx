@@ -42,14 +42,12 @@ export default function UserProfile() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [friendLoading, setFriendLoading] = useState(false);
 
-  // If viewing own profile, redirect to /profile
   useEffect(() => {
     if (authUser?.id && userId === authUser.id) {
       navigate("/profile", { replace: true });
     }
   }, [authUser?.id, userId, navigate]);
 
-  // Fetch profile + games in parallel
   useEffect(() => {
     if (!userId) return;
 
@@ -124,7 +122,7 @@ export default function UserProfile() {
         setRelationship("friends");
       }
     } catch {
-      // ignore
+
     } finally {
       setFriendLoading(false);
     }
@@ -142,14 +140,14 @@ export default function UserProfile() {
         setRelationship("none");
       }
     } catch {
-      // ignore
+
     } finally {
       setFriendLoading(false);
     }
   }, [userId, friendLoading]);
 
   const handleChallenge = useCallback(() => {
-    // Navigate to play with friend or trigger challenge flow
+
     navigate("/play/friend");
   }, [navigate]);
 

@@ -68,7 +68,7 @@ export const useChessStore = create<ChessStore>((set) => ({
   skillLevel: 10,
   playStyle: "balanced",
   playAs: "white",
-  timeControl: { initial: 300, increment: 0 }, // 5 min default
+  timeControl: { initial: 300, increment: 0 }, 
   playerAddIncrement: () => {},
   opponentAddIncrement: () => {},
   playerResetTimer: () => {},

@@ -52,7 +52,6 @@ export default function PlayPractice() {
   const [selectedFocus, setSelectedFocus] = useState(PRACTICE_OPTIONS[0]);
   const [sessionLength, setSessionLength] = useState(20);
 
-  // Responsive board width
   const [boardWidth, setBoardWidth] = useState(620);
   const containerRef = useRef<HTMLDivElement>(null);
   const leftRef = useRef<HTMLDivElement>(null);
@@ -86,7 +85,7 @@ export default function PlayPractice() {
   }, []);
 
   const handleStart = () => {
-    // Placeholder for starting a practice session
+
   };
 
   return (
@@ -95,12 +94,12 @@ export default function PlayPractice() {
       className="relative h-screen w-full bg-slate-100 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 overflow-hidden"
     >
       <div className="h-full grid grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]">
-        {/* Left Side - Board Preview */}
+        {}
         <div
           ref={leftRef}
           className="min-w-0 flex flex-col items-center justify-center p-2 gap-2 h-full"
         >
-          {/* Top Focus Info Bar */}
+          {}
           <div
             ref={topBarRef}
             className="w-full max-w-[900px] flex items-center gap-1.5 px-2"
@@ -122,7 +121,7 @@ export default function PlayPractice() {
             </div>
           </div>
 
-          {/* Chess Board Preview */}
+          {}
           <div
             className="rounded-2xl overflow-hidden shadow-2xl border border-gray-200/60 dark:border-white/10"
             style={{ width: boardWidth, height: boardWidth }}
@@ -136,7 +135,7 @@ export default function PlayPractice() {
             />
           </div>
 
-          {/* Bottom Player Info Bar */}
+          {}
           <div
             ref={bottomBarRef}
             className="w-full max-w-[900px] flex items-center gap-1.5 px-2 justify-start"
@@ -164,9 +163,9 @@ export default function PlayPractice() {
           </div>
         </div>
 
-        {/* Right Side - Practice Panel */}
+        {}
         <div className="min-w-0 w-full bg-white/90 dark:bg-slate-900/95 border-l border-gray-200/60 dark:border-white/10 flex flex-col h-full overflow-hidden">
-          {/* Panel Header */}
+          {}
           <div className="p-3 border-b border-gray-200/60 dark:border-white/10">
             <div className="flex items-center gap-2">
               <Target className="w-4 h-4 text-teal-500" />
@@ -180,7 +179,7 @@ export default function PlayPractice() {
           </div>
 
           <div className="flex-1 flex flex-col gap-3 px-3 py-3 overflow-hidden min-h-0">
-            {/* Practice Focus */}
+            {}
             <div className="rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 p-3">
               <div className="text-[12px] font-semibold text-gray-900 dark:text-white mb-2">
                 Focus
@@ -213,7 +212,7 @@ export default function PlayPractice() {
               </div>
             </div>
 
-            {/* Session Length */}
+            {}
             <div className="flex-1 min-h-0 rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 p-3 flex flex-col">
               <div className="flex items-center gap-2 text-[13px] font-semibold text-gray-900 dark:text-white mb-2">
                 <Timer className="w-4 h-4 text-teal-500" />
@@ -240,7 +239,7 @@ export default function PlayPractice() {
             </div>
           </div>
 
-          {/* Start Button */}
+          {}
           <div className="p-3 border-t border-gray-200/60 dark:border-white/10 flex-shrink-0">
             <button
               onClick={handleStart}

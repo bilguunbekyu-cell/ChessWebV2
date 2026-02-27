@@ -4,7 +4,7 @@ export type AnalysisEntry = {
   ply: number;
   cp?: number;
   mate?: number;
-  bestMove?: string; // UCI format e.g. "e2e4"
+  bestMove?: string; 
 };
 
 export type PlyState = {

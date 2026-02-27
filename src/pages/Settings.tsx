@@ -37,20 +37,18 @@ import {
   Toast,
   useToast,
 } from "../components/settings";
-
-/* ═══════════════════════════════════════════════════════
-   SETTINGS PAGE — Premium Redesign
-   ═══════════════════════════════════════════════════════ */
+import { useTranslation } from "react-i18next";
 
 export default function Settings() {
+  const { t } = useTranslation();
+  const tr = (value: string) => t(value, { defaultValue: value });
   const { isDarkMode } = useThemeStore();
-  const { settings, update, save, reset, isDirty } = useSettingsStore();
+  const { settings, update, save, reset, isDirty, setLanguage } = useSettingsStore();
   const { user } = useAuthStore();
   const groqConfigured = isGroqConfigured();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   const dirty = useMemo(() => isDirty(), [settings]);
 
-  // Modal states
   const [passwordModal, setPasswordModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -60,20 +58,18 @@ export default function Settings() {
     confirm: "",
   });
 
-  // Toast
   const { toast, show: showToast, hide: hideToast } = useToast();
 
   const handleSave = () => {
     save();
-    showToast("Settings saved successfully!");
+    showToast(tr("Settings saved successfully!"));
   };
 
   const handleReset = () => {
     reset();
-    showToast("Settings reset to last saved state", "success");
+    showToast(tr("Settings reset to last saved state"), "success");
   };
 
-  // Board theme options
   const boardThemes = [
     {
       value: "green",
@@ -131,7 +127,7 @@ export default function Settings() {
       <Sidebar />
 
       <main className="flex-1 ml-72 min-h-screen">
-        {/* ── Sticky Header ────────────────────────────── */}
+        {}
         <div className="sticky top-0 z-30 backdrop-blur-xl bg-[#f5f5f7]/80 dark:bg-gray-950/80 border-b border-gray-200/50 dark:border-gray-800/50">
           <div className="max-w-7xl mx-auto px-8 py-5 flex items-center justify-between">
             <div>
@@ -165,19 +161,19 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* ── Two-Column Layout ────────────────────────── */}
+        {}
         <div className="max-w-7xl mx-auto px-8 py-8">
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* ======= LEFT (wide) ======= */}
+            {}
             <div className="flex-1 min-w-0 space-y-6">
-              {/* ─── Profile & Account ─── */}
+              {}
               <SettingsCard
                 icon={<User className="w-5 h-5 text-teal-500" />}
                 title="Profile & Account"
                 subtitle="Your personal information and security"
                 accent="bg-teal-500"
               >
-                {/* Avatar + fields row */}
+                {}
                 <div className="flex items-start gap-6 py-2">
                   <ProfileAvatarUpload
                     currentAvatar={user?.avatar}
@@ -240,13 +236,27 @@ export default function Settings() {
                 </SettingRow>
               </SettingsCard>
 
-              {/* ─── Appearance ─── */}
+              {}
               <SettingsCard
                 icon={<Palette className="w-5 h-5 text-purple-500" />}
                 title="Appearance"
                 subtitle="Customize how NeonGambit looks"
                 accent="bg-purple-500"
               >
+                <SettingRow
+                  label="Language"
+                  helper="Choose your interface language"
+                >
+                  <SegmentedControl
+                    options={[
+                      { label: "English", value: "en" },
+                      { label: "Mongolian", value: "mn" },
+                    ]}
+                    value={settings.language}
+                    onChange={(v) => setLanguage(v as "en" | "mn")}
+                  />
+                </SettingRow>
+
                 <SettingRow
                   label="Theme"
                   helper="Choose your preferred color scheme"
@@ -312,7 +322,7 @@ export default function Settings() {
                 </SettingRow>
               </SettingsCard>
 
-              {/* ─── Gameplay ─── */}
+              {}
               <SettingsCard
                 icon={<Gamepad2 className="w-5 h-5 text-emerald-500" />}
                 title="Gameplay"
@@ -399,7 +409,7 @@ export default function Settings() {
                 </SettingRow>
               </SettingsCard>
 
-              {/* ─── Notifications ─── */}
+              {}
               <SettingsCard
                 icon={<Bell className="w-5 h-5 text-amber-500" />}
                 title="Notifications"
@@ -476,7 +486,7 @@ export default function Settings() {
                 </SettingRow>
               </SettingsCard>
 
-              {/* ─── Privacy & Safety ─── */}
+              {}
               <SettingsCard
                 icon={<Shield className="w-5 h-5 text-blue-500" />}
                 title="Privacy & Safety"
@@ -536,7 +546,7 @@ export default function Settings() {
                 </SettingRow>
               </SettingsCard>
 
-              {/* ─── AI / Analysis ─── */}
+              {}
               <SettingsCard
                 icon={<Sparkles className="w-5 h-5 text-violet-500" />}
                 title="AI & Analysis"
@@ -555,7 +565,7 @@ export default function Settings() {
                   />
                 </SettingRow>
 
-                {/* API status indicator */}
+                {}
                 <div className="py-2">
                   <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800/60">
                     {groqConfigured ? (
@@ -624,12 +634,12 @@ export default function Settings() {
               </SettingsCard>
             </div>
 
-            {/* ======= RIGHT (narrow sidebar) ======= */}
+            {}
             <div className="w-full lg:w-80 shrink-0 space-y-6">
-              {/* ─── Account Summary ─── */}
+              {}
               <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/80 bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-sm overflow-hidden">
                 <div className="relative p-6 text-center">
-                  {/* Glow */}
+                  {}
                   <div className="absolute inset-0 bg-gradient-to-b from-teal-500/5 to-transparent pointer-events-none" />
                   <div className="relative">
                     <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-teal-900/20 ring-4 ring-white dark:ring-gray-900 overflow-hidden">
@@ -652,7 +662,7 @@ export default function Settings() {
                       {user?.email || ""}
                     </p>
 
-                    {/* Rating badges */}
+                    {}
                     <div className="mt-4 grid grid-cols-2 gap-2">
                       {[
                         {
@@ -708,7 +718,7 @@ export default function Settings() {
                 </div>
               </div>
 
-              {/* ─── Quick Actions ─── */}
+              {}
               <SettingsCard
                 icon={<Zap className="w-5 h-5 text-amber-500" />}
                 title="Quick Actions"
@@ -725,7 +735,7 @@ export default function Settings() {
                 </div>
               </SettingsCard>
 
-              {/* ─── Danger Zone ─── */}
+              {}
               <div className="rounded-2xl border border-red-200/40 dark:border-red-900/30 bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl shadow-sm overflow-hidden">
                 <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-red-100/60 dark:border-red-900/20">
                   <AlertTriangle className="w-5 h-5 text-red-500" />
@@ -757,7 +767,7 @@ export default function Settings() {
         </div>
       </main>
 
-      {/* ── Change Password Modal ────────────────────── */}
+      {}
       <Modal
         open={passwordModal}
         onClose={() => {
@@ -816,7 +826,7 @@ export default function Settings() {
               pwFields.newPw !== pwFields.confirm
             }
             onClick={() => {
-              showToast("Password changed successfully!");
+              showToast(tr("Password changed successfully!"));
               setPasswordModal(false);
               setPwFields({ current: "", newPw: "", confirm: "" });
             }}
@@ -827,7 +837,7 @@ export default function Settings() {
         </div>
       </Modal>
 
-      {/* ── Delete Account Modal ─────────────────────── */}
+      {}
       <Modal
         open={deleteModal}
         onClose={() => {
@@ -862,7 +872,7 @@ export default function Settings() {
           <button
             disabled={deleteConfirmText !== (user?.fullName || "username")}
             onClick={() => {
-              showToast("Account deletion requested", "error");
+              showToast(tr("Account deletion requested"), "error");
               setDeleteModal(false);
               setDeleteConfirmText("");
             }}
@@ -873,7 +883,7 @@ export default function Settings() {
         </div>
       </Modal>
 
-      {/* Toast */}
+      {}
       <Toast
         message={toast.message}
         type={toast.type}

@@ -20,7 +20,6 @@ export function useOpeningExplorer(
 
   const local = useMemo(() => detectOpeningFromSan(moves), [moves]);
 
-  // Always prefer a local match first for instant feedback
   useEffect(() => {
     if (moves.length === 0) {
       setOpening(null);
@@ -29,7 +28,6 @@ export function useOpeningExplorer(
     setOpening((prev) => (local ? local : prev));
   }, [local, moves.length]);
 
-  // Optional remote lookup (Lichess Masters explorer) for full coverage
   useEffect(() => {
     if (!options.enableRemote) return;
     if (moves.length === 0) {

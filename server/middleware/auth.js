@@ -1,4 +1,3 @@
-// Auth Middleware for regular users
 export const authMiddleware = (req, res, next) => {
   const authToken = req.cookies.authToken;
   if (!authToken) {
@@ -12,7 +11,6 @@ export const authMiddleware = (req, res, next) => {
   }
 };
 
-// Admin Auth Middleware
 export const adminAuthMiddleware = (req, res, next) => {
   const adminToken = req.cookies.adminToken;
   if (!adminToken) {

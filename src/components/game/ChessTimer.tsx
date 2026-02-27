@@ -22,7 +22,6 @@ export function ChessTimer({
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const tenSecondWarningPlayedRef = useRef(false);
 
-  // Reset when initialTime changes
   useEffect(() => {
     setTimeLeft(initialTime);
     tenSecondWarningPlayedRef.current = false;
@@ -71,14 +70,12 @@ export function ChessTimer({
     playGameplaySound("tenSeconds");
   }, [isActive, timeLeft]);
 
-  // Add increment
   const addIncrement = useCallback(() => {
     if (increment > 0) {
       setTimeLeft((prev) => prev + increment);
     }
   }, [increment]);
 
-  // Expose addIncrement
   useEffect(() => {
     (window as any).__addIncrement = addIncrement;
   }, [addIncrement]);

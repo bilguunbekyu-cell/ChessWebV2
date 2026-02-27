@@ -121,13 +121,11 @@ function FourPlayerBoard({
     moved: boolean;
   } | null>(null);
 
-  // Compute cell size from board width (grid has 4px margin = m-1)
   const cellSize = useMemo(
     () => (boardWidth - 8) / FOUR_PLAYER_BOARD_SIZE,
     [boardWidth],
   );
 
-  // Compute drag-time legal highlights
   const dragLegalSet = useMemo(() => {
     if (!dragging) return null;
     const from = { row: dragging.fromRow, col: dragging.fromCol };
@@ -209,7 +207,7 @@ function FourPlayerBoard({
             destination.col,
           );
         } else {
-          // Snap back — clear selection
+
           onCancelSelection();
         }
         return null;
@@ -266,7 +264,6 @@ function FourPlayerBoard({
       setDragging(null);
     };
 
-    // Use capture phase for reliable mobile drag
     window.addEventListener("pointermove", handlePointerMove, {
       passive: false,
     });
@@ -347,13 +344,12 @@ function FourPlayerBoard({
                   if (!canDragFrom(row, col)) return;
                   if (!piece) return;
 
-                  // Capture pointer for reliable mobile/touch drag
                   try {
                     (event.target as Element).setPointerCapture(
                       event.pointerId,
                     );
                   } catch {
-                    /* ignore if capture fails */
+
                   }
                   dragPointerIdRef.current = event.pointerId;
 

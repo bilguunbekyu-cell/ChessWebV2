@@ -11,7 +11,6 @@ const POOLS: Array<{ id: RatingPool; label: string }> = [
   { id: "classical", label: "Classical" },
 ];
 
-/** Rank accent colours for top-3 */
 function rankAccent(rank: number) {
   if (rank === 1)
     return {
@@ -45,7 +44,7 @@ export function PoolLeaderboardCard() {
 
   return (
     <div className="bg-white dark:bg-gray-800/80 rounded-2xl p-6 border border-gray-200/60 dark:border-gray-700/40 shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">
           Leaderboard
@@ -53,7 +52,7 @@ export function PoolLeaderboardCard() {
         <Trophy className="w-5 h-5 text-amber-500" />
       </div>
 
-      {/* Pool tabs */}
+      {}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {POOLS.map((option) => (
           <button
@@ -71,7 +70,7 @@ export function PoolLeaderboardCard() {
         ))}
       </div>
 
-      {/* List container — softer border, inner glow */}
+      {}
       <div className="mt-4 rounded-xl border border-gray-200/50 dark:border-gray-700/30 bg-gray-50 dark:bg-gray-900/40 overflow-hidden shadow-inner dark:shadow-[inset_0_1px_4px_rgba(0,0,0,0.2)]">
         {loading ? (
           <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
@@ -109,7 +108,7 @@ export function PoolLeaderboardCard() {
                       .filter(Boolean)
                       .join(" ")}
                   >
-                    {/* Rank */}
+                    {}
                     <div className="flex items-center gap-1.5">
                       {accent?.icon}
                       <span
@@ -123,7 +122,7 @@ export function PoolLeaderboardCard() {
                       </span>
                     </div>
 
-                    {/* Player info */}
+                    {}
                     <div
                       className="min-w-0 cursor-pointer group/name"
                       onClick={() => {
@@ -153,7 +152,7 @@ export function PoolLeaderboardCard() {
                       </div>
                     </div>
 
-                    {/* Rating — dominant */}
+                    {}
                     <div
                       className={`text-base font-extrabold tabular-nums ${
                         accent

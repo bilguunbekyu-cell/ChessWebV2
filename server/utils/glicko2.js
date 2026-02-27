@@ -10,7 +10,7 @@ const MIN_VOLATILITY = 0.01;
 const MAX_VOLATILITY = 1.2;
 const VOLATILITY_TAU = 0.5;
 const CONVERGENCE_EPSILON = 0.000001;
-const RATING_PERIOD_MS = 24 * 60 * 60 * 1000; // 1 day
+const RATING_PERIOD_MS = 24 * 60 * 60 * 1000; 
 
 function clamp(value, min, max, fallback) {
   const parsed = Number(value);

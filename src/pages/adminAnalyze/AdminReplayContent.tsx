@@ -21,7 +21,6 @@ export function AdminReplayContent({ game }: AdminReplayContentProps) {
   const navigate = useNavigate();
   const replay = useGameReplay(game);
 
-  // Show loading overlay while analysis is in progress
   if (replay.isAnalyzing) {
     return <AdminAnalysisLoadingOverlay progress={replay.analysisProgress} />;
   }
@@ -31,7 +30,7 @@ export function AdminReplayContent({ game }: AdminReplayContentProps) {
       <AdminSidebar />
 
       <div className="flex-1 ml-72 flex flex-col overflow-hidden pt-4">
-        {/* Back Button */}
+        {}
         <div className="flex-shrink-0 px-4 sm:px-6 mb-2">
           <button
             onClick={() => navigate(-1)}
@@ -42,10 +41,10 @@ export function AdminReplayContent({ game }: AdminReplayContentProps) {
           </button>
         </div>
 
-        {/* Main Content - 3 columns */}
+        {}
         <div className="flex-1 min-h-0 w-full px-4 sm:px-6 py-2">
           <div className="flex gap-3 w-full h-full min-h-0">
-            {/* Left - Game Summary */}
+            {}
             <div
               className="flex-shrink-0 flex flex-col gap-2 h-full overflow-auto pr-1"
               style={{ flexBasis: "28%", maxWidth: "28%" }}
@@ -60,12 +59,12 @@ export function AdminReplayContent({ game }: AdminReplayContentProps) {
               />
             </div>
 
-            {/* Center - Board section */}
+            {}
             <div
               className="flex flex-col gap-1.5 h-full min-h-0"
               style={{ flexBasis: "44%", maxWidth: "44%" }}
             >
-              {/* Captured pieces */}
+              {}
               <div className="flex-shrink-0">
                 <CapturedPieces
                   capturedByWhite={replay.capturedByWhite}
@@ -73,7 +72,7 @@ export function AdminReplayContent({ game }: AdminReplayContentProps) {
                 />
               </div>
 
-              {/* Board */}
+              {}
               <div className="flex-1 min-h-0 flex items-center gap-2 overflow-hidden">
                 <div className="flex-1 flex items-center justify-center min-h-0">
                   <ReplayBoard
@@ -95,12 +94,12 @@ export function AdminReplayContent({ game }: AdminReplayContentProps) {
               </div>
             </div>
 
-            {/* Right - Move Explanation + Move List */}
+            {}
             <div
               className="flex-shrink-0 flex flex-col gap-2 h-full min-h-0"
               style={{ flexBasis: "28%", maxWidth: "28%" }}
             >
-              {/* Move Explanation */}
+              {}
               <div className="flex-shrink-0">
                 <MoveExplanationPanel
                   currentPly={replay.ply}
@@ -113,7 +112,7 @@ export function AdminReplayContent({ game }: AdminReplayContentProps) {
                 />
               </div>
 
-              {/* Move list */}
+              {}
               <div className="flex-1 min-h-0 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden">
                 <div className="flex-1 overflow-hidden">
                   <ReplayMoveList

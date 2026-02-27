@@ -115,7 +115,6 @@ export default function PlayWithFriend() {
     navigate("/friends");
   };
 
-  // If game started, show the game board
   if (gameStarted) {
     return (
       <FriendGameView
@@ -150,7 +149,6 @@ export default function PlayWithFriend() {
     );
   }
 
-  // Setup screen
   return (
     <FriendGameSetup
       playAs={playAs}

@@ -61,13 +61,13 @@ const io = new Server(server, {
   },
 });
 
-const waitingQueues = new Map(); // key -> [{ socketId, rating, joinedAt, pool }]
-const games = new Map(); // gameId -> { room, chess, players, playerUsers, timeControl, variant, chess960, isRated }
-const fourPlayerQueues = new Map(); // key -> socket ids
-const fourPlayerGames = new Map(); // gameId -> { room, state, playersByColor, socketToColor, timeControl }
-const userSockets = new Map(); // userId -> Set<socketId>
-const pendingChallenges = new Map(); // challengeId -> challenge metadata
-const userPresence = new Map(); // userId -> { status, lastSeenAt, lastActiveAt, lastPersistedAt }
+const waitingQueues = new Map(); 
+const games = new Map(); 
+const fourPlayerQueues = new Map(); 
+const fourPlayerGames = new Map(); 
+const userSockets = new Map(); 
+const pendingChallenges = new Map(); 
+const userPresence = new Map(); 
 const MIN_RATED_PLIES = 5;
 const INITIAL_MATCH_RANGE = 50;
 const MATCH_RANGE_STEP = 25;
@@ -82,7 +82,6 @@ const PRESENCE_VALID_STATUSES = new Set([
   "away",
 ]);
 
-// Middleware
 app.use(express.json());
 app.use(cookieParser());
 app.use(
@@ -92,20 +91,16 @@ app.use(
   }),
 );
 
-// Serve uploaded files
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Connect to MongoDB
 connectDB();
 
-// Run seeds after DB connection
 mongoose.connection.once("open", () => {
   seedPuzzles().catch(console.error);
   seedGamePageConfig().catch(console.error);
   seedBots().catch(console.error);
 });
 
-// API Routes
 app.use("/api", authRoutes);
 app.use("/api/history", historyRoutes);
 app.use("/api/puzzles", puzzleRoutes);
@@ -589,7 +584,6 @@ function createInitialPosition(variant) {
   const whiteBackRank = blackBackRank.toUpperCase();
   const chess960 = createChess960MetadataFromBackRank(blackBackRank);
 
-  // chess.js 0.13.x does not support Chess960 castling semantics.
   return {
     fen: `${blackBackRank}/pppppppp/8/8/8/8/PPPPPPPP/${whiteBackRank} w - - 0 1`,
     chess960,
@@ -916,7 +910,7 @@ function tryHandleChess960Castling(game, moverColor, from, to) {
     }
   } else {
     const occupant = getPiece(board, kingTo);
-    // In Chess960 the king can already be on its castling destination square.
+
     if (occupant && kingTo !== to && kingTo !== from) {
       return { handled: true, success: false, reason: "King destination is blocked." };
     }
@@ -954,7 +948,7 @@ function tryHandleChess960Castling(game, moverColor, from, to) {
   setPiece(travelBoard, from, null);
   setPiece(travelBoard, to, null);
   if (kingStep !== 0) {
-    // Validate only transit squares here; final king safety is checked on the final board.
+
     for (let file = kingFile + kingStep; file !== kingToFile; file += kingStep) {
       const travelSquare = coordsToSquare(file, rank);
       if (!travelSquare) continue;
@@ -1432,7 +1426,6 @@ io.on("connection", (socket) => {
     socket.join(getUserRoom(userId));
     syncUserPresenceFromSockets(userId, { forcePersist: true });
 
-    // Deliver account-level pending challenges when user comes online.
     for (const challenge of pendingChallenges.values()) {
       if (challenge.toUserId === userId) {
         socket.emit("friendChallengeReceived", challenge);
@@ -2215,7 +2208,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// Start server
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

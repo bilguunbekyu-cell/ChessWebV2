@@ -13,7 +13,6 @@ function resolveIsWhiteToMove(fen, fallback = true) {
   return fallback;
 }
 
-// Create puzzle
 router.post("/", adminAuthMiddleware, async (req, res) => {
   try {
     const {
@@ -50,7 +49,6 @@ router.post("/", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// Update puzzle
 router.put("/:id", adminAuthMiddleware, async (req, res) => {
   try {
     const {
@@ -93,7 +91,6 @@ router.put("/:id", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// Delete puzzle
 router.delete("/:id", adminAuthMiddleware, async (req, res) => {
   try {
     const puzzle = await Puzzle.findByIdAndDelete(req.params.id);

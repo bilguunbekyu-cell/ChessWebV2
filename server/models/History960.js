@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import History from "./History.js";
 
-// Same schema as standard history, stored in a separate collection for Chess960.
 const History960Schema = History.schema.clone();
 
 const History960 =

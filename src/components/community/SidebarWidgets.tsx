@@ -1,6 +1,3 @@
-/* ═══════════════════════════════════════════════════════
-   Community Right Sidebar Widgets
-   ═══════════════════════════════════════════════════════ */
 import {
   TrendingUp,
   Tv,
@@ -31,7 +28,6 @@ import {
   UPCOMING_EVENTS,
 } from "../../data/communityData";
 
-/* ─── Trending Topics ─── */
 export function TrendingWidget() {
   return (
     <SidebarCard
@@ -70,7 +66,6 @@ export function TrendingWidget() {
   );
 }
 
-/* ─── Live Games ─── */
 export function LiveGamesWidget() {
   return (
     <SidebarCard
@@ -135,7 +130,6 @@ export function LiveGamesWidget() {
   );
 }
 
-/* ─── Top Players Online ─── */
 export function TopPlayersWidget() {
   return (
     <SidebarCard
@@ -174,7 +168,6 @@ export function TopPlayersWidget() {
   );
 }
 
-/* ─── Puzzle Leaderboard ─── */
 export function PuzzleLeaderboardWidget() {
   return (
     <SidebarCard
@@ -221,7 +214,6 @@ export function PuzzleLeaderboardWidget() {
   );
 }
 
-/* ─── Who to Follow ─── */
 export function WhoToFollowWidget() {
   return (
     <SidebarCard
@@ -251,7 +243,6 @@ export function WhoToFollowWidget() {
   );
 }
 
-/* ─── Upcoming Events ─── */
 export function EventsWidget() {
   const typeIcon: Record<string, { icon: typeof Trophy; color: string }> = {
     tournament: { icon: Trophy, color: "text-amber-500 bg-amber-500/10" },
@@ -301,9 +292,8 @@ export function EventsWidget() {
   );
 }
 
-/* ─── Daily Puzzle Shortcut ─── */
 export function DailyPuzzleWidget() {
-  // 4x4 quick board
+
   const squares = Array.from({ length: 16 }, (_, i) => {
     const row = Math.floor(i / 4);
     const col = i % 4;

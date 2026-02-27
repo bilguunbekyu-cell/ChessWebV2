@@ -5,7 +5,6 @@ import { seedGamePageConfig } from "../seeds/index.js";
 
 const router = Router();
 
-// Get game page config (public)
 router.get("/", async (req, res) => {
   try {
     const config = await GamePageConfig.findOne({ key: "default" }).lean();
@@ -19,7 +18,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Admin: Update game page config
 router.put("/", adminAuthMiddleware, async (req, res) => {
   try {
     const { timeOptions, quickActions } = req.body;
@@ -37,7 +35,6 @@ router.put("/", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// Admin: Reseed game page config
 router.post("/reseed", adminAuthMiddleware, async (req, res) => {
   try {
     await GamePageConfig.deleteMany({});

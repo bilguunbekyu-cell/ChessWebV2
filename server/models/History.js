@@ -8,7 +8,6 @@ const HistorySchema = new mongoose.Schema(
       required: true,
     },
 
-    // PGN Headers
     event: { type: String, default: "NeonGambit Game" },
     site: { type: String, default: "NeonGambit" },
     date: { type: String },
@@ -22,11 +21,9 @@ const HistorySchema = new mongoose.Schema(
       default: "standard",
     },
 
-    // Position
     currentPosition: { type: String },
     startingFen: { type: String, default: "" },
 
-    // Time
     timeControl: { type: String },
     utcDate: { type: String },
     utcTime: { type: String },
@@ -34,7 +31,6 @@ const HistorySchema = new mongoose.Schema(
     endDate: { type: String },
     endTime: { type: String },
 
-    // Ratings
     whiteElo: { type: Number, default: 1200 },
     blackElo: { type: Number, default: 1200 },
     rated: { type: Boolean, default: false },
@@ -63,7 +59,6 @@ const HistorySchema = new mongoose.Schema(
       enum: ["bullet", "blitz", "rapid", "classical"],
     },
 
-    // Game info
     timezone: { type: String, default: "UTC" },
     eco: { type: String, default: "" },
     ecoUrl: { type: String, default: "" },
@@ -76,7 +71,6 @@ const HistorySchema = new mongoose.Schema(
     blackCountry: { type: String, default: "" },
     blackTitle: { type: String, default: "" },
 
-    // Moves
     moves: {
       type: [String],
       default: [],
@@ -96,7 +90,6 @@ const HistorySchema = new mongoose.Schema(
     ],
     moveTimes: { type: [Number], default: [] },
 
-    // Additional metadata
     playAs: { type: String, enum: ["white", "black"], required: true },
     opponent: { type: String, default: "Stockfish" },
     opponentLevel: { type: Number },

@@ -17,7 +17,7 @@ export function GameSidebar({
   opening,
   openingLoading,
 }: GameSidebarProps) {
-  // Format moves for display
+
   const formattedMoves = useMemo(() => {
     const pairs: { white: string; black: string }[] = [];
     for (let i = 0; i < moves.length; i += 2) {

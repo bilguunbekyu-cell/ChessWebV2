@@ -181,7 +181,6 @@ export default function AdminPuzzles() {
     setShowModal(true);
   };
 
-  // Convert board position object to FEN
   const positionToFen = (
     position: BoardPosition,
     isWhiteToMove: boolean,
@@ -198,7 +197,7 @@ export default function AdminPuzzles() {
             row += emptyCount;
             emptyCount = 0;
           }
-          // Convert wK -> K, bK -> k, etc.
+
           const fenPiece =
             piece[0] === "w" ? piece[1].toUpperCase() : piece[1].toLowerCase();
           row += fenPiece;
@@ -212,7 +211,6 @@ export default function AdminPuzzles() {
     return `${rows.join("/")} ${isWhiteToMove ? "w" : "b"} - - 0 1`;
   };
 
-  // Convert FEN to board position object
   const fenToPosition = (fen: string): BoardPosition => {
     const position: BoardPosition = {};
     const parts = fen.split(" ");
@@ -236,7 +234,6 @@ export default function AdminPuzzles() {
     return position;
   };
 
-  // Handle clicking on board square to place/remove piece
   const handleSquareClick = (square: Square) => {
     if (isRecordingSolution || !selectedPiece) return;
 
@@ -256,7 +253,6 @@ export default function AdminPuzzles() {
     });
   };
 
-  // Handle recording solution moves
   const onDrop = useCallback(
     (sourceSquare: string, targetSquare: string) => {
       if (!isRecordingSolution || !solutionGame) return false;
@@ -282,7 +278,6 @@ export default function AdminPuzzles() {
     [isRecordingSolution, solutionGame, solutionMoves],
   );
 
-  // Start recording solution
   const startRecordingSolution = () => {
     try {
       const fenWithSide = withFenSideToMove(formData.fen, formData.isWhiteToMove);
@@ -296,13 +291,11 @@ export default function AdminPuzzles() {
     }
   };
 
-  // Stop recording solution
   const stopRecordingSolution = () => {
     setIsRecordingSolution(false);
     setSolutionGame(null);
   };
 
-  // Undo last solution move
   const undoSolutionMove = () => {
     if (solutionGame && solutionMoves.length > 0) {
       solutionGame.undo();
@@ -312,7 +305,6 @@ export default function AdminPuzzles() {
     }
   };
 
-  // Clear the board
   const clearBoard = () => {
     setFormData((prev) => ({
       ...prev,
@@ -320,7 +312,6 @@ export default function AdminPuzzles() {
     }));
   };
 
-  // Set starting position
   const setStartingPosition = () => {
     setFormData((prev) => {
       const startFenBase = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
@@ -329,7 +320,6 @@ export default function AdminPuzzles() {
     });
   };
 
-  // Update FEN when isWhiteToMove changes
   const handleWhiteToMoveChange = (isWhite: boolean) => {
     setFormData((prev) => ({
       ...prev,
@@ -338,7 +328,6 @@ export default function AdminPuzzles() {
     }));
   };
 
-  // Auto-generate title based on puzzle type
   const generateTitle = () => {
     const title = formData.puzzleType;
     setFormData({ ...formData, title, themes: formData.puzzleType });
@@ -353,7 +342,6 @@ export default function AdminPuzzles() {
     const isWhiteToMove = getFenSideToMove(puzzle.fen, puzzle.isWhiteToMove);
     const normalizedFen = withFenSideToMove(puzzle.fen, isWhiteToMove);
 
-    // Determine puzzle type from themes
     let puzzleType: PuzzleFormData["puzzleType"] = "Tactics";
     if (puzzle.themes.includes("Mate in 1")) puzzleType = "Mate in 1";
     else if (puzzle.themes.includes("Mate in 2")) puzzleType = "Mate in 2";
@@ -447,7 +435,6 @@ export default function AdminPuzzles() {
       p.themes.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())),
   );
 
-  // Reset to page 1 when search changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
@@ -520,7 +507,7 @@ export default function AdminPuzzles() {
 
       <main className="ml-72 p-8">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
+          {}
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold">Puzzles</h1>
@@ -537,7 +524,7 @@ export default function AdminPuzzles() {
             </button>
           </div>
 
-          {/* Search */}
+          {}
           <div className="mb-6">
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -551,7 +538,7 @@ export default function AdminPuzzles() {
             </div>
           </div>
 
-          {/* Puzzles Table */}
+          {}
           {loading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
@@ -686,7 +673,7 @@ export default function AdminPuzzles() {
                 </div>
               )}
 
-              {/* Pagination */}
+              {}
               {filteredPuzzles.length > 0 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-800">
                   <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -739,7 +726,7 @@ export default function AdminPuzzles() {
         </div>
       </main>
 
-      {/* Modal */}
+      {}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-5xl my-4">
@@ -757,7 +744,7 @@ export default function AdminPuzzles() {
 
             <form onSubmit={handleSubmit} className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left Column - Board Editor */}
+                {}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold">
@@ -785,10 +772,10 @@ export default function AdminPuzzles() {
                     </div>
                   </div>
 
-                  {/* Piece Palette */}
+                  {}
                   {!isRecordingSolution && (
                     <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg space-y-2">
-                      {/* White Pieces Row */}
+                      {}
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-medium text-gray-600 dark:text-gray-300 w-12">
                           White
@@ -823,7 +810,7 @@ export default function AdminPuzzles() {
                           ))}
                         </div>
                       </div>
-                      {/* Black Pieces Row */}
+                      {}
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-medium text-gray-600 dark:text-gray-300 w-12">
                           Black
@@ -858,7 +845,7 @@ export default function AdminPuzzles() {
                           ))}
                         </div>
                       </div>
-                      {/* Eraser */}
+                      {}
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-medium text-gray-600 dark:text-gray-300 w-12">
                           Tool
@@ -882,7 +869,7 @@ export default function AdminPuzzles() {
                     </div>
                   )}
 
-                  {/* Chessboard */}
+                  {}
                   <div className="aspect-square max-w-[360px] mx-auto">
                     <Chessboard
                       position={
@@ -899,7 +886,7 @@ export default function AdminPuzzles() {
                     />
                   </div>
 
-                  {/* Solution Recording Controls */}
+                  {}
                   <div className="flex items-center gap-2">
                     {!isRecordingSolution ? (
                       <button
@@ -933,7 +920,7 @@ export default function AdminPuzzles() {
                     )}
                   </div>
 
-                  {/* Recorded Moves Display */}
+                  {}
                   {solutionMoves.length > 0 && (
                     <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
                       <div className="text-sm font-medium mb-1">
@@ -946,9 +933,9 @@ export default function AdminPuzzles() {
                   )}
                 </div>
 
-                {/* Right Column - Form Fields */}
+                {}
                 <div className="space-y-4">
-                  {/* Puzzle Type */}
+                  {}
                   <div>
                     <label className="block text-sm font-medium mb-1">
                       Puzzle Type
@@ -993,7 +980,7 @@ export default function AdminPuzzles() {
                     </div>
                   </div>
 
-                  {/* Who to Move */}
+                  {}
                   <div>
                     <label className="block text-sm font-medium mb-1">
                       Who to Move

@@ -1,6 +1,3 @@
-// Legacy types - kept for backward compatibility
-// New types are in src/utils/lichessApi.ts and src/hooks/useWatchPage.ts
-
 export interface LiveGame {
   id: number | string;
   white: string;
@@ -27,6 +24,5 @@ export interface Streamer {
   url?: string;
 }
 
-// Mock data removed - now using Lichess API
 export const LIVE_GAMES: LiveGame[] = [];
 export const STREAMERS: Streamer[] = [];

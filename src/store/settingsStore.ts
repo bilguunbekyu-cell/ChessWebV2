@@ -1,16 +1,15 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-/* ─── Settings values shape ─── */
 export interface SettingsValues {
-  // Appearance
+  language: "en" | "mn";
+
   theme: "dark" | "dim" | "amoled";
   accentColor: "teal" | "purple" | "blue";
   boardTheme: string;
   pieceStyle: string;
   reducedMotion: boolean;
 
-  // Gameplay
   defaultTimeControl: string;
   autoQueen: boolean;
   moveInput: "click" | "drag" | "both";
@@ -18,7 +17,6 @@ export interface SettingsValues {
   confirmMove: boolean;
   premoves: boolean;
 
-  // Notifications
   emailNotifications: boolean;
   pushNotifications: boolean;
   challengeRequests: boolean;
@@ -26,12 +24,10 @@ export interface SettingsValues {
   soundEffects: boolean;
   soundVolume: number;
 
-  // Privacy
   profileVisibility: "public" | "friends" | "private";
   showOnlineStatus: boolean;
   showLastSeen: boolean;
 
-  // AI / Analysis
   enableAiExplanations: boolean;
   explanationLevel: "brief" | "normal" | "deep";
   postGameAnalysis: boolean;
@@ -39,6 +35,7 @@ export interface SettingsValues {
 }
 
 export const defaultSettings: SettingsValues = {
+  language: "en",
   theme: "dark",
   accentColor: "teal",
   boardTheme: "green",
@@ -76,11 +73,11 @@ interface SettingsState {
     key: K,
     value: SettingsValues[K],
   ) => void;
+  setLanguage: (language: SettingsValues["language"]) => void;
   save: () => void;
   reset: () => void;
   isDirty: () => boolean;
 
-  // Legacy compat
   enableAiExplanations: boolean;
   setEnableAiExplanations: (enabled: boolean) => void;
 }
@@ -100,6 +97,12 @@ export const useSettingsStore = create<SettingsState>()(
               : state.enableAiExplanations,
         })),
 
+      setLanguage: (language) =>
+        set((state) => ({
+          settings: { ...state.settings, language },
+          savedSettings: { ...state.savedSettings, language },
+        })),
+
       save: () =>
         set((state) => ({
           savedSettings: { ...state.settings },
@@ -116,7 +119,6 @@ export const useSettingsStore = create<SettingsState>()(
         return JSON.stringify(settings) !== JSON.stringify(savedSettings);
       },
 
-      // Legacy compat
       enableAiExplanations: defaultSettings.enableAiExplanations,
       setEnableAiExplanations: (enabled) =>
         set((state) => ({
@@ -131,6 +133,27 @@ export const useSettingsStore = create<SettingsState>()(
         savedSettings: state.savedSettings,
         enableAiExplanations: state.enableAiExplanations,
       }),
+      merge: (persisted, current) => {
+        const typedPersisted = persisted as Partial<SettingsState>;
+        const mergedSettings = {
+          ...defaultSettings,
+          ...(typedPersisted.settings ?? {}),
+        };
+        const mergedSavedSettings = {
+          ...defaultSettings,
+          ...(typedPersisted.savedSettings ?? {}),
+        };
+
+        return {
+          ...current,
+          ...typedPersisted,
+          settings: mergedSettings,
+          savedSettings: mergedSavedSettings,
+          enableAiExplanations:
+            typedPersisted.enableAiExplanations ??
+            mergedSettings.enableAiExplanations,
+        };
+      },
     },
   ),
 );

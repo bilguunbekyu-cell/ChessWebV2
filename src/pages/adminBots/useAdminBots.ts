@@ -22,7 +22,6 @@ export function useAdminBots() {
     pages: 0,
   });
 
-  // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");

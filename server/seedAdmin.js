@@ -7,7 +7,6 @@ import { dirname, join } from "path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load env from parent directory
 dotenv.config({ path: join(__dirname, "..", ".env") });
 
 const MONGODB_URL = process.env.MONGODB_URL;
@@ -17,7 +16,6 @@ if (!MONGODB_URL) {
   process.exit(1);
 }
 
-// Admin Schema
 const AdminSchema = new mongoose.Schema(
   {
     username: { type: String, required: true, unique: true },
@@ -34,21 +32,17 @@ async function seedAdmin() {
     await mongoose.connect(MONGODB_URL);
     console.log("✅ MongoDB connected");
 
-    // Default admin credentials - CHANGE THESE!
     const adminData = {
       username: "admin",
       email: "admin@neongambit.com",
-      password: "admin123", // Change this password!
+      password: "admin123", 
     };
 
-    // Delete existing admin if exists
     await Admin.deleteOne({ email: adminData.email });
     console.log("🗑️ Removed existing admin (if any)");
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(adminData.password, 10);
 
-    // Create admin
     const admin = await Admin.create({
       username: adminData.username,
       email: adminData.email,

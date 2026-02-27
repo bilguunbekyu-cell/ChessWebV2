@@ -45,7 +45,6 @@ export function getRatingPoolForTimeControl(timeControl) {
     DEFAULT_TIME_CONTROL.increment,
   );
 
-  // Approximate total think time for a 40-move game.
   const estimatedSeconds = initial + increment * 40;
   if (estimatedSeconds < 180) return "bullet";
   if (estimatedSeconds < 600) return "blitz";

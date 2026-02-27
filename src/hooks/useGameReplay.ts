@@ -29,7 +29,7 @@ export type {
 };
 
 export function useGameReplay(game: GameHistory) {
-  // Parse moves and build positions
+
   const { positions, plies, moveRows, totalPlies } = usePositionParser(game);
 
   const sanMoves = useMemo(() => {
@@ -44,7 +44,6 @@ export function useGameReplay(game: GameHistory) {
 
   const { opening } = useOpeningExplorer(sanMoves, { enableRemote: true });
 
-  // Fallback to stored ECO only if explorer fails
   const openingResolved = useMemo(() => {
     if (opening) return opening;
     if (game.eco) {
@@ -54,10 +53,8 @@ export function useGameReplay(game: GameHistory) {
     return null;
   }, [opening, game.eco]);
 
-  // Track captured pieces
   const captureTimeline = useCaptureTimeline(plies);
 
-  // Analysis and move quality
   const {
     analysis,
     analysisByPly,
@@ -70,7 +67,6 @@ export function useGameReplay(game: GameHistory) {
     analysisProgress,
   } = useMoveAnalysis(game, positions, moveRows, totalPlies);
 
-  // Playback controls
   const {
     ply,
     isPlaying,
@@ -83,17 +79,13 @@ export function useGameReplay(game: GameHistory) {
     flipBoard,
   } = usePlaybackControls(game, totalPlies);
 
-  // Keyboard controls
   useKeyboardControls(ply, totalPlies, jumpTo, togglePlay, flipBoard);
   useReplayMoveSounds(ply, plies, game.playAs);
 
-  // Evaluation
   const { evalPercent, evalLabel } = useEvaluation(analysis, ply);
 
-  // Download PGN action
   const downloadPgn = useDownloadPgn(game);
 
-  // Computed values
   const current = plies[ply - 1];
   const currentFen = positions[ply] || positions[0];
   const lastMove =
@@ -109,7 +101,7 @@ export function useGameReplay(game: GameHistory) {
   const capturedByBlack = captureTimeline.black[captureIndex] || [];
 
   return {
-    // State
+
     ply,
     totalPlies,
     isPlaying,
@@ -117,20 +109,17 @@ export function useGameReplay(game: GameHistory) {
     orientation,
     atEnd,
 
-    // Position data
     currentFen,
-    positions, // All FEN positions for UCI to SAN conversion
+    positions, 
     lastMove,
     currentMoveSan,
     isCheck,
     isCheckmate,
     isStalemate,
 
-    // Captured pieces
     capturedByWhite,
     capturedByBlack,
 
-    // Move list
     moveRows: moveRowsWithQuality,
     moveRowsWithQuality,
     moveQualities,
@@ -141,15 +130,12 @@ export function useGameReplay(game: GameHistory) {
     analysisByPly,
     opening: openingResolved,
 
-    // Analysis state
     isAnalyzing,
     analysisProgress,
 
-    // Evaluation
     evalPercent,
     evalLabel,
 
-    // Actions
     jumpTo,
     togglePlay,
     setSpeed,

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -39,19 +39,25 @@ import { AdminGames } from "./pages/adminGames";
 import { useThemeStore } from "./store/themeStore";
 import { useAuthStore, authApi } from "./store/authStore";
 import { useFriendChallengeStore } from "./store/friendChallengeStore";
+import { useSettingsStore } from "./store/settingsStore";
 import FriendChallengeOverlay from "./components/FriendChallengeOverlay";
+import i18n from "./i18n";
+import { AutoTranslate } from "./i18n/AutoTranslate";
 
-// Auth check component
 function AuthChecker() {
-  const { setUser, setLoading, setBanned } = useAuthStore();
+  const { setUser, setBanned } = useAuthStore();
+  const setLanguage = useSettingsStore((state) => state.setLanguage);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const user = await authApi.getMe();
         setUser(user);
+        if (user?.language === "en" || user?.language === "mn") {
+          setLanguage(user.language);
+        }
       } catch (err: unknown) {
-        // Check if user was banned
+
         if (err && typeof err === "object" && "banned" in err) {
           const banErr = err as { banned: boolean; banReason: string };
           setBanned(banErr.banReason);
@@ -61,12 +67,40 @@ function AuthChecker() {
       }
     };
     checkAuth();
-  }, [setUser, setLoading, setBanned]);
+  }, [setUser, setBanned, setLanguage]);
 
   return null;
 }
 
-// Protected Route wrapper
+function LanguageProfileSync() {
+  const { isAuthenticated, user, setUser } = useAuthStore();
+  const language = useSettingsStore((state) => state.settings.language);
+  const lastSyncKeyRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+
+    const userLanguage = user.language === "mn" ? "mn" : "en";
+    const targetLanguage = language === "mn" ? "mn" : "en";
+    if (userLanguage === targetLanguage) return;
+
+    const syncKey = `${user.id}:${targetLanguage}`;
+    if (lastSyncKeyRef.current === syncKey) return;
+    lastSyncKeyRef.current = syncKey;
+
+    void authApi
+      .updateProfile({ language: targetLanguage })
+      .then((updatedUser) => {
+        setUser(updatedUser);
+      })
+      .catch(() => {
+        lastSyncKeyRef.current = "";
+      });
+  }, [isAuthenticated, language, setUser, user?.id, user?.language]);
+
+  return null;
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore();
   const location = useLocation();
@@ -86,7 +120,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Redirect if already logged in
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore();
 
@@ -119,6 +152,59 @@ function ThemeController() {
   return null;
 }
 
+function LanguageController() {
+  const language = useSettingsStore((state) => state.settings.language);
+  const [isSwitchingLanguage, setIsSwitchingLanguage] = useState(false);
+  const [loadingLabel, setLoadingLabel] = useState("Applying language...");
+
+  useEffect(() => {
+    const targetLanguage = language === "mn" ? "mn" : "en";
+    if (i18n.resolvedLanguage === targetLanguage) {
+      document.documentElement.lang = targetLanguage;
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingLabel(
+      i18n.t("Applying language...", {
+        lng: targetLanguage,
+        defaultValue: "Applying language...",
+      }),
+    );
+    setIsSwitchingLanguage(true);
+
+    void i18n
+      .changeLanguage(targetLanguage)
+      .then(() => {
+        if (cancelled) return;
+        document.documentElement.lang = targetLanguage;
+      })
+      .finally(() => {
+        if (cancelled) return;
+        window.setTimeout(() => {
+          if (!cancelled) setIsSwitchingLanguage(false);
+        }, 250);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [language]);
+
+  if (!isSwitchingLanguage) return null;
+
+  return (
+    <div className="fixed inset-0 z-[120] bg-[#f5f5f7]/80 dark:bg-gray-950/80 backdrop-blur-sm flex items-center justify-center">
+      <div className="flex items-center gap-3 px-5 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 shadow-lg">
+        <div className="w-5 h-5 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+          {loadingLabel}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function RealtimeBridge() {
   const { isAuthenticated, user } = useAuthStore();
   const initialize = useFriendChallengeStore((state) => state.initialize);
@@ -147,7 +233,6 @@ function Layout({ children }: { children: React.ReactNode }) {
     location.pathname === "/play/four-player" ||
     location.pathname === "/play/practice";
 
-  // Pages that have their own sidebar or are auth pages
   const hasOwnLayout =
     [
       "/watch",
@@ -164,7 +249,6 @@ function Layout({ children }: { children: React.ReactNode }) {
     location.pathname.startsWith("/admin") ||
     location.pathname.match(/^\/play\/bot\/.+/);
 
-  // For pages with their own layout, just render children
   if (hasOwnLayout) {
     return <>{children}</>;
   }
@@ -177,13 +261,13 @@ function Layout({ children }: { children: React.ReactNode }) {
     >
       <Sidebar />
 
-      {/* Main Content Wrapper */}
+      {}
       <div
         className={`flex-1 flex flex-col ml-72 relative z-10 ${
           isGamePage ? "h-screen overflow-hidden" : "min-h-screen"
         }`}
       >
-        {/* Main Content */}
+        {}
         <main
           className={`w-full flex-1 flex flex-col ${
             isGamePage
@@ -201,6 +285,9 @@ function Layout({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  const language = useSettingsStore((state) => state.settings.language);
+  const activeLanguage = language === "mn" ? "mn" : "en";
+
   return (
     <Router
       future={{
@@ -208,203 +295,207 @@ function App() {
         v7_relativeSplatPath: true,
       }}
     >
-      <ThemeController />
-      <AuthChecker />
-      <RealtimeBridge />
-      <Layout>
-        <Routes>
-          {/* Public routes - redirect to home if logged in */}
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <PublicRoute>
-                <Register />
-              </PublicRoute>
-            }
-          />
+      <AutoTranslate language={activeLanguage}>
+        <ThemeController />
+        <LanguageController />
+        <AuthChecker />
+        <LanguageProfileSync />
+        <RealtimeBridge />
+        <Layout>
+          <Routes>
+            {}
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              }
+            />
 
-          {/* Protected routes - redirect to login if not logged in */}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/play"
-            element={
-              <ProtectedRoute>
-                <Game />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/play/bot"
-            element={
-              <ProtectedRoute>
-                <PlayWithBot />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/play/bot/:botId"
-            element={
-              <ProtectedRoute>
-                <BotGamePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/play/quick"
-            element={
-              <ProtectedRoute>
-                <QuickMatch />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/play/variants"
-            element={
-              <ProtectedRoute>
-                <PlayVariants />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/play/four-player"
-            element={
-              <ProtectedRoute>
-                <PlayFourPlayer />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/play/practice"
-            element={
-              <ProtectedRoute>
-                <PlayPractice />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/play/friend"
-            element={
-              <ProtectedRoute>
-                <PlayWithFriend />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/puzzles"
-            element={
-              <ProtectedRoute>
-                <Puzzles />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/puzzles/train/:puzzleId?"
-            element={
-              <ProtectedRoute>
-                <PuzzleTrainer />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/learn"
-            element={
-              <ProtectedRoute>
-                <Learn />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/watch"
-            element={
-              <ProtectedRoute>
-                <Watch />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/community"
-            element={
-              <ProtectedRoute>
-                <Community />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/friends"
-            element={
-              <ProtectedRoute>
-                <Friends />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/u/:userId"
-            element={
-              <ProtectedRoute>
-                <UserProfile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/analyze/:gameId"
-            element={
-              <ProtectedRoute>
-                <Analyze />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/analyze960/:gameId"
-            element={
-              <ProtectedRoute>
-                <Analyze960 />
-              </ProtectedRoute>
-            }
-          />
+            {}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/play"
+              element={
+                <ProtectedRoute>
+                  <Game />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/play/bot"
+              element={
+                <ProtectedRoute>
+                  <PlayWithBot />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/play/bot/:botId"
+              element={
+                <ProtectedRoute>
+                  <BotGamePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/play/quick"
+              element={
+                <ProtectedRoute>
+                  <QuickMatch />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/play/variants"
+              element={
+                <ProtectedRoute>
+                  <PlayVariants />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/play/four-player"
+              element={
+                <ProtectedRoute>
+                  <PlayFourPlayer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/play/practice"
+              element={
+                <ProtectedRoute>
+                  <PlayPractice />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/play/friend"
+              element={
+                <ProtectedRoute>
+                  <PlayWithFriend />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/puzzles"
+              element={
+                <ProtectedRoute>
+                  <Puzzles />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/puzzles/train/:puzzleId?"
+              element={
+                <ProtectedRoute>
+                  <PuzzleTrainer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/learn"
+              element={
+                <ProtectedRoute>
+                  <Learn />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/watch"
+              element={
+                <ProtectedRoute>
+                  <Watch />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/community"
+              element={
+                <ProtectedRoute>
+                  <Community />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/friends"
+              element={
+                <ProtectedRoute>
+                  <Friends />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/u/:userId"
+              element={
+                <ProtectedRoute>
+                  <UserProfile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analyze/:gameId"
+              element={
+                <ProtectedRoute>
+                  <Analyze />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analyze960/:gameId"
+              element={
+                <ProtectedRoute>
+                  <Analyze960 />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Admin dashboard - uses same login page, admin auth checked inside */}
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/admin/users/:userId" element={<AdminUserProfile />} />
-          <Route path="/admin/puzzles" element={<AdminPuzzles />} />
-          <Route path="/admin/bots" element={<AdminBots />} />
-          <Route path="/admin/events" element={<AdminFeaturedEvents />} />
-          <Route path="/admin/games" element={<AdminGames />} />
-          <Route path="/admin/analyze/:gameId" element={<AdminAnalyze />} />
-        </Routes>
-      </Layout>
-      <FriendChallengeOverlay />
+            {}
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/users/:userId" element={<AdminUserProfile />} />
+            <Route path="/admin/puzzles" element={<AdminPuzzles />} />
+            <Route path="/admin/bots" element={<AdminBots />} />
+            <Route path="/admin/events" element={<AdminFeaturedEvents />} />
+            <Route path="/admin/games" element={<AdminGames />} />
+            <Route path="/admin/analyze/:gameId" element={<AdminAnalyze />} />
+          </Routes>
+        </Layout>
+        <FriendChallengeOverlay />
+      </AutoTranslate>
     </Router>
   );
 }

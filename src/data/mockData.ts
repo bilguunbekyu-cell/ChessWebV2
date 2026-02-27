@@ -45,7 +45,7 @@ export interface Course {
   lessons: number;
   progress: number;
   author: string;
-  image: string; // Emoji or placeholder
+  image: string; 
   level: "Beginner" | "Intermediate" | "Advanced";
 }
 

@@ -52,7 +52,6 @@ function normalizeObjectId(value) {
 function normalizeHistoryDocForVariant(historyDoc) {
   if (historyDoc?.variant !== "chess960") return historyDoc;
 
-  // Chess960 is stored as unrated history without opening metadata.
   historyDoc.rated = false;
   historyDoc.isProvisional = false;
   historyDoc.opponentIsProvisional = false;
@@ -65,7 +64,6 @@ function normalizeHistoryDocForVariant(historyDoc) {
   return historyDoc;
 }
 
-// Save game history
 router.post("/", authMiddleware, async (req, res) => {
   try {
     const requestUserId = normalizeObjectId(req.user?.userId);
@@ -251,7 +249,6 @@ router.post("/", authMiddleware, async (req, res) => {
   }
 });
 
-// Get game history for a specific user (public)
 router.get("/user/:userId", authMiddleware, async (req, res) => {
   try {
     const userId = normalizeObjectId(req.params.userId);
@@ -279,7 +276,6 @@ router.get("/user/:userId", authMiddleware, async (req, res) => {
   }
 });
 
-// Get game history for current user
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const { limit = 50, skip = 0 } = req.query;
@@ -306,7 +302,6 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
-// Get single game by ID
 router.get("/:id", authMiddleware, async (req, res) => {
   try {
     const gameId = normalizeObjectId(req.params.id);

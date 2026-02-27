@@ -10,7 +10,6 @@ interface GameSidebarProps {
 export function GameSidebar({ onStartMatch }: GameSidebarProps) {
   const navigate = useNavigate();
 
-  // Build quick actions with resolved icons and handlers
   const quickActions = useMemo(() => {
     return QUICK_ACTIONS.map((action) => {
       const IconComponent = iconMap[action.icon] || Gamepad2;

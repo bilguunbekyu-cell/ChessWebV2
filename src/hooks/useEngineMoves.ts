@@ -27,7 +27,6 @@ export function useEngineMoves(
     isEngineThinking.current = true;
     const moveNumber = Math.floor(currentGame.history().length / 2) + 1;
 
-    // Pass legal moves to engine for potential blundering
     const legalMoves = currentGame
       .moves({ verbose: true })
       .map((m) => m.from + m.to + (m.promotion || ""));

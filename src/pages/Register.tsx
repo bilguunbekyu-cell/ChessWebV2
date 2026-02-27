@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, User, ArrowRight, Github, Sun, Moon } from "lucide-react";
 import { useAuthStore, authApi } from "../store/authStore";
 import { useThemeStore } from "../store/themeStore";
+import LanguageSwitch from "../components/LanguageSwitch";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -37,7 +38,9 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 flex items-center justify-center p-4 transition-colors duration-300">
-      {/* Theme Toggle - Top Right */}
+      <LanguageSwitch className="fixed top-4 left-4 z-50" />
+
+      {}
       <button
         onClick={toggleTheme}
         className="fixed top-4 right-4 p-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg hover:scale-105 transition-transform z-50"

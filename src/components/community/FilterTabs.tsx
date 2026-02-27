@@ -1,6 +1,3 @@
-/* ═══════════════════════════════════════════════════════
-   Community Filter Tabs — smooth underline animation
-   ═══════════════════════════════════════════════════════ */
 import { useRef, useState, useLayoutEffect } from "react";
 import { type CommunityTab, COMMUNITY_TABS } from "../../data/communityData";
 
@@ -45,7 +42,7 @@ export function FilterTabs({ active, onChange }: FilterTabsProps) {
           </button>
         ))}
       </div>
-      {/* Animated underline */}
+      {}
       <div
         className="absolute bottom-0 h-0.5 bg-teal-500 rounded-full transition-all duration-300 ease-out"
         style={{ left: indicator.left, width: indicator.width }}

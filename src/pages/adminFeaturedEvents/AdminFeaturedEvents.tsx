@@ -106,7 +106,6 @@ export default function AdminFeaturedEvents() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Fetch events
   const fetchEvents = async () => {
     try {
       const response = await fetch(`${API_URL}/api/admin/featured-events`, {
@@ -125,7 +124,6 @@ export default function AdminFeaturedEvents() {
     fetchEvents();
   }, []);
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -152,7 +150,6 @@ export default function AdminFeaturedEvents() {
     }
   };
 
-  // Handle delete
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this event?")) return;
 
@@ -167,7 +164,6 @@ export default function AdminFeaturedEvents() {
     }
   };
 
-  // Toggle featured
   const toggleFeatured = async (id: string) => {
     try {
       await fetch(
@@ -183,7 +179,6 @@ export default function AdminFeaturedEvents() {
     }
   };
 
-  // Toggle active
   const toggleActive = async (id: string) => {
     try {
       await fetch(`${API_URL}/api/admin/featured-events/${id}/toggle-active`, {
@@ -196,7 +191,6 @@ export default function AdminFeaturedEvents() {
     }
   };
 
-  // Update status
   const updateStatus = async (id: string, status: string) => {
     try {
       await fetch(`${API_URL}/api/admin/featured-events/${id}/status`, {
@@ -211,14 +205,12 @@ export default function AdminFeaturedEvents() {
     }
   };
 
-  // Open modal for new event
   const openNewModal = () => {
     setEditingEvent(null);
     setFormData(initialFormState);
     setShowModal(true);
   };
 
-  // Open modal for editing
   const openEditModal = (event: FeaturedEvent) => {
     setEditingEvent(event);
     setFormData({
@@ -240,14 +232,12 @@ export default function AdminFeaturedEvents() {
     setShowModal(true);
   };
 
-  // Close modal
   const closeModal = () => {
     setShowModal(false);
     setEditingEvent(null);
     setFormData(initialFormState);
   };
 
-  // Add player to form
   const addPlayer = () => {
     setFormData({
       ...formData,
@@ -258,7 +248,6 @@ export default function AdminFeaturedEvents() {
     });
   };
 
-  // Update player
   const updatePlayer = (
     index: number,
     field: keyof Player,
@@ -269,7 +258,6 @@ export default function AdminFeaturedEvents() {
     setFormData({ ...formData, players: newPlayers });
   };
 
-  // Remove player
   const removePlayer = (index: number) => {
     setFormData({
       ...formData,
@@ -277,7 +265,6 @@ export default function AdminFeaturedEvents() {
     });
   };
 
-  // Filter events
   const filteredEvents = events.filter((event) => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -287,7 +274,6 @@ export default function AdminFeaturedEvents() {
     return matchesSearch && matchesStatus;
   });
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, filterStatus]);
@@ -333,7 +319,7 @@ export default function AdminFeaturedEvents() {
       <AdminSidebar />
 
       <main className="flex-1 ml-72 p-8">
-        {/* Header */}
+        {}
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -352,7 +338,7 @@ export default function AdminFeaturedEvents() {
           </button>
         </div>
 
-        {/* Filters */}
+        {}
         <div className="flex gap-4 mb-6">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -376,7 +362,7 @@ export default function AdminFeaturedEvents() {
           </select>
         </div>
 
-        {/* Events Table */}
+        {}
         {loading ? (
           <div className="text-center py-12 text-gray-500 dark:text-gray-400">
             Loading...
@@ -514,7 +500,7 @@ export default function AdminFeaturedEvents() {
               </tbody>
             </table>
 
-            {/* Pagination */}
+            {}
             <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-800">
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 {rangeStart}\u2013{rangeEnd} of {filteredEvents.length} events
@@ -561,7 +547,7 @@ export default function AdminFeaturedEvents() {
           </div>
         )}
 
-        {/* Modal */}
+        {}
         {showModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl">
@@ -578,7 +564,7 @@ export default function AdminFeaturedEvents() {
               </div>
 
               <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                {/* Title */}
+                {}
                 <div>
                   <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
                     Title *
@@ -594,7 +580,7 @@ export default function AdminFeaturedEvents() {
                   />
                 </div>
 
-                {/* Description */}
+                {}
                 <div>
                   <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
                     Description
@@ -609,7 +595,7 @@ export default function AdminFeaturedEvents() {
                   />
                 </div>
 
-                {/* Type & Status */}
+                {}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
@@ -652,7 +638,7 @@ export default function AdminFeaturedEvents() {
                   </div>
                 </div>
 
-                {/* Dates */}
+                {}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
@@ -682,7 +668,7 @@ export default function AdminFeaturedEvents() {
                   </div>
                 </div>
 
-                {/* Lichess URL */}
+                {}
                 <div>
                   <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
                     Lichess URL (optional)
@@ -698,7 +684,7 @@ export default function AdminFeaturedEvents() {
                   />
                 </div>
 
-                {/* Priority & Featured */}
+                {}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
@@ -752,7 +738,7 @@ export default function AdminFeaturedEvents() {
                   </div>
                 </div>
 
-                {/* Players (for matches) */}
+                {}
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <label className="text-sm font-medium text-gray-600 dark:text-gray-300">
@@ -811,7 +797,7 @@ export default function AdminFeaturedEvents() {
                   ))}
                 </div>
 
-                {/* Actions */}
+                {}
                 <div className="flex justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-800">
                   <button
                     type="button"

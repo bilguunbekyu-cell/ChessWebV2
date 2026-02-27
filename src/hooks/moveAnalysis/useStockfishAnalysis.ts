@@ -2,9 +2,6 @@ import { useState, useEffect } from "react";
 import { GameHistory } from "../../historyTypes";
 import { AnalysisEntry } from "../useGameReplayTypes";
 
-/**
- * Hook to run Stockfish analysis on positions when no analysis is provided
- */
 export function useStockfishAnalysis(game: GameHistory, positions: string[]) {
   const [analysis, setAnalysis] = useState<AnalysisEntry[]>(
     game.analysis || [],
@@ -12,7 +9,6 @@ export function useStockfishAnalysis(game: GameHistory, positions: string[]) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
 
-  // Sync external analysis if present
   useEffect(() => {
     if (game.analysis && game.analysis.length > 0) {
       setAnalysis(game.analysis);
@@ -21,7 +17,6 @@ export function useStockfishAnalysis(game: GameHistory, positions: string[]) {
     }
   }, [game]);
 
-  // Compute evaluations locally when none provided
   useEffect(() => {
     if ((game.analysis && game.analysis.length > 0) || positions.length === 0) {
       return;

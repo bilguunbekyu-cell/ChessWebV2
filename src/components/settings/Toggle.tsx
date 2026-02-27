@@ -3,7 +3,7 @@ import { Check } from "lucide-react";
 interface ToggleProps {
   enabled: boolean;
   onChange: (v: boolean) => void;
-  color?: string; // tailwind bg class like "bg-teal-500"
+  color?: string; 
   disabled?: boolean;
   ariaLabel?: string;
 }

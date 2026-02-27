@@ -3,7 +3,6 @@ import FeaturedEvent from "../models/FeaturedEvent.js";
 
 const router = express.Router();
 
-// GET all events (admin - includes inactive)
 router.get("/", async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
@@ -33,7 +32,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-// CREATE new event
 router.post("/", async (req, res) => {
   try {
     const event = new FeaturedEvent(req.body);
@@ -45,7 +43,6 @@ router.post("/", async (req, res) => {
   }
 });
 
-// UPDATE event
 router.put("/:id", async (req, res) => {
   try {
     const event = await FeaturedEvent.findByIdAndUpdate(
@@ -65,7 +62,6 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// DELETE event
 router.delete("/:id", async (req, res) => {
   try {
     const event = await FeaturedEvent.findByIdAndDelete(req.params.id);
@@ -81,7 +77,6 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// Toggle featured status
 router.patch("/:id/toggle-featured", async (req, res) => {
   try {
     const event = await FeaturedEvent.findById(req.params.id);
@@ -100,7 +95,6 @@ router.patch("/:id/toggle-featured", async (req, res) => {
   }
 });
 
-// Toggle active status
 router.patch("/:id/toggle-active", async (req, res) => {
   try {
     const event = await FeaturedEvent.findById(req.params.id);
@@ -119,7 +113,6 @@ router.patch("/:id/toggle-active", async (req, res) => {
   }
 });
 
-// Update event status (upcoming/live/completed)
 router.patch("/:id/status", async (req, res) => {
   try {
     const { status } = req.body;

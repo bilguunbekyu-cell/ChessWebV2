@@ -11,9 +11,6 @@ import {
 import { AnalysisEntry, MoveRow, MoveQuality } from "../useGameReplayTypes";
 import { isSameMoveAsBest } from "./utils";
 
-/**
- * Hook to classify move quality based on analysis
- */
 export function useQualityClassification(
   analysisByPly: Map<number, AnalysisEntry>,
   positions: string[],
@@ -38,7 +35,6 @@ export function useQualityClassification(
       const after = analysisByPly.get(i);
       const san = sanByPly.get(i);
 
-      // Special case: last move ends the game (mate/stalemate) — always "Best"
       const isLastMove = i === totalPlies;
       const gameEndedAfterMove = !after || after?.mate === 0;
       if (isLastMove && gameEndedAfterMove) {

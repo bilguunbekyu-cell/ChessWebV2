@@ -33,7 +33,6 @@ export default function PuzzleTrainer() {
     navigate,
   } = usePuzzleTrainer();
 
-  // Responsive board size
   const [boardSize, setBoardSize] = useState(560);
 
   useEffect(() => {
@@ -87,7 +86,7 @@ export default function PuzzleTrainer() {
       <Sidebar />
 
       <main className="flex-1 ml-72 min-h-0 overflow-hidden flex gap-3 pt-3 pb-3 pr-4">
-        {/* Board Area */}
+        {}
         <div className="min-h-0 flex items-center justify-start bg-[#0b0f19] pl-6 pr-3 py-4">
           <div style={{ width: boardSize, height: boardSize }}>
             {fenError && (
@@ -109,7 +108,7 @@ export default function PuzzleTrainer() {
           </div>
         </div>
 
-        {/* Right Panel */}
+        {}
         <div className="flex-1 min-w-[360px] bg-[#111521] flex flex-col h-full">
           <PuzzlePanelHeader onBack={() => navigate("/puzzles")} />
           <PuzzleInfoCard
@@ -118,7 +117,7 @@ export default function PuzzleTrainer() {
           />
           <PuzzleProgressBar streak={streak} puzzleElo={puzzleElo} />
 
-          {/* Status Area */}
+          {}
           <div className="flex-1 px-3 py-2 flex flex-col justify-center min-h-0">
             <PuzzleStatusArea
               status={status}

@@ -46,6 +46,7 @@ const UserSchema = new mongoose.Schema(
     banned: { type: Boolean, default: false },
     bannedAt: { type: Date, default: null },
     banReason: { type: String, default: "" },
+    language: { type: String, enum: ["en", "mn"], default: "en" },
   },
   { timestamps: true },
 );

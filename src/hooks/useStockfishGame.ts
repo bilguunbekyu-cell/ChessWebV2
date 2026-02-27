@@ -51,24 +51,19 @@ export function useStockfishGame() {
   const playerColor = gameSettings.playAs === "white" ? "w" : "b";
   const isPlayerTurn = game.turn() === playerColor;
 
-  // Initialize Stockfish engine with bot personality if selected
   const engineRef = useStockfishEngine(
     gameSettings.difficulty,
     gameSettings.selectedBot,
   );
 
-  // Opening recognition (local book + optional Lichess explorer)
   const { opening, isLoading: openingLoading } = useOpeningExplorer(moves, {
     enableRemote: true,
   });
 
-  // Get move options for a square
   const getMoveOptions = useMoveOptions(gameRef, setOptionSquares);
 
-  // Save game history to backend
   const saveGameHistory = useSaveGameHistory();
 
-  // Try to apply premove
   const tryApplyPreMove = useCallback(() => {
     const queued = getPreMove();
     if (!queued) return;
@@ -90,12 +85,11 @@ export function useStockfishGame() {
         setLastMove({ from: queued.from as Square, to: queued.to as Square });
       }
     } catch {
-      // invalid premove in new position; just drop it
+
     }
     clearPreMove();
   }, [clearPreMove, getPreMove, playerColor]);
 
-  // Engine moves
   const { isEngineThinking, makeEngineMove, handleEngineMessage } =
     useEngineMoves(
       engineRef,
@@ -109,13 +103,11 @@ export function useStockfishGame() {
       tryApplyPreMove,
     );
 
-  // Single Stockfish listener
   useEffect(() => {
     if (!engineRef.current) return;
     engineRef.current.onMessage(handleEngineMessage);
   }, [engineRef, handleEngineMessage]);
 
-  // Check game state and trigger engine
   useGameStateChecker(
     game,
     gameRef,
@@ -128,7 +120,6 @@ export function useStockfishGame() {
     setShowGameOverModal,
   );
 
-  // If playing as black, engine moves first
   useEffect(() => {
     if (
       gameStarted &&
@@ -140,7 +131,6 @@ export function useStockfishGame() {
     }
   }, [gameStarted, gameSettings.playAs, game, makeEngineMove]);
 
-  // Fallback trigger: if turn flips and a premove is queued, execute immediately.
   useEffect(() => {
     if (!gameStarted || gameOver || !isPlayerTurn || !preMove) return;
     const timer = setTimeout(() => {
@@ -149,7 +139,6 @@ export function useStockfishGame() {
     return () => clearTimeout(timer);
   }, [gameStarted, gameOver, isPlayerTurn, preMove, tryApplyPreMove]);
 
-  // Save history once when game ends
   useGameHistorySaver(
     gameOver,
     gameResult,
@@ -162,7 +151,6 @@ export function useStockfishGame() {
     setSavedGameId,
   );
 
-  // Square click handler
   const {
     onSquareClick,
     onPieceDrop,
@@ -186,7 +174,6 @@ export function useStockfishGame() {
     setLastMove,
   );
 
-  // Game actions
   const {
     handleStartGame: baseHandleStartGame,
     handleNewGame: baseHandleNewGame,
@@ -249,7 +236,7 @@ export function useStockfishGame() {
   }, [baseOnCancelSelection, clearPreMove, moveFrom]);
 
   return {
-    // Game state
+
     game,
     moves,
     gameSettings,
@@ -261,7 +248,6 @@ export function useStockfishGame() {
     savedGameId,
     lastMove,
 
-    // UI state
     showSetupModal,
     showGameOverModal,
     optionSquares,
@@ -273,7 +259,6 @@ export function useStockfishGame() {
     opening,
     openingLoading,
 
-    // Handlers
     onSquareClick,
     onPieceDrop,
     onCancelSelection,

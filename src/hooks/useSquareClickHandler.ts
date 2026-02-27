@@ -4,21 +4,15 @@ import { OptionSquares } from "./useStockfishGameTypes";
 import { playChessMoveSound, playGameplaySound } from "../utils/moveSounds";
 import type { PromotionState } from "../components/game";
 
-/**
- * Extract a single-char promotion key ("q", "r", "b", "n") from the piece
- * string that react-chessboard passes (e.g. "wQ", "bN") or from an already
- * lowercase char.  Falls back to "q".
- */
 function extractPromotion(piece?: string): "q" | "r" | "b" | "n" {
   if (!piece) return "q";
-  // react-chessboard format: "wQ", "bR", etc.
+
   const ch =
     piece.length === 2 ? piece[1].toLowerCase() : piece[0].toLowerCase();
   if (ch === "q" || ch === "r" || ch === "b" || ch === "n") return ch;
   return "q";
 }
 
-/** Check whether moving `from → to` is a pawn promotion. */
 function isPromotionMove(game: Chess, from: Square, to: Square): boolean {
   const piece = game.get(from);
   if (!piece || piece.type !== "p") return false;
@@ -39,6 +33,7 @@ function isPromotionTargetSquare(
 }
 
 const PREMOVE_SOURCE_STYLE = {
+  boxShadow: "inset 0 0 0 3px rgba(249, 115, 22, 0.82)",
 };
 
 export function useSquareClickHandler(
@@ -58,7 +53,7 @@ export function useSquareClickHandler(
     React.SetStateAction<{ from: Square; to: Square } | null>
   >,
 ) {
-  // ---------- promotion dialog state (click-to-move) ----------
+
   const [promotionToSquare, setPromotionToSquare] = useState<Square | null>(
     null,
   );
@@ -101,19 +96,17 @@ export function useSquareClickHandler(
     [clearPreMove, clearSelection, gameRef, setGame, setLastMove, setMoves],
   );
 
-  // ---------- promotion piece select handler ----------
   const onPromotionPieceSelect = useCallback(
     (piece?: string, _fromSquare?: Square, _toSquare?: Square) => {
       const from = pendingPromoFrom;
       const to = promotionToSquare;
 
-      // Reset dialog state first
       setShowPromotionDialog(false);
       setPromotionToSquare(null);
       setPendingPromoFrom(null);
 
       if (!piece || !from || !to) {
-        // User cancelled (clicked backdrop)
+
         return false;
       }
 
@@ -143,7 +136,6 @@ export function useSquareClickHandler(
       const currentGame = gameRef.current;
       const turn = currentGame.turn();
 
-      // If engine's turn: allow setting a premove with player's piece
       if (turn !== playerColor) {
         if (!moveFrom) {
           const piece = currentGame.get(square);
@@ -192,7 +184,6 @@ export function useSquareClickHandler(
         return;
       }
 
-      // Player turn: normal move flow
       if (!moveFrom) {
         const piece = currentGame.get(square);
         if (piece && piece.color === playerColor) {
@@ -207,7 +198,6 @@ export function useSquareClickHandler(
         return;
       }
 
-      // Check if this is a promotion move → show the dialog instead of auto-queen
       const isLegal = currentGame
         .moves({ square: moveFrom, verbose: true })
         .some((m) => m.to === square);

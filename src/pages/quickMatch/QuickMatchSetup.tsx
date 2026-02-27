@@ -10,6 +10,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
 import { BOARD_FRAME } from "./types";
 
@@ -135,6 +136,8 @@ export function QuickMatchSetup({
   isConnected,
   onCancel,
 }: QuickMatchSetupProps) {
+  const { t } = useTranslation();
+  const tr = (value: string) => t(value, { defaultValue: value });
   const { user } = useAuthStore();
 
   const [searchElapsedSeconds, setSearchElapsedSeconds] = useState(0);
@@ -156,7 +159,6 @@ export function QuickMatchSetup({
     return () => window.clearInterval(intervalId);
   }, [isSearching]);
 
-  // Responsive board width
   const [boardWidth, setBoardWidth] = useState(640);
   const containerRef = useRef<HTMLDivElement>(null);
   const leftRef = useRef<HTMLDivElement>(null);
@@ -199,7 +201,7 @@ export function QuickMatchSetup({
     }
     return null;
   })();
-  const variantLabel = variant === "chess960" ? "Chess960" : "";
+  const variantLabel = variant === "chess960" ? tr("Chess960") : "";
   const selectedGameType =
     GAME_TYPE_OPTIONS.find((option) => option.id === variant) ||
     GAME_TYPE_OPTIONS[0];
@@ -207,9 +209,9 @@ export function QuickMatchSetup({
     selectedTimeOption?.groupLabel || getTimeGroupLabel(timeControl);
   const timeOptionLabel = selectedTimeOption?.label || formatTimeLabel(timeControl);
   const selectedTimeLabel = selectedTimeOption
-    ? `${selectedTimeOption.label} (${selectedTimeOption.groupLabel})`
-    : `${timeOptionLabel} (${timeGroupLabel})`;
-  const searchingGameText = `Searching ${timeOptionLabel} ${timeGroupLabel}${variantLabel ? " " + variantLabel : ""} Game`;
+    ? `${tr(selectedTimeOption.label)} (${tr(selectedTimeOption.groupLabel)})`
+    : `${timeOptionLabel} (${tr(timeGroupLabel)})`;
+  const searchingGameText = `${tr("Searching")} ${timeOptionLabel} ${tr(timeGroupLabel)}${variantLabel ? " " + variantLabel : ""} ${tr("Game")}`;
   const expandedRange = Math.min(
     500,
     50 + Math.floor(searchElapsedSeconds / 5) * 25,
@@ -222,12 +224,12 @@ export function QuickMatchSetup({
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(20,184,166,0.14),transparent_48%),radial-gradient(circle_at_85%_10%,rgba(56,189,248,0.08),transparent_42%)]" />
       <div className="relative h-full min-h-0 grid grid-cols-1 lg:grid-cols-2">
-        {/* Left Side - Board Preview with Player Info */}
+        {}
         <div
           ref={leftRef}
           className="flex flex-col items-center justify-center p-4 gap-4 h-full min-h-0"
         >
-          {/* Top Opponent Info Bar */}
+          {}
           <div
             ref={topBarRef}
             className="w-full max-w-[900px] flex items-center gap-3 px-2"
@@ -240,22 +242,22 @@ export function QuickMatchSetup({
             <div className="flex-1">
               {isSearching ? (
                 <div className="font-semibold text-gray-900 dark:text-white text-base sm:text-lg">
-                  Searching...
+                  {tr("Searching...")}
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5">
                   <span className="font-semibold text-gray-900 dark:text-white text-sm">
-                    Opponent
+                    {tr("Opponent")}
                   </span>
                   <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                    (Waiting...)
+                    {tr("(Waiting...)")}
                   </span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Chess Board Preview */}
+          {}
           <div
             className="rounded-2xl overflow-hidden shadow-2xl border border-gray-200/60 dark:border-white/10"
             style={{ width: boardWidth, height: boardWidth }}
@@ -269,7 +271,7 @@ export function QuickMatchSetup({
             />
           </div>
 
-          {/* Bottom Player Info Bar */}
+          {}
           <div
             ref={bottomBarRef}
             className="w-full max-w-[900px] flex items-center gap-3 px-2 justify-start"
@@ -290,14 +292,14 @@ export function QuickMatchSetup({
               )}
             </div>
             <div className="flex-1">
-              <span className="font-semibold text-gray-900 dark:text-white text-sm">
-                {user?.fullName || "You"}
+                <span className="font-semibold text-gray-900 dark:text-white text-sm">
+                {user?.fullName || tr("You")}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Right Side - Quick Match Panel */}
+        {}
         <div className="w-full h-full min-h-0 rounded-2xl overflow-hidden bg-white/85 dark:bg-slate-900/75 border border-gray-200/60 dark:border-white/10 shadow-[0_16px_36px_rgba(0,0,0,0.32)] backdrop-blur-md flex flex-col">
           {isSearching ? (
             <>
@@ -308,20 +310,20 @@ export function QuickMatchSetup({
                   <div className="w-full max-w-[300px] rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white/90 dark:bg-slate-900/85 p-7 text-center shadow-[0_20px_40px_rgba(0,0,0,0.35)]">
                     <Timer className="w-10 h-10 mx-auto text-gray-700 dark:text-gray-200" />
                     <p className="mt-3 text-2xl font-semibold text-gray-900 dark:text-white">
-                      {searchElapsedSeconds} sec
+                      {searchElapsedSeconds} {tr("sec")}
                     </p>
                     <p className="mt-2 text-lg text-gray-600 dark:text-gray-300">
                       {searchingGameText}
                     </p>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      {queueStatus || `Rating range: ±${expandedRange}`}
+                      {queueStatus || `${tr("Rating range")}: ±${expandedRange}`}
                     </p>
                     <button
                       type="button"
                       onClick={onCancel}
                       className="mt-7 text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors"
                     >
-                      Cancel
+                      {tr("Cancel")}
                     </button>
                   </div>
                 </div>
@@ -329,13 +331,14 @@ export function QuickMatchSetup({
             </>
           ) : (
             <>
-              {/* Panel Header */}
+              {}
               <div className="px-4 py-3 border-b border-gray-200/55 dark:border-white/10">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-teal-500" />
                     <h2 className="font-bold text-base text-gray-900 dark:text-white">
-                      Quick Match{variant === "chess960" ? " — Chess960" : ""}
+                      {tr("Quick Match")}
+                      {variant === "chess960" ? ` — ${tr("Chess960")}` : ""}
                     </h2>
                   </div>
                   <div className="flex items-center gap-2">
@@ -343,20 +346,20 @@ export function QuickMatchSetup({
                       {timeOptionLabel}
                     </span>
                     <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {timeGroupLabel}
+                      {tr(timeGroupLabel)}
                     </span>
                   </div>
                 </div>
                 <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-                  Find an opponent and start playing instantly.
+                  {tr("Find an opponent and start playing instantly.")}
                 </p>
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-4">
-                {/* Game Type */}
+                {}
                 <div className="rounded-2xl border border-gray-200/55 dark:border-white/10 bg-white/60 dark:bg-slate-900/45 p-3">
                   <div className="text-[12px] font-semibold text-gray-900 dark:text-white mb-2">
-                    Game Type
+                    {tr("Game Type")}
                   </div>
                   <button
                     type="button"
@@ -365,7 +368,7 @@ export function QuickMatchSetup({
                   >
                     <span className="flex items-center gap-2 text-[13px] font-semibold">
                       <LayoutGrid className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                      {selectedGameType.label}
+                      {tr(selectedGameType.label)}
                     </span>
                     {isGameTypeOpen ? (
                       <ChevronUp className="w-4 h-4 opacity-80" />
@@ -396,8 +399,8 @@ export function QuickMatchSetup({
                                 : "bg-white dark:bg-slate-900 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-200"
                             }`}
                           >
-                            <span className="text-[13px] font-medium">
-                              {option.label}
+                              <span className="text-[13px] font-medium">
+                              {tr(option.label)}
                             </span>
                             {option.source === "variants" ? (
                               <ExternalLink className="w-3.5 h-3.5 opacity-70" />
@@ -409,7 +412,7 @@ export function QuickMatchSetup({
                   )}
                 </div>
 
-                {/* Time Control */}
+                {}
                 <div className="rounded-2xl border border-gray-200/55 dark:border-white/10 bg-white/60 dark:bg-slate-900/45 p-3">
                   <button
                     type="button"
@@ -435,7 +438,7 @@ export function QuickMatchSetup({
                           <div key={group.id}>
                             <div className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold text-gray-800 dark:text-gray-200">
                               <GroupIcon className="w-4 h-4 text-yellow-500" />
-                              <span>{group.label}</span>
+                              <span>{tr(group.label)}</span>
                             </div>
                             <div className="grid grid-cols-3 gap-2">
                               {group.options.map((opt) => {
@@ -458,7 +461,7 @@ export function QuickMatchSetup({
                                         : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 ring-1 ring-gray-200 dark:ring-slate-700 hover:ring-gray-300 dark:hover:ring-slate-600"
                                     }`}
                                   >
-                                    {opt.label}
+                                    {tr(opt.label)}
                                   </button>
                                 );
                               })}
@@ -472,7 +475,7 @@ export function QuickMatchSetup({
 
               </div>
 
-              {/* Play Button */}
+              {}
               <div className="p-4 pt-3 border-t border-gray-200/55 dark:border-white/10 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                 <button
                   onClick={onStart}
@@ -480,10 +483,10 @@ export function QuickMatchSetup({
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold text-lg transition-all shadow-lg hover:shadow-xl active:scale-[0.98] disabled:cursor-not-allowed disabled:shadow-none"
                 >
                   {isSearching
-                    ? "Searching..."
+                    ? tr("Searching...")
                     : isConnected
-                      ? "Play"
-                      : "Server Offline"}
+                      ? tr("Play")
+                      : tr("Server Offline")}
                 </button>
               </div>
             </>

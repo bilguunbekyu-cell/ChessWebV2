@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Square } from "chess.js";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
 import { GameOverModal, PlayerInfo, GameBoard } from "../../components/game";
 import type { GameSettings, PromotionState } from "../../components/game";
@@ -74,9 +75,11 @@ export function QuickMatchGameView({
   promotionState,
   onPromotionPieceSelect,
 }: QuickMatchGameViewProps) {
+  const { t } = useTranslation();
+  const tr = (value: string) => t(value, { defaultValue: value });
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const displayMoves = moves.slice(-8); // keep recent moves visible without scroll
+  const displayMoves = moves.slice(-8); 
   const [boardWidth, setBoardWidth] = useState(620);
   const leftRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
@@ -119,12 +122,12 @@ export function QuickMatchGameView({
           analyzeBasePath={variant === "chess960" ? "/analyze960" : "/analyze"}
         />
 
-        {/* Main Board Area */}
+        {}
         <div
           ref={leftRef}
           className="min-w-0 flex flex-col items-center justify-center p-4 gap-4 h-full overflow-hidden"
         >
-          {/* Opponent Info */}
+          {}
           <div
             ref={topRef}
             className="flex-shrink-0 z-10"
@@ -132,7 +135,7 @@ export function QuickMatchGameView({
           >
             <PlayerInfo
               name={opponentName || "Opponent"}
-              subtitle="Online"
+              subtitle={tr("Online")}
               avatarLetter={opponentName?.substring(0, 1).toUpperCase() || "O"}
               avatarStyle="opponent"
               initialTime={gameSettings.timeControl.initial}
@@ -148,7 +151,7 @@ export function QuickMatchGameView({
             />
           </div>
 
-          {/* Chessboard */}
+          {}
           <div
             className="rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-gray-200/60 dark:border-white/5 shadow-xl"
             style={{ width: boardWidth + BOARD_FRAME }}
@@ -173,7 +176,7 @@ export function QuickMatchGameView({
             />
           </div>
 
-          {/* Player Info */}
+          {}
           <div
             ref={bottomRef}
             className="flex-shrink-0 z-10"
@@ -181,7 +184,7 @@ export function QuickMatchGameView({
           >
             <PlayerInfo
               name={user?.fullName || "You"}
-              subtitle={gameSettings.playAs === "white" ? "White" : "Black"}
+              subtitle={gameSettings.playAs === "white" ? tr("White") : tr("Black")}
               avatarLetter={
                 user?.fullName?.substring(0, 2).toUpperCase() || "U"
               }
@@ -201,22 +204,23 @@ export function QuickMatchGameView({
           </div>
         </div>
 
-        {/* Sidebar */}
+        {}
         <div className="min-w-0 w-full lg:flex-1 lg:self-stretch min-h-0 flex flex-col">
           <div className="flex-1 rounded-3xl border border-white/10 bg-white/70 dark:bg-slate-900/80 shadow-2xl backdrop-blur-xl px-4 py-4 flex flex-col overflow-hidden">
-            {/* Header */}
+            {}
             <div className="flex items-center justify-center mb-3 pb-3 border-b border-gray-200/60 dark:border-white/10">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                Quick Match{variant === "chess960" ? " — Chess960" : ""}
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                {tr("Quick Match")}
+                {variant === "chess960" ? ` — ${tr("Chess960")}` : ""}
               </h2>
             </div>
 
-            {/* Move List */}
+            {}
             <div className="flex-1 mb-3 rounded-xl bg-gray-50/50 dark:bg-slate-800/50 border border-gray-200/60 dark:border-white/5 overflow-hidden">
               <div className="p-2.5">
                 {moves.length === 0 ? (
                   <div className="text-center text-gray-400 dark:text-gray-500 text-xs py-6">
-                    Game in progress...
+                    {tr("Game in progress...")}
                   </div>
                 ) : (
                   <div className="space-y-1">
@@ -251,14 +255,14 @@ export function QuickMatchGameView({
               </div>
             </div>
 
-            {/* Actions */}
+            {}
             <div className="flex flex-col gap-2">
               <button
                 onClick={onResign}
                 disabled={gameOver}
                 className="w-full px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-medium transition-colors disabled:opacity-50"
               >
-                Resign
+                {tr("Resign")}
               </button>
               <button
                 onClick={() => {
@@ -267,7 +271,7 @@ export function QuickMatchGameView({
                 }}
                 className="w-full px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 font-medium transition-colors"
               >
-                Back to Play
+                {tr("Back to Play")}
               </button>
             </div>
           </div>

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "i18n:check": "node scripts/check-i18n.mjs",
+    "build:i18n": "npm run build && npm run i18n:check",
     "preview": "vite preview",
     "migrate:ratings:pools": "npm --prefix server run migrate:ratings:pools --",
     "migrate:ratings:pools:dry": "npm --prefix server run migrate:ratings:pools -- --dry-run",

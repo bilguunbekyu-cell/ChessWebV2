@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
 import { useOnlineQuickMatch } from "../../hooks/useOnlineQuickMatch";
 import { QuickMatchSetup } from "./QuickMatchSetup";
@@ -84,7 +85,7 @@ function storeTimeControl(value: { initial: number; increment: number }) {
       JSON.stringify(value),
     );
   } catch {
-    // Ignore persistence issues.
+
   }
 }
 
@@ -111,6 +112,8 @@ function getVariantFromSearch(search: string): MatchVariant | null {
 }
 
 export default function QuickMatch() {
+  const { t } = useTranslation();
+  const tr = (value: string) => t(value, { defaultValue: value });
   const { user } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
@@ -206,7 +209,7 @@ export default function QuickMatch() {
 
     autoStartHandledRef.current = true;
     storeTimeControl(timeControl);
-    startMatch(timeControl, user?.fullName || "Player", variant);
+    startMatch(timeControl, user?.fullName || tr("Player"), variant);
   }, [
     gameStarted,
     isConnected,
@@ -256,7 +259,7 @@ export default function QuickMatch() {
       },
     });
     setPendingAutoStart(false);
-    startMatch(timeControl, user?.fullName || "Player", variant);
+    startMatch(timeControl, user?.fullName || tr("Player"), variant);
   };
 
   const handleVariantChange = (nextVariant: MatchVariant) => {
@@ -295,7 +298,6 @@ export default function QuickMatch() {
     });
   };
 
-  // If game started, show the game board
   if (gameStarted) {
     return (
       <QuickMatchGameView
@@ -329,7 +331,6 @@ export default function QuickMatch() {
     );
   }
 
-  // Setup screen
   return (
     <QuickMatchSetup
       timeControl={timeControl}

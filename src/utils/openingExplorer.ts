@@ -16,7 +16,6 @@ export type OpeningMatch = {
 
 type BookLine = OpeningLine & { uci: string[]; line: string };
 
-// Precompute UCI move strings for every book line for fast matching
 const BOOK_LINES: BookLine[] = OPENING_BOOK.map((entry) => {
   const chess = new Chess();
   const uci: string[] = [];
@@ -51,7 +50,7 @@ export function verboseToUci(moves: Move[]): string[] {
   return moves.map((m) => `${m.from}${m.to}${m.promotion || ""}`);
 }
 
-const MIN_MATCH = 3; // require at least 3 plies to avoid noisy prefixes
+const MIN_MATCH = 3; 
 
 function bestBookMatch(uciMoves: string[]): OpeningMatch | null {
   if (!uciMoves.length) return null;

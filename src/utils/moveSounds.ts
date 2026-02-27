@@ -88,13 +88,13 @@ function playSound(name: keyof typeof SOUND_PATHS) {
     audio.volume = Math.max(0, Math.min(1, settings.soundVolume / 100));
     audio.currentTime = 0;
     void audio.play().catch(() => {
-      // Ignore autoplay-blocked cases and other playback failures.
+
     });
     if (name === "checkmate" || name === "gameEnd") {
       lastTerminalSoundAt = now;
     }
   } catch {
-    // Ignore playback errors to keep gameplay smooth.
+
   }
 }
 

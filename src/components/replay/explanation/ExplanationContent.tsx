@@ -21,7 +21,7 @@ export function ExplanationContent({
 }: ExplanationContentProps) {
   return (
     <>
-      {/* Title */}
+      {}
       <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
         {title}
         {showAiBadge && (
@@ -32,7 +32,7 @@ export function ExplanationContent({
         )}
       </h4>
 
-      {/* AI Explanation or Template Description */}
+      {}
       {aiLoading ? (
         <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -44,19 +44,19 @@ export function ExplanationContent({
         </p>
       ) : (
         <>
-          {/* Description */}
+          {}
           <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
             {description}
           </p>
 
-          {/* Details */}
+          {}
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
             {details}
           </p>
         </>
       )}
 
-      {/* AI Error */}
+      {}
       {aiError && (
         <p className="text-xs text-red-500 dark:text-red-400 mb-2">{aiError}</p>
       )}

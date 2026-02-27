@@ -30,7 +30,6 @@ export function useAiExplanations({
   const [aiError, setAiError] = useState<string | null>(null);
   const [hasRequestedBatch, setHasRequestedBatch] = useState(false);
 
-  // Build SAN by ply map
   const sanByPly = useMemo(() => {
     const map = new Map<number, string>();
     sanMoves.forEach((san, idx) => {
@@ -39,7 +38,6 @@ export function useAiExplanations({
     return map;
   }, [sanMoves]);
 
-  // Build prepared texts immediately so we always have something short
   useEffect(() => {
     const preset = new Map<number, string>();
     moveQualities.forEach((mq) => {
@@ -50,7 +48,6 @@ export function useAiExplanations({
     setExplanationsByPly(preset);
   }, [moveQualities]);
 
-  // Fetch AI batch once per analysis session (game)
   useEffect(() => {
     if (
       hasRequestedBatch ||

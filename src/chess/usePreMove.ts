@@ -7,7 +7,6 @@ export const usePreMove = () => {
   const preMoveRef = useRef<PreMove | null>(null);
   const [preMoveSquares, setPreMoveSquares] = useState<PreMoveSquares>({});
 
-  // Set a pre-move with red target highlight similar to chess premove UX.
   const setPreMoveWithHighlight = useCallback(
     (from: string, to: string, promotion?: "b" | "n" | "r" | "q") => {
       const nextPreMove = { from, to, promotion };
@@ -30,19 +29,16 @@ export const usePreMove = () => {
     [],
   );
 
-  // Clear the pre-move
   const clearPreMove = useCallback(() => {
     preMoveRef.current = null;
     setPreMove(null);
     setPreMoveSquares({});
   }, []);
 
-  // Check if a pre-move is set
   const hasPreMove = useCallback(() => {
     return preMoveRef.current !== null;
   }, []);
 
-  // Get the current pre-move
   const getPreMove = useCallback(() => {
     return preMoveRef.current;
   }, []);

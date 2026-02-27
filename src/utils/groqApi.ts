@@ -16,16 +16,10 @@ interface GroqResponse {
   }>;
 }
 
-/**
- * Check if Groq API is configured
- */
 export function isGroqConfigured(): boolean {
   return !!GROQ_API_KEY;
 }
 
-/**
- * Generate a chess move explanation using Groq's Llama 3 model
- */
 export async function getAiMoveExplanation(
   fen: string,
   movePlayed: string,
@@ -83,19 +77,13 @@ Explain in max 120 chars why this ${quality.toLowerCase()} is bad or good.`;
     const data: GroqResponse = await response.json();
     const content =
       data.choices[0]?.message?.content || "No explanation available.";
-    return content.slice(0, 120); // Enforce 120 char limit
+    return content.slice(0, 120); 
   } catch (error) {
     console.error("Failed to get AI explanation:", error);
     throw error;
   }
 }
 
-/**
- * Batch-generate explanations in a single request.
- * Only Blunder / Mistake / Brilliant get AI text; others should
- * be filled with prepared phrases on the caller side.
- * Every returned string must be <= 60 characters.
- */
 export async function getAiBatchExplanations(
   moves: Array<{
     ply: number;
@@ -194,9 +182,6 @@ Examples:
   }
 }
 
-/**
- * Check if the Groq API key is valid
- */
 export async function validateGroqApiKey(apiKey: string): Promise<boolean> {
   if (!apiKey || apiKey.length < 10) return false;
 

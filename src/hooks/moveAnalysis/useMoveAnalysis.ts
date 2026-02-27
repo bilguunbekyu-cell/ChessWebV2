@@ -15,20 +15,18 @@ export function useMoveAnalysis(
   moveRows: MoveRow[],
   totalPlies: number,
 ) {
-  // Run Stockfish analysis
+
   const { analysis, isAnalyzing, analysisProgress } = useStockfishAnalysis(
     game,
     positions,
   );
 
-  // Build analysis lookup map
   const analysisByPly = useMemo(() => {
     const map = new Map<number, AnalysisEntry>();
     analysis.forEach((a) => map.set(a.ply, a));
     return map;
   }, [analysis]);
 
-  // Build analysis series for charts
   const analysisSeries = useMemo(() => {
     const max = Math.max(totalPlies, positions.length - 1);
     const series: Array<{ cp?: number; mate?: number } | undefined> = [];
@@ -38,7 +36,6 @@ export function useMoveAnalysis(
     return series;
   }, [analysisByPly, positions.length, totalPlies]);
 
-  // Classify move qualities
   const moveQualities = useQualityClassification(
     analysisByPly,
     positions,
@@ -46,13 +43,10 @@ export function useMoveAnalysis(
     totalPlies,
   );
 
-  // Add quality labels to move rows
   const moveRowsWithQuality = useMoveRowsWithQuality(moveRows, moveQualities);
 
-  // Count qualities per side
   const qualityCounts = useQualityCounts(moveQualities);
 
-  // Calculate accuracy
   const accuracy = useAccuracy(moveQualities);
 
   return {

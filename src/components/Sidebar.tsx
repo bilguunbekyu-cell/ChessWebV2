@@ -58,7 +58,7 @@ export default function Sidebar() {
 
   return (
     <div className="w-72 h-screen bg-[#ebebed] dark:bg-gray-900 flex flex-col fixed left-0 top-0 z-50 transition-colors duration-300">
-      {/* Logo */}
+      {}
       <Link
         to="/"
         className={`flex items-center gap-3 border-b border-gray-200/70 dark:border-gray-800 ${styleGroup.logoWrapper}`}
@@ -77,7 +77,7 @@ export default function Sidebar() {
         </span>
       </Link>
 
-      {/* Navigation */}
+      {}
       <nav className={`flex-1 overflow-y-auto ${styleGroup.navWrapper}`}>
         <div className={`flex flex-col ${styleGroup.navGap}`}>
           {navItems.map((item) => (
@@ -107,14 +107,14 @@ export default function Sidebar() {
         </div>
       </nav>
 
-      {/* Bottom Section */}
+      {}
       <div
         className={`border-t border-gray-200/70 dark:border-gray-800 flex flex-col ${isCompact ? "px-3 py-3 gap-1" : "px-3 py-4 gap-1.5"}`}
       >
-        {/* User Profile & Quick Actions */}
+        {}
         <div className={`${isCompact ? "pt-1" : "pt-1.5"}`}>
           <div className="flex items-center gap-2 w-full">
-            {/* Click avatar/name to go to Profile */}
+            {}
             <Link
               to="/profile"
               className={`flex-1 min-w-0 flex items-center gap-3 ${styleGroup.profileRowPadding} rounded-xl transition-colors cursor-pointer group ${
@@ -156,7 +156,7 @@ export default function Sidebar() {
               </div>
             </Link>
 
-            {/* Messages Icon Button */}
+            {}
             <Link
               to="/messages"
               className={`flex-shrink-0 rounded-lg transition-colors ${
@@ -169,7 +169,7 @@ export default function Sidebar() {
               <MessageSquare className={styleGroup.rowIcon} />
             </Link>
 
-            {/* Friends Icon Button */}
+            {}
             <Link
               to="/friends"
               className={`flex-shrink-0 rounded-lg transition-colors ${
@@ -182,7 +182,7 @@ export default function Sidebar() {
               <Users className={styleGroup.rowIcon} />
             </Link>
 
-            {/* Settings Icon Button */}
+            {}
             <Link
               to="/settings"
               className={`flex-shrink-0 rounded-lg transition-colors ${
@@ -197,7 +197,7 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Logout */}
+        {}
         <button
           onClick={handleLogout}
           className={`w-full flex items-center gap-3 min-h-[44px] ${styleGroup.rowPadding} rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors`}

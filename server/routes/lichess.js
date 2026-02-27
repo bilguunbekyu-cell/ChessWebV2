@@ -7,7 +7,6 @@ const DEFAULT_TIMEOUT_MS = 8000;
 const TV_CACHE_TTL_MS = 15000;
 const TV_REQUEST_COOLDOWN_MS = 2500;
 
-// simple in-memory cache to keep last good response
 let cachedGames = [];
 let cachedAt = 0;
 let lastTvFetchAt = 0;
@@ -173,7 +172,7 @@ async function fetchGameStreamHead(gameId) {
         try {
           await reader.cancel();
         } catch {
-          // ignore
+
         }
         if (!firstLine) return null;
         return JSON.parse(firstLine);
@@ -183,7 +182,7 @@ async function fetchGameStreamHead(gameId) {
     try {
       await reader.cancel();
     } catch {
-      // ignore
+
     }
     return null;
   } catch (error) {
@@ -336,7 +335,6 @@ router.get("/tv", async (_req, res) => {
   return res.json(payload);
 });
 
-// Streamers proxy with fallback
 router.get("/streamers", async (_req, res) => {
   try {
     const response = await fetchWithTimeout(`${LICHESS_API_BASE}/streamer/live`);

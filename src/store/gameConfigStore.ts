@@ -2,18 +2,18 @@ import { create } from "zustand";
 
 export interface TimeOption {
   label: string;
-  initial: number; // seconds
-  increment: number; // seconds
+  initial: number; 
+  increment: number; 
 }
 
 export interface QuickAction {
   id: string;
   title: string;
   description: string;
-  icon: string; // icon name like "Gamepad2", "Bot", etc.
-  accent: string; // tailwind gradient classes
-  route: string; // navigation route
-  action: string; // special action like "startMatch"
+  icon: string; 
+  accent: string; 
+  route: string; 
+  action: string; 
   disabled: boolean;
 }
 

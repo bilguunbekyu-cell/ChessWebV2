@@ -12,7 +12,6 @@ export const useChessGame = () => {
   const [moveTo, setMoveTo] = useState<Square | null>(null);
   const setMoves = useChessStore((state) => state.setMoves);
 
-  // Get available moves for a square
   const getMoveOptions = useCallback((square: Square) => {
     const currentGame = gameRef.current;
     const moves = currentGame.moves({ square, verbose: true });
@@ -21,25 +20,38 @@ export const useChessGame = () => {
       return false;
     }
 
-    const newSquares: OptionSquares = {};
+    const newSquares: OptionSquares = {
+      [square]: {
+        backgroundColor: "rgba(0, 0, 0, 0.08)",
+        boxShadow: "inset 0 0 0 3px rgba(0, 0, 0, 0.18)",
+      } as any,
+    };
     moves.forEach((move) => {
-      newSquares[move.to] = {};
+      const targetPiece = currentGame.get(move.to);
+      newSquares[move.to] = targetPiece
+        ? ({
+            background:
+              "radial-gradient(circle, transparent 52%, rgba(0, 0, 0, 0.25) 53%, rgba(0, 0, 0, 0.25) 66%, transparent 67%)",
+            cursor: "pointer",
+          } as any)
+        : ({
+            background:
+              "radial-gradient(circle, rgba(0, 0, 0, 0.25) 24%, transparent 25%)",
+            cursor: "pointer",
+          } as any);
     });
     setOptionSquares(newSquares);
     return true;
   }, []);
 
-  // Check if a move is valid
   const isValidMove = useCallback((from: Square, to: Square): boolean => {
     const moves = gameRef.current.moves({ square: from, verbose: true });
     return moves.some((m) => m.from === from && m.to === to);
   }, []);
 
-  // Make a move on the board
   const makeMove = useCallback(
     (from: Square, to: Square, promotion?: "b" | "n" | "r" | "q"): boolean => {
       try {
-        // Create a copy of the game to avoid mutating the current state
         const gameCopy = new Chess(gameRef.current.fen());
         const move = gameCopy.move({ from, to, promotion: promotion || "q" });
         if (move) {
@@ -56,7 +68,6 @@ export const useChessGame = () => {
     [setMoves],
   );
 
-  // Reset the game
   const resetGame = useCallback(() => {
     const newGame = new Chess();
     gameRef.current = newGame;
@@ -67,14 +78,12 @@ export const useChessGame = () => {
     setMoveTo(null);
   }, [setMoves]);
 
-  // Clear selection
   const clearSelection = useCallback(() => {
     setOptionSquares({});
     setMoveFrom(null);
     setMoveTo(null);
   }, []);
 
-  // Check game state - use ref for consistent reads
   const isGameOver = useCallback(() => {
     const g = gameRef.current;
     return g.game_over();
@@ -91,7 +100,6 @@ export const useChessGame = () => {
     [],
   );
 
-  // Update game state (for external use)
   const updateGame = useCallback(
     (newGame: Chess) => {
       gameRef.current = newGame;

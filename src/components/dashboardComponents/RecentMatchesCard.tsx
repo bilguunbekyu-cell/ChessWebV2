@@ -44,7 +44,6 @@ function transformGameHistory(game: GameHistory): RecentMatch {
           : "win"
         : "draw";
 
-  // Calculate rating change based on result (simplified estimation)
   const ratingChange = result === "win" ? 12 : result === "loss" ? -8 : 0;
 
   return {

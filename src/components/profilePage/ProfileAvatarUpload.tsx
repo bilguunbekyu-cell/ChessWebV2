@@ -40,13 +40,11 @@ export function ProfileAvatarUpload({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       setError("Please select an image file");
       return;
     }
 
-    // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       setError("Image must be smaller than 2MB");
       return;
@@ -54,7 +52,6 @@ export function ProfileAvatarUpload({
 
     setError(null);
 
-    // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setPreviewUrl(reader.result as string);
@@ -69,10 +66,9 @@ export function ProfileAvatarUpload({
     setError(null);
 
     try {
-      // The previewUrl is already a base64 data URL
+
       const updatedUser = await authApi.updateProfile({ avatar: previewUrl });
 
-      // Update the auth store with new user data
       if (user && updatedUser) {
         setUser({ ...user, avatar: updatedUser.avatar });
       }
@@ -121,7 +117,7 @@ export function ProfileAvatarUpload({
 
   return (
     <>
-      {/* Avatar with edit button */}
+      {}
       <div className="relative group">
         <div
           className={`${avatarSizeClass} rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg ring-4 ring-white dark:ring-gray-900 overflow-hidden`}
@@ -139,7 +135,7 @@ export function ProfileAvatarUpload({
           )}
         </div>
 
-        {/* Edit button overlay */}
+        {}
         {editable && (
           <button
             onClick={() => setIsModalOpen(true)}
@@ -151,7 +147,7 @@ export function ProfileAvatarUpload({
         )}
       </div>
 
-      {/* Upload Modal */}
+      {}
       <AnimatePresence>
         {editable && isModalOpen && (
           <motion.div
@@ -168,7 +164,7 @@ export function ProfileAvatarUpload({
               onClick={(e) => e.stopPropagation()}
               className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6"
             >
-              {/* Header */}
+              {}
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                   Update Profile Picture
@@ -181,7 +177,7 @@ export function ProfileAvatarUpload({
                 </button>
               </div>
 
-              {/* Preview Area */}
+              {}
               <div className="flex flex-col items-center mb-6">
                 <div className="w-32 h-32 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center overflow-hidden ring-4 ring-gray-200 dark:ring-gray-700">
                   {previewUrl ? (
@@ -214,14 +210,14 @@ export function ProfileAvatarUpload({
                 )}
               </div>
 
-              {/* Error Message */}
+              {}
               {error && (
                 <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm">
                   {error}
                 </div>
               )}
 
-              {/* File Input */}
+              {}
               <input
                 type="file"
                 ref={fileInputRef}
@@ -230,7 +226,7 @@ export function ProfileAvatarUpload({
                 className="hidden"
               />
 
-              {/* Actions */}
+              {}
               <div className="space-y-3">
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -281,7 +277,7 @@ export function ProfileAvatarUpload({
                 )}
               </div>
 
-              {/* Help text */}
+              {}
               <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
                 Supported formats: JPG, PNG, GIF. Max size: 2MB
               </p>

@@ -13,7 +13,7 @@ export function FeaturedMatch({
   fallbackGame,
   loading,
 }: FeaturedMatchProps) {
-  // Show skeleton while loading
+
   if (loading) {
     return (
       <section className="mb-10">
@@ -30,7 +30,6 @@ export function FeaturedMatch({
     );
   }
 
-  // If we have a featured event from admin
   if (event) {
     const player1 = event.players?.[0];
     const player2 = event.players?.[1];
@@ -55,7 +54,7 @@ export function FeaturedMatch({
         <div className="bg-white dark:bg-gradient-to-r dark:from-gray-900 dark:to-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 dark:bg-teal-500/10 rounded-full blur-3xl -mr-16 -mt-16 transition-all group-hover:bg-teal-500/10 dark:group-hover:bg-teal-500/20"></div>
 
-          {/* Event Header */}
+          {}
           <div className="relative z-10 mb-6">
             <div className="flex items-center gap-3 mb-2">
               {event.status === "live" && (
@@ -82,10 +81,10 @@ export function FeaturedMatch({
             )}
           </div>
 
-          {/* Players (if it's a match) */}
+          {}
           {player1 && player2 && (
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 mb-6">
-              {/* Player 1 */}
+              {}
               <div className="flex items-center space-x-4 flex-1 justify-end">
                 <div className="text-right">
                   <div className="flex items-center justify-end gap-2">
@@ -107,14 +106,14 @@ export function FeaturedMatch({
                 </div>
               </div>
 
-              {/* VS */}
+              {}
               <div className="flex flex-col items-center px-8">
                 <div className="text-4xl font-black text-gray-400 dark:text-gray-600">
                   VS
                 </div>
               </div>
 
-              {/* Player 2 */}
+              {}
               <div className="flex items-center space-x-4 flex-1">
                 <div className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 flex items-center justify-center text-2xl shadow-lg">
                   ♙
@@ -138,7 +137,7 @@ export function FeaturedMatch({
             </div>
           )}
 
-          {/* Event Info */}
+          {}
           <div className="relative z-10 flex items-center justify-center gap-6 text-sm text-gray-500 dark:text-gray-400 mb-6">
             {event.startDate && (
               <div className="flex items-center gap-1">
@@ -176,7 +175,6 @@ export function FeaturedMatch({
     );
   }
 
-  // Fallback to Lichess live game
   if (fallbackGame) {
     return (
       <section className="mb-10">
@@ -197,7 +195,7 @@ export function FeaturedMatch({
           <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 dark:bg-teal-500/10 rounded-full blur-3xl -mr-16 -mt-16 transition-all group-hover:bg-teal-500/10 dark:group-hover:bg-teal-500/20"></div>
 
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-            {/* Player 1 */}
+            {}
             <div className="flex items-center space-x-4 flex-1 justify-end">
               <div className="text-right">
                 <div className="flex items-center justify-end gap-2">
@@ -219,7 +217,7 @@ export function FeaturedMatch({
               </div>
             </div>
 
-            {/* VS / Status */}
+            {}
             <div className="flex flex-col items-center px-8">
               <div className="text-sm font-bold text-red-500 tracking-widest mb-2 animate-pulse">
                 LIVE
@@ -234,7 +232,7 @@ export function FeaturedMatch({
               </div>
             </div>
 
-            {/* Player 2 */}
+            {}
             <div className="flex items-center space-x-4 flex-1">
               <div className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 flex items-center justify-center text-2xl shadow-lg">
                 ♙
@@ -273,7 +271,6 @@ export function FeaturedMatch({
     );
   }
 
-  // No featured content
   return (
     <section className="mb-10">
       <div className="flex items-center justify-between mb-4">

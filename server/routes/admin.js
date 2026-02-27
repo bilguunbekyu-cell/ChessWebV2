@@ -5,7 +5,6 @@ import { adminAuthMiddleware } from "../middleware/index.js";
 
 const router = Router();
 
-// Admin Login
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -50,7 +49,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Admin Logout
 router.post("/logout", (req, res) => {
   res.cookie("adminToken", "", {
     httpOnly: true,
@@ -62,7 +60,6 @@ router.post("/logout", (req, res) => {
   res.json({ success: true, message: "Admin logged out successfully" });
 });
 
-// Get current admin
 router.get("/me", adminAuthMiddleware, async (req, res) => {
   try {
     const admin = await Admin.findById(req.admin.adminId).select("-password");
@@ -76,7 +73,6 @@ router.get("/me", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// Get stats
 router.get("/stats", adminAuthMiddleware, async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();

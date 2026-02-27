@@ -35,9 +35,6 @@ export function buildSanMoveText(moves: string[], pgnResult?: string): string {
   return chunks.join(" ").trim();
 }
 
-/**
- * Build full PGN string with headers
- */
 export function buildFullPgn(
   currentGame: Chess,
   params: PgnHeadersParams,

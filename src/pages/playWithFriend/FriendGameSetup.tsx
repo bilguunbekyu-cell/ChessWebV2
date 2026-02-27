@@ -171,7 +171,6 @@ export function FriendGameSetup({
   const [isGameTypeOpen, setIsGameTypeOpen] = useState(false);
   const [isTimeControlOpen, setIsTimeControlOpen] = useState(false);
 
-  // Responsive board width
   const [boardWidth, setBoardWidth] = useState(620);
   const containerRef = useRef<HTMLDivElement>(null);
   const leftRef = useRef<HTMLDivElement>(null);
@@ -303,12 +302,12 @@ export function FriendGameSetup({
       className="relative h-screen w-full bg-slate-100 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 overflow-hidden"
     >
       <div className="h-full grid grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]">
-        {/* Left Side - Board Preview */}
+        {}
         <div
           ref={leftRef}
           className="min-w-0 flex flex-col items-center justify-center p-2 gap-2 h-full"
         >
-          {/* Top Opponent Info Bar */}
+          {}
           <div
             ref={topBarRef}
             className="w-full max-w-[900px] flex items-center gap-1.5 px-2"
@@ -337,7 +336,7 @@ export function FriendGameSetup({
             </div>
           </div>
 
-          {/* Chess Board Preview */}
+          {}
           <div
             className="rounded-2xl overflow-hidden shadow-2xl border border-gray-200/60 dark:border-white/10"
             style={{ width: boardWidth, height: boardWidth }}
@@ -351,7 +350,7 @@ export function FriendGameSetup({
             />
           </div>
 
-          {/* Bottom Player Info Bar */}
+          {}
           <div
             ref={bottomBarRef}
             className="w-full max-w-[900px] flex items-center gap-1.5 px-2 justify-start"
@@ -379,7 +378,7 @@ export function FriendGameSetup({
           </div>
         </div>
 
-        {/* Right Side - Settings Panel */}
+        {}
         <div className="min-w-0 w-full bg-white/90 dark:bg-slate-900/95 border-l border-gray-200/60 dark:border-white/10 flex flex-col h-full overflow-hidden">
           <div className="flex-1 flex flex-col gap-3 px-3 py-3 overflow-y-auto min-h-0">
             {!hasChosenFriend ? (
@@ -689,7 +688,7 @@ export function FriendGameSetup({
             )}
           </div>
 
-          {/* Play Button */}
+          {}
           <div className="p-3 border-t border-gray-200/60 dark:border-white/10 flex-shrink-0">
             {hasChosenFriend ? (
               <button

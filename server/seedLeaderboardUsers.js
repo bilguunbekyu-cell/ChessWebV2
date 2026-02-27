@@ -204,7 +204,7 @@ seedLeaderboardUsers().catch(async (error) => {
   try {
     await mongoose.disconnect();
   } catch {
-    // ignore disconnect errors in failure path
+
   }
   process.exit(1);
 });

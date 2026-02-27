@@ -36,7 +36,6 @@ function calculateStats(games: GameHistory[]): GameStats {
 
   const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
 
-  // Calculate current streak from most recent games
   let streak = "";
   if (games.length > 0) {
     const sortedGames = [...games].sort(
@@ -100,7 +99,7 @@ export function FormatRatingsCard() {
         const calculatedStats = calculateStats(data.games || []);
         setStats(calculatedStats);
       } catch {
-        // Keep default stats on error
+
       } finally {
         setLoading(false);
       }

@@ -30,7 +30,6 @@ export function useAdminUsers() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  // Fetch users
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -152,7 +151,7 @@ export function useAdminUsers() {
   const totalPages = Math.ceil(totalUsers / LIMIT);
 
   return {
-    // State
+
     users,
     totalUsers,
     searchQuery,
@@ -167,13 +166,13 @@ export function useAdminUsers() {
     sortOrder,
     isLoading,
     totalPages,
-    // Setters
+
     setSearchQuery,
     setPage,
     setDeleteConfirm,
     setBanConfirm,
     setBanReason,
-    // Actions
+
     handleDeleteUser,
     handleBanUser,
     handleSort,

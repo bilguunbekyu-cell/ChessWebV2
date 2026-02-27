@@ -106,7 +106,6 @@ export function LiveGameCard({ game }: LiveGameCardProps) {
   );
 }
 
-// Skeleton loader
 function GameCardSkeleton() {
   return (
     <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 animate-pulse">
@@ -169,7 +168,6 @@ export function LiveGamesGrid({
     return game.type || "Blitz";
   };
 
-  // Filter games based on tab - now uses both speed and type fields
   const filteredGames = games.filter((game) => {
     const category = getCategory(game);
     if (activeTab === "Top Rated") return true;
@@ -185,7 +183,6 @@ export function LiveGamesGrid({
     return true;
   });
 
-  // Reset to page 1 when tab or game list changes
   useEffect(() => {
     setCurrentPage(1);
   }, [activeTab, games.length]);
@@ -215,7 +212,7 @@ export function LiveGamesGrid({
 
   return (
     <section>
-      {/* Tabs */}
+      {}
       <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 mb-6">
         <div className="flex space-x-6">
           {["Top Rated", "Blitz", "Rapid", "Classical"].map((tab) => (
@@ -250,7 +247,7 @@ export function LiveGamesGrid({
         )}
       </div>
 
-      {/* Count info */}
+      {}
       {!loading && filteredGames.length > 0 && (
         <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
           {rangeStart}–{rangeEnd} of {filteredGames.length} games
@@ -278,7 +275,7 @@ export function LiveGamesGrid({
         </div>
       )}
 
-      {/* Pagination */}
+      {}
       {!loading && totalPages > 1 && (
         <div className="flex items-center justify-center gap-1.5 pt-4">
           <button
@@ -316,7 +313,7 @@ export function LiveGamesGrid({
         </div>
       )}
 
-      {/* Lichess attribution */}
+      {}
       <div className="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">
         Live games powered by{" "}
         <a

@@ -21,13 +21,13 @@ export function PuzzleActions({
 }: PuzzleActionsProps) {
   return (
     <>
-      {/* Timer */}
+      {}
       <div className="px-3 py-2 flex items-center gap-2 text-gray-300">
         <div className="w-3 h-3 rounded-full border-2 border-gray-500" />
         <span className="font-mono">{formatTime(elapsedTime)}</span>
       </div>
 
-      {/* Action Button */}
+      {}
       <div className="p-3">
         {status === "correct" || status === "showingSolution" ? (
           <button
@@ -55,7 +55,7 @@ export function PuzzleActions({
         )}
       </div>
 
-      {/* Bottom Nav */}
+      {}
       <div className="flex items-center justify-between px-3 py-2 border-t border-[#1f2633]">
         <button className="text-gray-500 hover:text-white transition-colors">
           <Settings size={18} />

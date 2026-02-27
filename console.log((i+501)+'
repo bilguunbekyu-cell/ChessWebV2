@@ -1,0 +1,23 @@
+function alphabeta(P, depth, alpha, beta, isMax):
+    if depth == 0 or isTerminal(P):
+        return f(P)
+
+    if isMax:
+        value = -∞
+        for M in orderedMoves(P):         
+            child = apply(P, M)
+            value = max(value, alphabeta(child, depth-1, alpha, beta, false))
+            alpha = max(alpha, value)
+            if alpha >= beta:
+                break                      
+        return value
+
+    else:
+        value = +∞
+        for M in orderedMoves(P):
+            child = apply(P, M)
+            value = min(value, alphabeta(child, depth-1, alpha, beta, true))
+            beta = min(beta, value)
+            if beta <= alpha:
+                break                      
+        return value

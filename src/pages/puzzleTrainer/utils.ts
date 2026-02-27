@@ -1,8 +1,5 @@
 import { Chess } from "chess.js";
 
-/**
- * Normalize FEN string to ensure valid 6-field format
- */
 export function normalizeFen(fen: string): string {
   const parts = fen.trim().split(/\s+/);
   if (parts.length >= 6) {
@@ -15,7 +12,7 @@ export function normalizeFen(fen: string): string {
     parts[5] = String(fullmove);
     return parts.slice(0, 6).join(" ");
   }
-  // If someone saved only the board + side, patch missing fields
+
   if (parts.length === 2 || parts.length === 3 || parts.length === 4) {
     const padded = [
       parts[0],
@@ -30,9 +27,6 @@ export function normalizeFen(fen: string): string {
   return fen;
 }
 
-/**
- * Resolve side-to-move from FEN (true = white, false = black)
- */
 export function fenStartsWithWhite(fen: string, fallback = true): boolean {
   const normalized = normalizeFen(fen);
   const side = normalized.trim().split(/\s+/)[1];
@@ -41,9 +35,6 @@ export function fenStartsWithWhite(fen: string, fallback = true): boolean {
   return fallback;
 }
 
-/**
- * Safely load a game from FEN with fallbacks
- */
 export function safeLoadGame(
   fen: string,
   setFenError: (error: string | null) => void,
@@ -52,12 +43,12 @@ export function safeLoadGame(
   try {
     return new Chess(fen);
   } catch {
-    // Try with normalized fen
+
     try {
       return new Chess(normalizeFen(fen));
     } catch {
       try {
-        return new Chess(); // start position fallback
+        return new Chess(); 
       } catch {
         setFenError("Invalid FEN for this puzzle");
         return new Chess();
@@ -66,9 +57,6 @@ export function safeLoadGame(
   }
 }
 
-/**
- * Normalize solution moves array
- */
 export function normalizeSolution(moves: string[]): string[] {
   return moves
     .map((m) => m.trim())
@@ -83,16 +71,10 @@ export function normalizeSolution(moves: string[]): string[] {
     .map((m) => m.replace(/[?!]+$/g, ""));
 }
 
-/**
- * Check if a move string is in UCI format
- */
 export function isUciMove(move: string): boolean {
   return /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(move);
 }
 
-/**
- * Apply a move string (SAN or UCI) to a chess instance
- */
 export function applyMoveString(
   chess: Chess,
   moveStr: string,
@@ -106,9 +88,6 @@ export function applyMoveString(
   return chess.move(moveStr);
 }
 
-/**
- * Convert a move string to a move object
- */
 export function moveStringToMove(
   fen: string,
   moveStr: string,
@@ -120,9 +99,6 @@ export function moveStringToMove(
     : null;
 }
 
-/**
- * Format elapsed time as MM:SS
- */
 export function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;

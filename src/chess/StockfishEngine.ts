@@ -30,7 +30,6 @@ export class StockfishEngine {
     }
   }
 
-  // Configure engine with a complete bot personality
   configureBotPersonality(config: BotConfig) {
     this.setSkillLevel(config.skillLevel);
     this.setPlayStyle(config.playStyle);
@@ -45,7 +44,6 @@ export class StockfishEngine {
     }
   }
 
-  // Set Stockfish skill level (0-20). Lower = weaker play with more mistakes
   setSkillLevel(level: number) {
     this.skillLevel = Math.max(0, Math.min(20, level));
     if (this.stockfish) {
@@ -53,11 +51,10 @@ export class StockfishEngine {
     }
   }
 
-  // Set playing style
   setPlayStyle(style: PlayStyle) {
     this.playStyle = style;
     if (this.stockfish) {
-      // Contempt: positive = aggressive (avoids draws), negative = defensive
+
       let contempt = 0;
       switch (style) {
         case "aggressive":
@@ -79,21 +76,18 @@ export class StockfishEngine {
 
   onMessage(callback: (data: { bestMove: string }) => void) {
     if (this.stockfish) {
-      // Use onmessage to ensure we only have one active listener at a time
-      // prevents memory leaks and multiple callbacks firing
+
       this.stockfish.onmessage = (e) => {
-        // Log for debugging
-        // console.log("Stockfish says:", e.data);
 
         const bestMove = e.data?.match(/bestmove\s+(\S+)/)?.[1];
-        // Collect MultiPV moves for variety
+
         const pvMatch = e.data?.match(/multipv (\d+).*? pv (\S+)/);
         if (pvMatch) {
           const pvIndex = parseInt(pvMatch[1]) - 1;
           this.multiPvMoves[pvIndex] = pvMatch[2];
         }
         if (bestMove) {
-          // Check if we should blunder (make a random legal move instead)
+
           if (
             this.blunderChance > 0 &&
             Math.random() < this.blunderChance &&
@@ -110,14 +104,12 @@ export class StockfishEngine {
         }
       };
 
-      // Also handle errors
       this.stockfish.onerror = (e) => {
         console.error("Stockfish Worker Error:", e);
       };
     }
   }
 
-  // Store legal moves for potential blundering
   setLegalMoves(moves: string[]) {
     this.allLegalMoves = moves;
   }
@@ -131,11 +123,9 @@ export class StockfishEngine {
     if (this.stockfish) {
       this.multiPvMoves = [];
 
-      // Use custom depth/time if set by bot personality
       const actualDepth = this.customDepth ?? depth;
       const actualTime = this.customThinkTime ?? minTimeMs;
 
-      // Use MultiPV for opening variety (first 10 moves)
       const useMultiPv = moveNumber <= 10;
       if (useMultiPv) {
         this.sendMessage("setoption name MultiPV value 5");
@@ -144,18 +134,17 @@ export class StockfishEngine {
       }
 
       this.stockfish.postMessage(`position fen ${fen}`);
-      // ensure engine thinks at least minTimeMs
+
       this.stockfish.postMessage(
         `go movetime ${Math.max(actualTime, 500)} depth ${actualDepth}`,
       );
     }
   }
 
-  // Get a random move from top moves (for opening variety)
   getRandomTopMove(): string | null {
     const validMoves = this.multiPvMoves.filter((m) => m);
     if (validMoves.length > 1) {
-      // Weight towards better moves but still allow variety
+
       const weights = validMoves.map((_, i) => Math.pow(0.6, i));
       const totalWeight = weights.reduce((a, b) => a + b, 0);
       let random = Math.random() * totalWeight;

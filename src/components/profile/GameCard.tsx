@@ -11,7 +11,7 @@ interface GameCardProps {
   game: GameHistory;
   isExpanded: boolean;
   onToggle: () => void;
-  analyzeBaseUrl?: string; // Optional custom base URL for analyze, defaults to "/analyze"
+  analyzeBaseUrl?: string; 
 }
 
 function isChess960Game(game: GameHistory): boolean {

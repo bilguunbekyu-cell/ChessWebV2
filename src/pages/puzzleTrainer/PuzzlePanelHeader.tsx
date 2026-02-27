@@ -19,7 +19,7 @@ export function PuzzlePanelHeader({ onBack }: PuzzlePanelHeaderProps) {
         </div>
         <span className="text-lg font-bold">Puzzles</span>
       </div>
-      <div className="w-5" /> {/* Spacer */}
+      <div className="w-5" /> {}
     </div>
   );
 }

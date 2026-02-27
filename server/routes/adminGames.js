@@ -335,7 +335,6 @@ function buildAdminGameQuery(rawQuery) {
   return query;
 }
 
-// Get all games
 router.get("/", adminAuthMiddleware, async (req, res) => {
   try {
     const page = Math.max(1, Number(req.query.page) || 1);
@@ -377,7 +376,6 @@ router.get("/", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// Get game stats for dashboard cards
 router.get("/stats", adminAuthMiddleware, async (req, res) => {
   try {
     const [total, rated, standard, chess960, recent24h, results] =
@@ -423,7 +421,6 @@ router.get("/stats", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// Export games as CSV
 router.get("/export/csv", adminAuthMiddleware, async (req, res) => {
   try {
     const query = buildAdminGameQuery(req.query);
@@ -482,7 +479,6 @@ router.get("/export/csv", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// Get single game by ID
 router.get("/:gameId", adminAuthMiddleware, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.gameId)) {
@@ -504,7 +500,6 @@ router.get("/:gameId", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// Create game
 router.post("/", adminAuthMiddleware, async (req, res) => {
   try {
     const { data, error } = sanitizeGamePayload(req.body, { partial: false });
@@ -526,7 +521,6 @@ router.post("/", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// Update game
 router.put("/:gameId", adminAuthMiddleware, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.gameId)) {
@@ -563,7 +557,6 @@ router.put("/:gameId", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// Delete game
 router.delete("/:gameId", adminAuthMiddleware, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.gameId)) {

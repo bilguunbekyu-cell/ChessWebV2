@@ -66,6 +66,7 @@ function buildBot(index) {
     openingBook: true,
     isActive: true,
     sortOrder: 1000 + index,
+    avatarUrl: "/images/Test.png",
   };
 }
 

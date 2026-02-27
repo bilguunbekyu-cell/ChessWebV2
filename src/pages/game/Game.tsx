@@ -44,7 +44,6 @@ export default function Game() {
     }));
   }, [gameSettings]);
 
-  // Responsive board width based on available viewport and layout
   const [boardWidth, setBoardWidth] = useState(900);
   const containerRef = useRef<HTMLDivElement>(null);
   const topInfoRef = useRef<HTMLDivElement>(null);
@@ -101,7 +100,7 @@ export default function Game() {
         ref={containerRef}
         className="relative h-full w-full flex flex-col lg:flex-row lg:items-stretch gap-2 lg:gap-3 px-2 sm:px-3 lg:px-4 py-3 lg:py-4 overflow-hidden"
       >
-        {/* Game Over Modal */}
+        {}
         <GameOverModal
           isOpen={showGameOverModal}
           result={gameResult}
@@ -110,9 +109,9 @@ export default function Game() {
           savedGameId={savedGameId}
         />
 
-        {/* Main Game Area */}
+        {}
         <div className="flex flex-col items-start gap-2 sm:gap-3 flex-shrink-0">
-          {/* Opponent Info */}
+          {}
           <div
             ref={topInfoRef}
             className="flex-shrink-0 z-10"
@@ -136,7 +135,7 @@ export default function Game() {
             />
           </div>
 
-          {/* Chessboard */}
+          {}
           <div className="flex-shrink-0">
             <div
               className="rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-gray-200/60 dark:border-white/5 shadow-xl p-2"
@@ -157,7 +156,7 @@ export default function Game() {
             </div>
           </div>
 
-          {/* Player Info */}
+          {}
           <div
             ref={bottomInfoRef}
             className="flex-shrink-0 z-10"
@@ -185,7 +184,7 @@ export default function Game() {
           </div>
         </div>
 
-        {/* Sidebar Controls */}
+        {}
         <GameSidebar onStartMatch={startMatch} />
       </div>
     </div>

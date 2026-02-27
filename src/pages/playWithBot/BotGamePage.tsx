@@ -12,11 +12,10 @@ import { BOARD_FRAME } from "./types";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
-// Map database bot to BotPersonality interface
 function mapDbBotToPersonality(dbBot: any): BotPersonality {
-  // Construct full avatar URL - uploaded images are stored on server
+
   let avatarUrl = dbBot.avatarUrl || "";
-  if (avatarUrl && !avatarUrl.startsWith("http")) {
+  if (avatarUrl && !avatarUrl.startsWith("http") && !avatarUrl.startsWith("/images/")) {
     avatarUrl = `${API_URL}${avatarUrl.startsWith("/") ? "" : "/"}${avatarUrl}`;
   }
 
@@ -45,7 +44,6 @@ export default function BotGamePage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
 
-  // Bot state
   const [bot, setBot] = useState<BotPersonality | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,13 +75,11 @@ export default function BotGamePage() {
     handleTimeOut,
   } = useStockfishGame();
 
-  // Responsive board width
   const [boardWidth, setBoardWidth] = useState(620);
   const containerRef = useRef<HTMLDivElement>(null);
   const leftRef = useRef<HTMLDivElement>(null);
   const moveListRef = useRef<HTMLDivElement>(null);
 
-  // Fetch bot from API
   useEffect(() => {
     async function fetchBot() {
       if (!botId) return;
@@ -138,7 +134,6 @@ export default function BotGamePage() {
     };
   }, []);
 
-  // Auto-start game when bot is loaded
   useEffect(() => {
     if (bot && !gameStarted) {
       const settings: GameSettings = {
@@ -155,14 +150,12 @@ export default function BotGamePage() {
     handleStartGame({ ...gameSettings });
   };
 
-  // Auto-scroll move list to bottom when new moves are added
   useEffect(() => {
     if (moveListRef.current) {
       moveListRef.current.scrollTop = moveListRef.current.scrollHeight;
     }
   }, [moves]);
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-100 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center">
@@ -171,7 +164,6 @@ export default function BotGamePage() {
     );
   }
 
-  // If bot not found, redirect back
   if (error || !bot) {
     return (
       <div className="min-h-screen bg-slate-100 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center">
@@ -194,7 +186,7 @@ export default function BotGamePage() {
     <div className="h-screen overflow-hidden bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white font-sans selection:bg-teal-500/30 transition-colors duration-300">
       <Sidebar />
 
-      {/* Main Content */}
+      {}
       <div className="flex flex-col ml-72 h-screen overflow-hidden">
         <main className="flex-1 flex flex-col overflow-hidden">
           <div
@@ -210,12 +202,12 @@ export default function BotGamePage() {
                 savedGameId={savedGameId}
               />
 
-              {/* Left Side - Board with Player Info */}
+              {}
               <div
                 ref={leftRef}
                 className="flex flex-col items-center justify-center p-4 gap-4 h-full overflow-hidden"
               >
-                {/* Top Player Info Bar (Opponent) */}
+                {}
                 <div className="w-full max-w-[900px] flex items-center gap-3 px-2">
                   <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-700 flex-shrink-0">
                     {bot.avatarUrl ? (
@@ -258,7 +250,7 @@ export default function BotGamePage() {
                   )}
                 </div>
 
-                {/* Chess Board */}
+                {}
                 <div
                   className="rounded-2xl overflow-hidden shadow-2xl border border-gray-200/60 dark:border-white/10"
                   style={{ width: boardWidth }}
@@ -278,7 +270,7 @@ export default function BotGamePage() {
                   />
                 </div>
 
-                {/* Bottom Player Info Bar (You) */}
+                {}
                 <div className="w-full max-w-[900px] flex items-center gap-3 px-2 justify-start">
                   <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-700 flex-shrink-0">
                     {user?.avatar ? (
@@ -312,9 +304,9 @@ export default function BotGamePage() {
                 </div>
               </div>
 
-              {/* Right Side - Game Panel */}
+              {}
               <div className="w-full bg-white/90 dark:bg-slate-900/95 border-l border-gray-200/60 dark:border-white/10 flex flex-col h-full overflow-hidden">
-                {/* Panel Header - Fixed */}
+                {}
                 <div className="flex-shrink-0 p-4 border-b border-gray-200/60 dark:border-white/10">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-700 flex-shrink-0">
@@ -350,7 +342,7 @@ export default function BotGamePage() {
                   </div>
                 </div>
 
-                {/* Move List - Scrollable */}
+                {}
                 <div
                   ref={moveListRef}
                   className="flex-1 overflow-y-auto min-h-0"
@@ -388,7 +380,7 @@ export default function BotGamePage() {
                   </div>
                 </div>
 
-                {/* Action Buttons - Fixed */}
+                {}
                 <div className="flex-shrink-0 p-4 border-t border-gray-200/60 dark:border-white/10 flex flex-col gap-2">
                   <button
                     onClick={handleResign}

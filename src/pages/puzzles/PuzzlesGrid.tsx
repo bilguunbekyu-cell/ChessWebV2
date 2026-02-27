@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Play, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { PuzzleItem, getDifficultyColor } from "./types";
 
 const ITEMS_PER_PAGE = 12;
@@ -12,6 +13,8 @@ interface PuzzleCardProps {
 }
 
 export function PuzzleCard({ puzzle, index }: PuzzleCardProps) {
+  const { t } = useTranslation();
+  const tr = (value: string) => t(value, { defaultValue: value });
   const navigate = useNavigate();
 
   return (
@@ -58,17 +61,17 @@ export function PuzzleCard({ puzzle, index }: PuzzleCardProps) {
           {puzzle.isWhiteToMove ? (
             <>
               <div className="w-3 h-3 rounded-full bg-white border border-gray-300" />
-              White to move
+              {tr("White to move")}
             </>
           ) : (
             <>
               <div className="w-3 h-3 rounded-full bg-gray-800 border border-gray-600" />
-              Black to move
+              {tr("Black to move")}
             </>
           )}
         </span>
         <button className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition-all text-sm font-medium flex items-center gap-1 group-hover:shadow-lg group-hover:shadow-teal-500/20">
-          <Play size={14} /> Solve
+          <Play size={14} /> {tr("Solve")}
         </button>
       </div>
     </motion.div>
@@ -100,9 +103,10 @@ export function PuzzlesGrid({
   totalCount,
   activeLabel,
 }: PuzzlesGridProps) {
+  const { t } = useTranslation();
+  const tr = (value: string) => t(value, { defaultValue: value });
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Reset to page 1 whenever the filtered list changes
   useEffect(() => {
     setCurrentPage(1);
   }, [puzzles.length, activeLabel]);
@@ -133,12 +137,12 @@ export function PuzzlesGrid({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-          Puzzle Library
+          {tr("Puzzle Library")}
         </h3>
         <div className="text-sm text-gray-500 dark:text-gray-400">
           {selectedCount === 0
-            ? `0/${allCount} shown`
-            : `${rangeStart}–${rangeEnd} of ${selectedCount}`}
+            ? `0/${allCount} ${tr("shown")}`
+            : `${rangeStart}–${rangeEnd} ${tr("of")} ${selectedCount}`}
           {activeLabel ? ` • ${activeLabel}` : ""}
         </div>
       </div>
@@ -150,7 +154,7 @@ export function PuzzlesGrid({
           </div>
         ) : puzzles.length === 0 ? (
           <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
-            No puzzles available
+            {tr("No puzzles available")}
           </div>
         ) : (
           paginatedPuzzles.map((puzzle, idx) => (
@@ -159,10 +163,10 @@ export function PuzzlesGrid({
         )}
       </div>
 
-      {/* Pagination */}
+      {}
       {!loading && totalPages > 1 && (
         <div className="flex items-center justify-center gap-1.5 pt-2">
-          {/* Previous */}
+          {}
           <button
             disabled={safePage <= 1}
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -171,7 +175,7 @@ export function PuzzlesGrid({
             <ChevronLeft size={16} />
           </button>
 
-          {/* Page numbers */}
+          {}
           {pageNums.map((p, i) =>
             p === "..." ? (
               <span
@@ -191,7 +195,7 @@ export function PuzzlesGrid({
             ),
           )}
 
-          {/* Next */}
+          {}
           <button
             disabled={safePage >= totalPages}
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}

@@ -86,7 +86,7 @@ export function useOnlineFourPlayerMatch() {
     if (!socket) return;
     if (!gameIdRef.current) return;
     const now = Date.now();
-    if (now - lastResyncAtRef.current < 500) return; // throttle spam
+    if (now - lastResyncAtRef.current < 500) return; 
     lastResyncAtRef.current = now;
     socket.emit("fourPlayerResync", { gameId: gameIdRef.current });
   }, []);

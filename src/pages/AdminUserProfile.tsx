@@ -54,7 +54,6 @@ export default function AdminUserProfile() {
     }
   }, [isAuthenticated, authLoading, navigate]);
 
-  // Fetch user data
   useEffect(() => {
     if (!isAuthenticated || !userId) return;
 
@@ -62,7 +61,6 @@ export default function AdminUserProfile() {
       try {
         setLoading(true);
 
-        // Fetch user info
         const userRes = await fetch(`${API_URL}/api/admin/users/${userId}`, {
           credentials: "include",
         });
@@ -70,7 +68,6 @@ export default function AdminUserProfile() {
         const userData = await userRes.json();
         setUser(userData.user);
 
-        // Fetch user's games
         const gamesRes = await fetch(
           `${API_URL}/api/admin/users/${userId}/games`,
           {
@@ -131,7 +128,6 @@ export default function AdminUserProfile() {
     );
   }
 
-  // Create a user object compatible with ProfileHeader
   const profileUser = {
     id: user._id,
     fullName: user.fullName,
@@ -144,7 +140,7 @@ export default function AdminUserProfile() {
       <AdminSidebar />
 
       <div className="ml-72">
-        {/* Back Button */}
+        {}
         <div className="px-8 pt-6">
           <button
             onClick={() => navigate("/admin")}

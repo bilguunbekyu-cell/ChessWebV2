@@ -1,6 +1,3 @@
-// Script to force reseed all bots
-// Run with: node seedBots.js
-
 import mongoose from "mongoose";
 import { config } from "dotenv";
 import Bot from "./models/Bot.js";
@@ -17,17 +14,14 @@ async function reseedBots() {
     await mongoose.connect(MONGODB_URL);
     console.log("✅ Connected to MongoDB");
 
-    // Delete all existing bots
     console.log("🗑️  Deleting existing bots...");
     const deleteResult = await Bot.deleteMany({});
     console.log(`   Deleted ${deleteResult.deletedCount} bots`);
 
-    // Insert new bots
     console.log("🤖 Inserting bot seed data...");
     const result = await Bot.insertMany(botSeedData);
     console.log(`✅ Successfully seeded ${result.length} bots!`);
 
-    // Show summary by difficulty
     const summary = {};
     result.forEach((bot) => {
       summary[bot.difficulty] = (summary[bot.difficulty] || 0) + 1;

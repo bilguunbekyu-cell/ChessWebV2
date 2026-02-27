@@ -12,6 +12,7 @@ import {
 import { useAuthStore, authApi } from "../store/authStore";
 import { useThemeStore } from "../store/themeStore";
 import { useAdminStore } from "../store/adminStore";
+import LanguageSwitch from "../components/LanguageSwitch";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -26,10 +27,9 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setLocalError] = useState("");
 
-  // Clear ban reason after showing it
   useEffect(() => {
     if (banReason) {
-      // Keep showing it, user will see it on login page
+
     }
   }, [banReason]);
 
@@ -37,17 +37,16 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
     setLocalError("");
-    setBanned(""); // Clear any previous ban message
+    setBanned(""); 
 
     try {
-      // Try admin login first
+
       const isAdmin = await adminLogin(email, password);
       if (isAdmin) {
         navigate("/admin");
         return;
       }
 
-      // If not admin, try regular user login
       const data = await authApi.login(email, password, rememberMe);
       setUser(data.user);
       navigate("/");
@@ -62,7 +61,9 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 flex items-center justify-center p-4 transition-colors duration-300">
-      {/* Theme Toggle - Top Right */}
+      <LanguageSwitch className="fixed top-4 left-4 z-50" />
+
+      {}
       <button
         onClick={toggleTheme}
         className="fixed top-4 right-4 p-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg hover:scale-105 transition-transform z-50"
@@ -89,7 +90,7 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Banned notice */}
+        {}
         {banReason && (
           <div className="mb-4 p-4 rounded-lg bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-800">
             <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-semibold mb-1">

@@ -8,7 +8,6 @@ export function useStockfishEngine(
 ) {
   const engineRef = useRef<StockfishEngine | null>(null);
 
-  // Initialize Stockfish engine
   useEffect(() => {
     engineRef.current = new StockfishEngine();
     return () => {
@@ -16,11 +15,10 @@ export function useStockfishEngine(
     };
   }, []);
 
-  // Configure engine based on bot personality or difficulty
   useEffect(() => {
     if (engineRef.current) {
       if (selectedBot) {
-        // Use bot personality configuration
+
         engineRef.current.configureBotPersonality({
           skillLevel: selectedBot.skillLevel,
           playStyle: selectedBot.playStyle,
@@ -30,8 +28,7 @@ export function useStockfishEngine(
           aggressiveness: selectedBot.aggressiveness,
         });
       } else {
-        // Use simple difficulty slider (make level 1 very easy)
-        // Level 1 = Skill 0, Level 10 = Skill 20
+
         const skillLevel = Math.max(0, (difficulty - 1) * 2.2);
         engineRef.current.setSkillLevel(Math.round(skillLevel));
       }

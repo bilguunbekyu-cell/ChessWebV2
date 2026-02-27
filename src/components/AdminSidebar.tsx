@@ -40,7 +40,7 @@ export default function AdminSidebar() {
 
   return (
     <div className="w-72 h-screen bg-[#ebebed] dark:bg-gray-900 border-r border-gray-200/60 dark:border-gray-800 flex flex-col fixed left-0 top-0 z-50 transition-colors duration-300">
-      {/* Logo */}
+      {}
       <Link
         to="/admin"
         className="px-5 py-4 flex items-center gap-3 border-b border-gray-200/70 dark:border-gray-800"
@@ -60,7 +60,7 @@ export default function AdminSidebar() {
         </div>
       </Link>
 
-      {/* Navigation */}
+      {}
       <nav className="flex-1 px-4 space-y-2 mt-2">
         {navItems.map((item) => (
           <Link
@@ -80,7 +80,7 @@ export default function AdminSidebar() {
         ))}
       </nav>
 
-      {/* Theme Toggle & Profile */}
+      {}
       <div className="p-4 border-t border-gray-200 dark:border-gray-800 space-y-2">
         <button
           onClick={toggleTheme}
@@ -96,7 +96,7 @@ export default function AdminSidebar() {
           </span>
         </button>
 
-        {/* Admin Profile */}
+        {}
         <div className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg">
             <Shield className="w-5 h-5 text-white" />

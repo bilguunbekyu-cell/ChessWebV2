@@ -78,7 +78,6 @@ export function BotGameView({
   const navigate = useNavigate();
   const movesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto-scroll moves list to the latest move
   useEffect(() => {
     if (movesEndRef.current) {
       movesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -99,12 +98,12 @@ export function BotGameView({
           savedGameId={savedGameId}
         />
 
-        {/* Left Side - Board with Player Info */}
+        {}
         <div
           ref={leftRef}
           className="flex flex-col items-center justify-center p-4 gap-4 h-full min-h-0"
         >
-          {/* Top Player Info Bar (Opponent) */}
+          {}
           <div className="w-full max-w-[900px] flex items-center gap-3 px-2">
             <PlayerInfo
               name={gameSettings.selectedBot?.name || "Stockfish"}
@@ -124,7 +123,7 @@ export function BotGameView({
             />
           </div>
 
-          {/* Chess Board */}
+          {}
           <div
             className="rounded-2xl overflow-hidden shadow-2xl border border-gray-200/60 dark:border-white/10"
             style={{ width: boardWidth }}
@@ -144,7 +143,7 @@ export function BotGameView({
             />
           </div>
 
-          {/* Bottom Player Info Bar (You) */}
+          {}
           <div className="w-full max-w-[900px] flex items-center gap-3 px-2 justify-start">
             <PlayerInfo
               name={user?.fullName || "You"}
@@ -168,9 +167,9 @@ export function BotGameView({
           </div>
         </div>
 
-        {/* Right Side - Game Panel (same width as bot selection) */}
+        {}
         <div className="w-full bg-white/90 dark:bg-slate-900/95 border-l border-gray-200/60 dark:border-white/10 flex flex-col h-full">
-          {/* Panel Header */}
+          {}
           <div className="p-4 border-b border-gray-200/60 dark:border-white/10">
             <div className="flex items-center gap-3">
               <div className="text-3xl">
@@ -194,7 +193,7 @@ export function BotGameView({
             </div>
           </div>
 
-          {/* Move List */}
+          {}
           <div className="flex-1 overflow-y-auto min-h-0">
             <div className="p-3">
               {moves.length === 0 ? (
@@ -232,7 +231,7 @@ export function BotGameView({
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {}
           <div className="p-4 pb-6 border-t border-gray-200/60 dark:border-white/10 flex flex-col gap-2">
             <button
               onClick={onResign}

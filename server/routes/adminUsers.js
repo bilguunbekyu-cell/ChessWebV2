@@ -4,7 +4,6 @@ import { adminAuthMiddleware } from "../middleware/index.js";
 
 const router = Router();
 
-// Get all users
 router.get("/", adminAuthMiddleware, async (req, res) => {
   try {
     const { limit = 50, skip = 0, search = "" } = req.query;
@@ -34,7 +33,6 @@ router.get("/", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// Get single user
 router.get("/:id", adminAuthMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password").lean();
@@ -48,7 +46,6 @@ router.get("/:id", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// Get user's games
 router.get("/:id/games", adminAuthMiddleware, async (req, res) => {
   try {
     const { limit = 50, skip = 0 } = req.query;
@@ -68,7 +65,6 @@ router.get("/:id/games", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// Delete user
 router.delete("/:id", adminAuthMiddleware, async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
@@ -83,7 +79,6 @@ router.delete("/:id", adminAuthMiddleware, async (req, res) => {
   }
 });
 
-// Ban/Unban user
 router.patch("/:id/ban", adminAuthMiddleware, async (req, res) => {
   try {
     const { banned, reason } = req.body;

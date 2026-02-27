@@ -1,8 +1,6 @@
-/* ═══════════════════════════════════════════════════════
-   Community — Premium Redesign
-   ═══════════════════════════════════════════════════════ */
 import { useEffect, useState, useMemo } from "react";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const POSTS_PER_PAGE = 8;
 
@@ -32,12 +30,30 @@ import {
 import {
   COMMUNITY_POSTS,
 } from "../data/communityData";
+import { Toast, useToast } from "../components/settings";
 
 export default function Community() {
+  const { t } = useTranslation();
+  const tr = (value: string) => t(value, { defaultValue: value });
   const [searchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const { toast, show: showToast, hide: hideToast } = useToast();
 
-  /* ── Filter posts ── */
+  const handleModerationAction = (
+    action: "report" | "block" | "mute",
+    userName: string,
+  ) => {
+    if (action === "report") {
+      showToast(tr("Post reported"), "success");
+      return;
+    }
+    if (action === "block") {
+      showToast(`${tr("Blocked user")}: ${userName}`, "success");
+      return;
+    }
+    showToast(`${tr("Muted user")}: ${userName}`, "success");
+  };
+
   const filteredPosts = useMemo(() => {
     let posts = COMMUNITY_POSTS;
 
@@ -53,7 +69,6 @@ export default function Community() {
     return posts;
   }, [searchQuery]);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
@@ -86,34 +101,42 @@ export default function Community() {
       <Sidebar />
 
       <main className="flex-1 ml-72 min-h-screen">
-        {/* ── Content Grid ── */}
+        {}
         <div className="max-w-[1440px] mx-auto flex justify-center gap-6 px-6 py-6">
-          {/* Feed Column */}
+          {}
           <div className="flex-1 min-w-0 max-w-2xl space-y-5">
             <PostComposer />
 
             {filteredPosts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-gray-400 dark:text-gray-600">
                 <Search className="w-10 h-10 mb-3 opacity-40" />
-                <p className="text-sm font-medium">No posts found</p>
+                <p className="text-sm font-medium">{tr("No posts found")}</p>
                 <p className="text-xs mt-1">
-                  Try a different tab or search term
+                  {tr("Try a different tab or search term")}
                 </p>
               </div>
             ) : (
               <>
-                {/* Range info */}
+                {}
                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {rangeStart}–{rangeEnd} of {filteredPosts.length} posts
+                  {rangeStart}–{rangeEnd} {tr("of")} {filteredPosts.length}{" "}
+                  {tr("posts")}
                 </div>
 
                 <div className="space-y-4">
                   {paginatedPosts.map((post, i) => (
-                    <PostCard key={post.id} post={post} index={i} />
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      index={i}
+                      onModerationAction={(action, targetPost) =>
+                        handleModerationAction(action, targetPost.user.name)
+                      }
+                    />
                   ))}
                 </div>
 
-                {/* Pagination */}
+                {}
                 {totalPages > 1 && (
                   <div className="flex items-center justify-center gap-1.5 pt-2 pb-4">
                     <button
@@ -156,7 +179,7 @@ export default function Community() {
             )}
           </div>
 
-          {/* Right Sidebar */}
+          {}
           <aside className="hidden xl:block w-80 shrink-0 space-y-4 pb-10">
             <DailyPuzzleWidget />
             <TrendingWidget />
@@ -166,7 +189,7 @@ export default function Community() {
             <WhoToFollowWidget />
             <EventsWidget />
 
-            {/* Footer */}
+            {}
             <div className="px-3 pt-2">
               <p className="text-[10px] text-gray-400 dark:text-gray-600 leading-relaxed">
                 About · Help · Terms · Privacy · Ads · API ·{" "}
@@ -179,6 +202,12 @@ export default function Community() {
           </aside>
         </div>
       </main>
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        visible={toast.visible}
+        onClose={hideToast}
+      />
     </div>
   );
 }

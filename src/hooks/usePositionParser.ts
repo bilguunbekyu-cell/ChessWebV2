@@ -3,11 +3,6 @@ import { Chess, Move, Square } from "chess.js";
 import { GameHistory } from "../historyTypes";
 import { PlyState, MoveRow, PositionData } from "./useGameReplayTypes";
 
-/* ──────────────────────────────────────────────────────────
-   Chess960 castling helpers (client-side, mirrors server logic)
-   ────────────────────────────────────────────────────────── */
-
-/** Parse a FEN string into an 8×8 board array plus metadata. */
 function parseFen(fen: string) {
   const [placement, activeColor = "w", , , halfmove = "0", fullmove = "1"] = fen
     .trim()
@@ -37,8 +32,8 @@ function parseFen(fen: string) {
 
 function sqToCoords(sq: string): { file: number; rank: number } | null {
   if (sq.length !== 2) return null;
-  const file = sq.charCodeAt(0) - 97; // a=0 … h=7
-  const rank = 8 - Number(sq[1]); // 1→7 … 8→0 (row index)
+  const file = sq.charCodeAt(0) - 97; 
+  const rank = 8 - Number(sq[1]); 
   if (file < 0 || file > 7 || rank < 0 || rank > 7) return null;
   return { file, rank };
 }
@@ -70,7 +65,6 @@ function serializeBoard(board: (string | null)[][]): string {
     .join("/");
 }
 
-/** Find the file index of a piece on a given rank. */
 function findPieceFile(
   board: (string | null)[][],
   rank: number,
@@ -82,10 +76,6 @@ function findPieceFile(
   return -1;
 }
 
-/**
- * Apply a Chess960 castling move (O-O / O-O-O) to a raw board and return the
- * resulting FEN string.  Returns null if the move can't be applied.
- */
 function applyChess960Castling(
   fen: string,
   san: string,
@@ -93,8 +83,8 @@ function applyChess960Castling(
   const parsed = parseFen(fen);
   if (!parsed) return null;
 
-  const color = parsed.activeColor; // "w" | "b"
-  const rank = color === "w" ? 7 : 0; // board row index
+  const color = parsed.activeColor; 
+  const rank = color === "w" ? 7 : 0; 
   const kingPiece = color === "w" ? "K" : "k";
   const rookPiece = color === "w" ? "R" : "r";
 
@@ -102,10 +92,9 @@ function applyChess960Castling(
   if (kingFile < 0) return null;
 
   const isKingside = san === "O-O";
-  const kingToFile = isKingside ? 6 : 2; // g-file or c-file
-  const rookToFile = isKingside ? 5 : 3; // f-file or d-file
+  const kingToFile = isKingside ? 6 : 2; 
+  const rookToFile = isKingside ? 5 : 3; 
 
-  // Find the correct rook: for kingside, search right of king; for queenside, left.
   let rookFile = -1;
   if (isKingside) {
     for (let f = 7; f > kingFile; f--) {
@@ -124,7 +113,6 @@ function applyChess960Castling(
   }
   if (rookFile < 0) return null;
 
-  // Move pieces: clear old positions, set new.
   parsed.board[rank][kingFile] = null;
   parsed.board[rank][rookFile] = null;
   parsed.board[rank][kingToFile] = kingPiece;
@@ -140,10 +128,6 @@ function applyChess960Castling(
   return { newFen, kingFrom, kingTo };
 }
 
-/* ──────────────────────────────────────────────────────────
-   Main parser
-   ────────────────────────────────────────────────────────── */
-
 function isChess960Game(game: GameHistory): boolean {
   if (game.variant === "chess960") return true;
   if (game.event?.toLowerCase().includes("960")) return true;
@@ -156,7 +140,7 @@ function initChess(game: GameHistory): Chess {
     try {
       return new Chess(game.startingFen);
     } catch {
-      // fall through
+
     }
   }
   return new Chess();
@@ -168,20 +152,18 @@ export function usePositionParser(game: GameHistory): PositionData {
     const chess = initChess(game);
     const verboseMoves: Move[] = [];
 
-    /* ---- Helper: try to apply a single SAN move (with 960 castling fallback) ---- */
     const tryApplySan = (
       engine: Chess,
       san: string,
     ): { applied: Move | null; engine: Chess } => {
-      // Normal move via chess.js first
+
       try {
         const res = engine.move(san, { sloppy: true });
         if (res) return { applied: res, engine };
       } catch {
-        // fall through
+
       }
 
-      // Chess960 castling fallback
       if (is960 && (san === "O-O" || san === "O-O-O")) {
         const result = applyChess960Castling(engine.fen(), san);
         if (result) {
@@ -200,7 +182,7 @@ export function usePositionParser(game: GameHistory): PositionData {
             };
             return { applied: syntheticMove, engine: nextEngine };
           } catch {
-            // fall through
+
           }
         }
       }
@@ -208,7 +190,6 @@ export function usePositionParser(game: GameHistory): PositionData {
       return { applied: null, engine };
     };
 
-    /* ---- Load from stored moves array ---- */
     if (game.moves && game.moves.length > 0) {
       let eng = initChess(game);
       for (const moveStr of game.moves) {
@@ -222,7 +203,6 @@ export function usePositionParser(game: GameHistory): PositionData {
       }
     }
 
-    /* ---- Fallback: parse PGN (only for standard games) ---- */
     const loadPgn = (pgnText: string) => {
       if (!pgnText || is960) return false;
       try {
@@ -281,7 +261,6 @@ export function usePositionParser(game: GameHistory): PositionData {
       }
     }
 
-    // If parsing failed, return minimal state to avoid crashes
     if (verboseMoves.length === 0) {
       const startFen =
         is960 && game.startingFen ? game.startingFen : chess.fen();
@@ -293,7 +272,6 @@ export function usePositionParser(game: GameHistory): PositionData {
       };
     }
 
-    // Rebuild from start to capture all intermediate FENs and captures
     let replayEngine = initChess(game);
     const fens: string[] = [replayEngine.fen()];
     const plyStates: PlyState[] = [];
@@ -303,7 +281,6 @@ export function usePositionParser(game: GameHistory): PositionData {
         let applied: Move | null = null;
         let nextEngine: Chess = replayEngine;
 
-        // For synthetic 960 castling moves, use our helper
         if (is960 && (move.san === "O-O" || move.san === "O-O-O")) {
           const result = applyChess960Castling(replayEngine.fen(), move.san);
           if (result) {
@@ -317,12 +294,11 @@ export function usePositionParser(game: GameHistory): PositionData {
                 after: result.newFen,
               };
             } catch {
-              // fall through
+
             }
           }
         }
 
-        // Normal move
         if (!applied) {
           const res = replayEngine.move({
             from: move.from,
@@ -380,7 +356,6 @@ export function usePositionParser(game: GameHistory): PositionData {
       }
     }
 
-    // Build move rows for the table
     const rows: MoveRow[] = [];
     for (let i = 0; i < verboseMoves.length; i += 2) {
       const whiteMove = verboseMoves[i];

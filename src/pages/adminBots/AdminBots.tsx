@@ -177,7 +177,7 @@ export default function AdminBots() {
       <AdminSidebar />
 
       <div className="flex-1 ml-72 p-8">
-        {/* Notification */}
+        {}
         {notification && (
           <div
             className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
@@ -195,7 +195,7 @@ export default function AdminBots() {
           </div>
         )}
 
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
@@ -224,7 +224,7 @@ export default function AdminBots() {
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-gray-200 dark:border-gray-800">
@@ -290,10 +290,10 @@ export default function AdminBots() {
           </div>
         )}
 
-        {/* Filters */}
+        {}
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 mb-6">
           <div className="flex flex-wrap items-center gap-4">
-            {/* Search */}
+            {}
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -307,7 +307,7 @@ export default function AdminBots() {
               </div>
             </div>
 
-            {/* Difficulty Filter */}
+            {}
             <select
               value={difficultyFilter}
               onChange={(e) => setDifficultyFilter(e.target.value)}
@@ -321,7 +321,7 @@ export default function AdminBots() {
               ))}
             </select>
 
-            {/* Category Filter */}
+            {}
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
@@ -335,7 +335,7 @@ export default function AdminBots() {
               ))}
             </select>
 
-            {/* Active Filter */}
+            {}
             <select
               value={activeFilter}
               onChange={(e) => setActiveFilter(e.target.value)}
@@ -348,7 +348,7 @@ export default function AdminBots() {
           </div>
         </div>
 
-        {/* Table */}
+        {}
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-20">
@@ -416,7 +416,15 @@ export default function AdminBots() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="text-2xl">{bot.avatar}</div>
+                        <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-700 flex-shrink-0">
+                          {bot.avatarUrl ? (
+                            <img src={bot.avatarUrl} alt={bot.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
+                              <span className="text-white font-bold text-xs">{bot.name.substring(0, 2).toUpperCase()}</span>
+                            </div>
+                          )}
+                        </div>
                         <div>
                           <div className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
                             {bot.name}
@@ -486,7 +494,7 @@ export default function AdminBots() {
             </table>
           )}
 
-          {/* Pagination */}
+          {}
           {pagination.pages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-800">
               <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -518,7 +526,7 @@ export default function AdminBots() {
         </div>
       </div>
 
-      {/* Modals */}
+      {}
       <BotFormModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}

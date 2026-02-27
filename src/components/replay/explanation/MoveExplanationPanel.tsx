@@ -22,7 +22,7 @@ export function MoveExplanationPanel({
   positions,
   sanMoves = [],
 }: MoveExplanationPanelProps) {
-  // AI explanations hook
+
   const {
     explanationsByPly,
     aiLoading,
@@ -36,7 +36,6 @@ export function MoveExplanationPanel({
     sanMoves,
   });
 
-  // Best move hook
   const bestMoveInfo = useBestMove({
     currentPly,
     currentMoveSan,
@@ -44,10 +43,8 @@ export function MoveExplanationPanel({
     positions,
   });
 
-  // Get current AI explanation
   const aiExplanation = explanationsByPly.get(currentPly) || null;
 
-  // Generate explanation
   const explanation = useMemo(() => {
     if (currentPly === 0) {
       return {
@@ -70,10 +67,8 @@ export function MoveExplanationPanel({
     );
   }, [currentPly, currentMoveSan, moveQualities, analysisByPly]);
 
-  // Get quality info for current ply
   const qualityInfo = moveQualities.find((q) => q.ply === currentPly);
 
-  // Calculate eval trend
   const evalTrend: EvalTrend = useMemo(() => {
     if (!qualityInfo) return "neutral";
     if (qualityInfo.epGain > 0.05) return "up";
@@ -81,7 +76,6 @@ export function MoveExplanationPanel({
     return "neutral";
   }, [qualityInfo]);
 
-  // Show empty state for starting position
   if (currentPly === 0) {
     return <EmptyState />;
   }

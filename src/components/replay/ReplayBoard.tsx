@@ -31,7 +31,6 @@ export function ReplayBoard({
     return () => window.removeEventListener("resize", updateViewport);
   }, []);
 
-  // Keep board size stable and derived from viewport only to avoid mount-time grow/shrink flicker.
   const boardWidth = useMemo(() => {
     const byWidth = Math.floor(viewport.width * 0.38);
     const byHeight = Math.floor(viewport.height * 0.68);
@@ -63,7 +62,7 @@ export function ReplayBoard({
         />
       </div>
 
-      {/* Status Badge */}
+      {}
       {(isCheck || isCheckmate || isStalemate) && (
         <div
           className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-white text-xs sm:text-sm font-bold shadow-lg ${

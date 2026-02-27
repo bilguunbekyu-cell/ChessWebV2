@@ -1,10 +1,11 @@
 import Bot from "../models/Bot.js";
 
 const botSeedData = [
-  // ===== BEGINNER BOTS (ELO 200-500) - Learning Bots =====
+
   {
     name: "Nelson",
     avatar: "🧒",
+    avatarUrl: "/images/Test.png",
     eloRating: 250,
     difficulty: "beginner",
     category: "Learning Bots",
@@ -24,6 +25,7 @@ const botSeedData = [
   {
     name: "Lily",
     avatar: "🌸",
+    avatarUrl: "/images/Test.png",
     eloRating: 300,
     difficulty: "beginner",
     category: "Learning Bots",
@@ -43,6 +45,7 @@ const botSeedData = [
   {
     name: "Bobby",
     avatar: "⚽",
+    avatarUrl: "/images/Test.png",
     eloRating: 400,
     difficulty: "beginner",
     category: "Learning Bots",
@@ -62,6 +65,7 @@ const botSeedData = [
   {
     name: "Emma",
     avatar: "📚",
+    avatarUrl: "/images/Test.png",
     eloRating: 500,
     difficulty: "beginner",
     category: "Learning Bots",
@@ -79,10 +83,10 @@ const botSeedData = [
     sortOrder: 4,
   },
 
-  // ===== CASUAL BOTS (ELO 600-1000) - Casual Players =====
   {
     name: "Alex",
     avatar: "🎮",
+    avatarUrl: "/images/Test.png",
     eloRating: 700,
     difficulty: "casual",
     category: "Casual Players",
@@ -102,6 +106,7 @@ const botSeedData = [
   {
     name: "Mia",
     avatar: "☕",
+    avatarUrl: "/images/Test.png",
     eloRating: 800,
     difficulty: "casual",
     category: "Casual Players",
@@ -121,6 +126,7 @@ const botSeedData = [
   {
     name: "Jordan",
     avatar: "🏀",
+    avatarUrl: "/images/Test.png",
     eloRating: 900,
     difficulty: "casual",
     category: "Casual Players",
@@ -140,6 +146,7 @@ const botSeedData = [
   {
     name: "Sam",
     avatar: "🎯",
+    avatarUrl: "/images/Test.png",
     eloRating: 1000,
     difficulty: "casual",
     category: "Casual Players",
@@ -157,10 +164,10 @@ const botSeedData = [
     sortOrder: 8,
   },
 
-  // ===== INTERMEDIATE BOTS (ELO 1100-1500) - Club Players =====
   {
     name: "Viktor",
     avatar: "⚔️",
+    avatarUrl: "/images/Test.png",
     eloRating: 1200,
     difficulty: "intermediate",
     category: "Club Players",
@@ -180,6 +187,7 @@ const botSeedData = [
   {
     name: "Sofia",
     avatar: "👸",
+    avatarUrl: "/images/Test.png",
     eloRating: 1300,
     difficulty: "intermediate",
     category: "Club Players",
@@ -199,6 +207,7 @@ const botSeedData = [
   {
     name: "Chen",
     avatar: "🧘",
+    avatarUrl: "/images/Test.png",
     eloRating: 1400,
     difficulty: "intermediate",
     category: "Club Players",
@@ -218,6 +227,7 @@ const botSeedData = [
   {
     name: "Aria",
     avatar: "🎭",
+    avatarUrl: "/images/Test.png",
     eloRating: 1500,
     difficulty: "intermediate",
     category: "Club Players",
@@ -235,10 +245,10 @@ const botSeedData = [
     sortOrder: 12,
   },
 
-  // ===== ADVANCED BOTS (ELO 1600-2000) - Advanced Players =====
   {
     name: "Dmitri",
     avatar: "🎩",
+    avatarUrl: "/images/Test.png",
     eloRating: 1700,
     difficulty: "advanced",
     category: "Advanced Players",
@@ -258,6 +268,7 @@ const botSeedData = [
   {
     name: "Nadia",
     avatar: "💎",
+    avatarUrl: "/images/Test.png",
     eloRating: 1800,
     difficulty: "advanced",
     category: "Advanced Players",
@@ -278,6 +289,7 @@ const botSeedData = [
   {
     name: "Marco",
     avatar: "🏛️",
+    avatarUrl: "/images/Test.png",
     eloRating: 1900,
     difficulty: "advanced",
     category: "Advanced Players",
@@ -297,6 +309,7 @@ const botSeedData = [
   {
     name: "Zara",
     avatar: "🔮",
+    avatarUrl: "/images/Test.png",
     eloRating: 2000,
     difficulty: "advanced",
     category: "Advanced Players",
@@ -315,10 +328,10 @@ const botSeedData = [
     sortOrder: 16,
   },
 
-  // ===== MASTER BOTS (ELO 2100-2800) - Masters =====
   {
     name: "Grandmaster Boris",
     avatar: "🧔‍♂️",
+    avatarUrl: "/images/Test.png",
     eloRating: 2200,
     difficulty: "master",
     category: "Masters",
@@ -338,6 +351,7 @@ const botSeedData = [
   {
     name: "Alexandra",
     avatar: "👑",
+    avatarUrl: "/images/Test.png",
     eloRating: 2400,
     difficulty: "master",
     category: "Masters",
@@ -357,6 +371,7 @@ const botSeedData = [
   {
     name: "Magnus",
     avatar: "🦁",
+    avatarUrl: "/images/Test.png",
     eloRating: 2600,
     difficulty: "master",
     category: "Masters",
@@ -377,6 +392,7 @@ const botSeedData = [
   {
     name: "Hikaru",
     avatar: "⚡",
+    avatarUrl: "/images/Test.png",
     eloRating: 2800,
     difficulty: "master",
     category: "Masters",
@@ -394,10 +410,10 @@ const botSeedData = [
     sortOrder: 20,
   },
 
-  // ===== THEMED: WINTER ATHLETES (ELO 1000-1400) =====
   {
     name: "Snowboarder",
     avatar: "🏂",
+    avatarUrl: "/images/Test.png",
     eloRating: 1000,
     difficulty: "casual",
     category: "Winter Athletes",
@@ -417,6 +433,7 @@ const botSeedData = [
   {
     name: "Skier",
     avatar: "⛷️",
+    avatarUrl: "/images/Test.png",
     eloRating: 1100,
     difficulty: "intermediate",
     category: "Winter Athletes",
@@ -436,6 +453,7 @@ const botSeedData = [
   {
     name: "Curler",
     avatar: "🥌",
+    avatarUrl: "/images/Test.png",
     eloRating: 1200,
     difficulty: "intermediate",
     category: "Winter Athletes",
@@ -456,6 +474,7 @@ const botSeedData = [
   {
     name: "Figure Skater",
     avatar: "⛸️",
+    avatarUrl: "/images/Test.png",
     eloRating: 1300,
     difficulty: "intermediate",
     category: "Winter Athletes",
@@ -475,6 +494,7 @@ const botSeedData = [
   {
     name: "Hockey Player",
     avatar: "🏒",
+    avatarUrl: "/images/Test.png",
     eloRating: 1400,
     difficulty: "intermediate",
     category: "Winter Athletes",
@@ -492,10 +512,10 @@ const botSeedData = [
     sortOrder: 25,
   },
 
-  // ===== THEMED: ANIME CHARACTERS (ELO 800-2000) =====
   {
     name: "Reze",
     avatar: "💣",
+    avatarUrl: "/images/Test.png",
     eloRating: 1500,
     difficulty: "intermediate",
     category: "Anime",
@@ -516,6 +536,7 @@ const botSeedData = [
   {
     name: "Shikamaru",
     avatar: "🦌",
+    avatarUrl: "/images/Test.png",
     eloRating: 1200,
     difficulty: "intermediate",
     category: "Anime",
@@ -535,6 +556,7 @@ const botSeedData = [
   {
     name: "Lelouch",
     avatar: "♟️",
+    avatarUrl: "/images/Test.png",
     eloRating: 1700,
     difficulty: "advanced",
     category: "Anime",
@@ -555,6 +577,7 @@ const botSeedData = [
   {
     name: "Light",
     avatar: "📓",
+    avatarUrl: "/images/Test.png",
     eloRating: 1800,
     difficulty: "advanced",
     category: "Anime",
@@ -575,6 +598,7 @@ const botSeedData = [
   {
     name: "L Lawliet",
     avatar: "🍰",
+    avatarUrl: "/images/Test.png",
     eloRating: 1900,
     difficulty: "advanced",
     category: "Anime",
@@ -593,10 +617,10 @@ const botSeedData = [
     sortOrder: 30,
   },
 
-  // ===== THEMED: HISTORICAL FIGURES (ELO 1500-2500) =====
   {
     name: "Cleopatra",
     avatar: "🐍",
+    avatarUrl: "/images/Test.png",
     eloRating: 1800,
     difficulty: "advanced",
     category: "Historical",
@@ -616,6 +640,7 @@ const botSeedData = [
   {
     name: "Einstein",
     avatar: "🧠",
+    avatarUrl: "/images/Test.png",
     eloRating: 1900,
     difficulty: "advanced",
     category: "Historical",
@@ -636,6 +661,7 @@ const botSeedData = [
   {
     name: "Napoleon",
     avatar: "🎖️",
+    avatarUrl: "/images/Test.png",
     eloRating: 2000,
     difficulty: "advanced",
     category: "Historical",
@@ -656,6 +682,7 @@ const botSeedData = [
   {
     name: "Da Vinci",
     avatar: "🎨",
+    avatarUrl: "/images/Test.png",
     eloRating: 2100,
     difficulty: "master",
     category: "Historical",

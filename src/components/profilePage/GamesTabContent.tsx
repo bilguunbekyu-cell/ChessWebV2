@@ -38,7 +38,6 @@ export function GamesTabContent({
 }: GamesTabContentProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Reset to page 1 when filter changes
   const handleSetFilter = (f: FilterType) => {
     setFilter(f);
     setCurrentPage(1);
@@ -94,7 +93,7 @@ export function GamesTabContent({
         </div>
       </div>
 
-      {/* Range info */}
+      {}
       {filteredGames.length > 0 && (
         <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
           {rangeStart}–{rangeEnd} of {filteredGames.length} games
@@ -130,7 +129,7 @@ export function GamesTabContent({
         )}
       </div>
 
-      {/* Pagination */}
+      {}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-1.5 pt-6">
           <button

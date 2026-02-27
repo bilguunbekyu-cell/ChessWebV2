@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Puzzle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../store/authStore";
+import { parseApiError } from "../../utils/apiError";
 import {
   API_URL,
   detectPuzzleCollection,
@@ -18,6 +20,8 @@ import { PuzzlesGrid } from "./PuzzlesGrid";
 import { PuzzleBrowseFilters } from "./PuzzleBrowseFilters";
 
 export default function Puzzles() {
+  const { t } = useTranslation();
+  const tr = (value: string) => t(value, { defaultValue: value });
   const { user } = useAuthStore();
   const [puzzles, setPuzzles] = useState<PuzzleItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,29 +33,43 @@ export default function Puzzles() {
   const [motif, setMotif] = useState("All");
 
   useEffect(() => {
-    fetch(`${API_URL}/api/puzzles`, { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchPuzzles = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/puzzles`, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          const parsed = await parseApiError(res, "Failed to fetch puzzles");
+          throw new Error(parsed.message);
+        }
+        const data = await res.json();
         setPuzzles(data);
-        setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Failed to fetch puzzles:", err);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    void fetchPuzzles();
   }, []);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/puzzles/me/stats`, { credentials: "include" })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch puzzle stats");
-        return res.json();
-      })
-      .then((data) => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/puzzles/me/stats`, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          const parsed = await parseApiError(
+            res,
+            "Failed to fetch puzzle stats",
+          );
+          throw new Error(parsed.message);
+        }
+        const data = await res.json();
         setStats(data);
-        setStatsLoading(false);
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Failed to fetch puzzle stats:", error);
         setStats({
           rating: user?.puzzleElo ?? 1200,
@@ -64,8 +82,12 @@ export default function Puzzles() {
           streak: 0,
           provisional: (user?.puzzleAttempts ?? 0) < 20,
         });
+      } finally {
         setStatsLoading(false);
-      });
+      }
+    };
+
+    void fetchStats();
   }, [
     user?.puzzleAttempts,
     user?.puzzleBestElo,
@@ -101,38 +123,38 @@ export default function Puzzles() {
   const activeLabel = useMemo(() => {
     if (collection === "all") return "All Puzzles";
     if (collection === "mate") {
-      return mateBucket === "all" ? "Mate" : `Mate in ${mateBucket}`;
+      return mateBucket === "all" ? tr("Mate") : `${tr("Mate in")} ${mateBucket}`;
     }
     if ((collection === "tactics" || collection === "endgame") && motif !== "All") {
-      return `${collection === "tactics" ? "Tactics" : "Endgame"} • ${motif}`;
+      return `${collection === "tactics" ? tr("Tactics") : tr("Endgame")} • ${motif}`;
     }
-    if (collection === "openings") return "Openings";
-    return "Filtered";
-  }, [collection, mateBucket, motif]);
+    if (collection === "openings") return tr("Openings");
+    return tr("Filtered");
+  }, [collection, mateBucket, motif, tr]);
 
   return (
     <div className="space-y-8">
-      {/* Header & Stats */}
+      {}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1 space-y-2">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <Puzzle className="w-8 h-8 text-teal-500 dark:text-teal-400" />
-            Puzzles
+            {tr("Puzzles")}
           </h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Train by motif and track your puzzle strength.
+            {tr("Train by motif and track your puzzle strength.")}
           </p>
         </div>
 
         <PuzzleStatsCards stats={stats} loading={statsLoading} />
       </div>
 
-      {/* Main Content Grid */}
+      {}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Daily Puzzle (Left 2 cols) */}
+        {}
         <DailyPuzzleCard />
 
-        {/* Filters / Buckets (Right col) */}
+        {}
         <PuzzleBrowseFilters
           query={query}
           onQueryChange={setQuery}
@@ -149,7 +171,7 @@ export default function Puzzles() {
         />
       </div>
 
-      {/* Recommended Puzzles Grid */}
+      {}
       <PuzzlesGrid
         puzzles={filteredPuzzles}
         loading={loading}

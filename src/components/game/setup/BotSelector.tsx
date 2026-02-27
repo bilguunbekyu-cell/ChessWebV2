@@ -32,7 +32,7 @@ export function BotSelector({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
     >
-      {/* Category Selector */}
+      {}
       <div className="mb-4">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
           Difficulty Category
@@ -57,7 +57,7 @@ export function BotSelector({
         </div>
       </div>
 
-      {/* Bot Selection Grid */}
+      {}
       <div className="mb-4">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
           Choose Your Opponent
@@ -74,7 +74,15 @@ export function BotSelector({
               }`}
             >
               <div className="flex items-center gap-2">
-                <span className="text-2xl">{bot.avatar}</span>
+                <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-700 flex-shrink-0">
+                  {bot.avatarUrl ? (
+                    <img src={bot.avatarUrl} alt={bot.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
+                      <span className="text-white font-bold text-xs">{bot.name.substring(0, 2).toUpperCase()}</span>
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">
                     {bot.title && (
@@ -100,7 +108,7 @@ export function BotSelector({
         </div>
       </div>
 
-      {/* Selected Bot Info */}
+      {}
       {selectedBot && <BotInfoCard bot={selectedBot} />}
     </motion.div>
   );
@@ -110,7 +118,15 @@ function BotInfoCard({ bot }: { bot: BotPersonality }) {
   return (
     <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
       <div className="flex items-start gap-3">
-        <span className="text-4xl">{bot.avatar}</span>
+        <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-700 flex-shrink-0">
+          {bot.avatarUrl ? (
+            <img src={bot.avatarUrl} alt={bot.name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
+              <span className="text-white font-bold">{bot.name.substring(0, 2).toUpperCase()}</span>
+            </div>
+          )}
+        </div>
         <div className="flex-1">
           <h3 className="font-bold text-gray-900 dark:text-white">
             {bot.title && (

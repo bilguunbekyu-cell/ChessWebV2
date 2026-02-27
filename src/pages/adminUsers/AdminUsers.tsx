@@ -45,7 +45,7 @@ export default function AdminUsers() {
       <AdminSidebar />
 
       <main className="ml-72 p-8">
-        {/* Page Header */}
+        {}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-3">
@@ -69,7 +69,7 @@ export default function AdminUsers() {
 
         <UserStatsCards users={users} totalUsers={totalUsers} />
 
-        {/* Users Table */}
+        {}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
           <UsersTable
             users={users}

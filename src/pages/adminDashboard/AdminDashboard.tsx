@@ -30,7 +30,6 @@ export default function AdminDashboard() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  // Fetch stats
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -40,7 +39,6 @@ export default function AdminDashboard() {
       .catch(console.error);
   }, [isAuthenticated]);
 
-  // Fetch users
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -97,7 +95,7 @@ export default function AdminDashboard() {
       <AdminSidebar />
 
       <main className="ml-72 p-8">
-        {/* Page Title */}
+        {}
         <div className="mb-8">
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-gray-500 dark:text-gray-400">
@@ -105,10 +103,10 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        {/* Stats */}
+        {}
         <DashboardStats stats={stats} />
 
-        {/* Users Table */}
+        {}
         <DashboardUsersTable
           users={users}
           totalUsers={totalUsers}

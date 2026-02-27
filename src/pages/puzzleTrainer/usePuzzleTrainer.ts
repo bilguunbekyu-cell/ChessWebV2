@@ -19,7 +19,6 @@ export function usePuzzleTrainer() {
   const { puzzleId } = useParams<{ puzzleId?: string }>();
   const { user, setUser } = useAuthStore();
 
-  // Check if puzzle was passed via navigation state (from Dashboard)
   const initialPuzzle = (location.state as { puzzle?: PuzzleItem })?.puzzle;
 
   const [puzzles, setPuzzles] = useState<PuzzleItem[]>([]);
@@ -42,7 +41,6 @@ export function usePuzzleTrainer() {
     Record<string, React.CSSProperties>
   >({});
 
-  // Timer
   useEffect(() => {
     if (status !== "solving") return;
     const interval = setInterval(() => {
@@ -51,7 +49,6 @@ export function usePuzzleTrainer() {
     return () => clearInterval(interval);
   }, [status, startTime]);
 
-  // Fetch puzzles
   useEffect(() => {
     fetch(`${API_URL}/api/puzzles`, { credentials: "include" })
       .then((res) => res.json())
@@ -158,7 +155,6 @@ export function usePuzzleTrainer() {
     return puzzles.findIndex((p) => p._id === currentPuzzle._id);
   }, [currentPuzzle, puzzles]);
 
-  // Initialize puzzle on change
   useEffect(() => {
     if (!currentPuzzle) return;
     const newGame = safeLoadGame(puzzleFen, setFenError);
@@ -184,7 +180,6 @@ export function usePuzzleTrainer() {
     setMoveSquares({});
   }, [currentPuzzle?._id, puzzleFen]);
 
-  // Auto-restart after a wrong move
   useEffect(() => {
     if (status !== "wrong") return;
     const timer = setTimeout(() => resetPuzzleState(), 600);
@@ -276,7 +271,9 @@ export function usePuzzleTrainer() {
                   setCurrentMoveIndex(nextMoveIndex + 1);
 
                   if (nextMoveIndex + 1 >= solutionMoves.length) {
-                    handlePuzzleSolved(solutionMoves.slice(0, nextMoveIndex + 1));
+                    handlePuzzleSolved(
+                      solutionMoves.slice(0, nextMoveIndex + 1),
+                    );
                   }
                 }
               }
@@ -332,18 +329,26 @@ export function usePuzzleTrainer() {
   const highlightMoves = (from: string) => {
     const moves = game
       .moves({ square: from, verbose: true })
-      .map((m) => m.to)
-      .reduce<Record<string, React.CSSProperties>>((acc, sq) => {
-        acc[sq] = {
-          boxShadow:
-            "inset 0 0 0 3px rgba(20,184,166,0.8), inset 0 0 0 6px rgba(20,184,166,0.18)",
-          background:
-            "radial-gradient(circle, rgba(20,184,166,0.45) 38%, rgba(0,0,0,0) 60%)",
-        };
+      .reduce<Record<string, React.CSSProperties>>((acc, move) => {
+        const targetPiece = game.get(move.to as any);
+        acc[move.to] = targetPiece
+          ? {
+              background:
+                "radial-gradient(circle, transparent 52%, rgba(0,0,0,0.25) 53%, rgba(0,0,0,0.25) 66%, transparent 67%)",
+              cursor: "pointer",
+            }
+          : {
+              background:
+                "radial-gradient(circle, rgba(0,0,0,0.25) 24%, transparent 25%)",
+              cursor: "pointer",
+            };
         return acc;
       }, {});
     setMoveSquares({
-      [from]: { backgroundColor: "rgba(20,184,166,0.25)" },
+      [from]: {
+        backgroundColor: "rgba(0,0,0,0.08)",
+        boxShadow: "inset 0 0 0 3px rgba(0,0,0,0.18)",
+      },
       ...moves,
     });
   };
@@ -363,10 +368,26 @@ export function usePuzzleTrainer() {
         setMoveSquares({});
         return;
       }
+
+      const clickedPieceMoves = game.moves({ square, verbose: true });
+      if (clickedPieceMoves.length > 0) {
+        const clickedPiece = game.get(square as any);
+        const sourcePiece = game.get(moveFrom as any);
+        if (
+          clickedPiece &&
+          sourcePiece &&
+          clickedPiece.color === sourcePiece.color
+        ) {
+          setMoveFrom(square);
+          highlightMoves(square);
+          return;
+        }
+      }
+
       const moved = onDrop(moveFrom, square);
-      if (!moved) return;
       setMoveFrom(null);
       setMoveSquares({});
+      if (!moved) return;
     },
     [game, moveFrom, onDrop, status],
   );
@@ -386,7 +407,6 @@ export function usePuzzleTrainer() {
   }, [lastMove, moveSquares]);
 
   return {
-    // State
     loading,
     status,
     streak,
@@ -401,7 +421,7 @@ export function usePuzzleTrainer() {
     puzzleElo,
     customSquareStyles,
     puzzleStartsWithWhite,
-    // Actions
+
     onDrop,
     handleSquareClick,
     handleSquareRightClick,

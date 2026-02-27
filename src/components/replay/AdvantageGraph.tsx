@@ -18,7 +18,7 @@ export function AdvantageGraph({
     if (!cps || cps.length === 0) return [];
     return cps.map((entry, idx) => ({
       x: idx,
-      y: 1 - evalToExpectedPoints(entry?.cp, entry?.mate, "w"), // invert so White up = positive
+      y: 1 - evalToExpectedPoints(entry?.cp, entry?.mate, "w"), 
     }));
   }, [cps]);
 

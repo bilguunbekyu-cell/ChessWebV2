@@ -133,7 +133,7 @@ export default function Friends() {
         body: JSON.stringify({ friendId }),
       });
       if (!res.ok) throw new Error("Failed to add friend");
-      // refresh list
+
       const updated = await fetch(`${API_URL}/api/friends`, {
         credentials: "include",
       });
@@ -161,7 +161,7 @@ export default function Friends() {
       <Sidebar />
 
       <main className="flex-1 ml-72 p-8">
-        {/* Header */}
+        {}
         <header className="flex flex-col gap-4 mb-8">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -184,7 +184,7 @@ export default function Friends() {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] gap-6">
-          {/* Friend List */}
+          {}
           <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -263,7 +263,7 @@ export default function Friends() {
             )}
           </section>
 
-          {/* Add Friend */}
+          {}
           <aside className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm">
             <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
               <UserPlus className="w-5 h-5 text-teal-500" />

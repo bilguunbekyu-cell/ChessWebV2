@@ -20,14 +20,13 @@ export function ReplayContent({ game }: ReplayContentProps) {
   const navigate = useNavigate();
   const replay = useGameReplay(game);
 
-  // Show loading overlay while analysis is in progress
   if (replay.isAnalyzing) {
     return <AnalysisLoadingOverlay progress={replay.analysisProgress} />;
   }
 
   return (
     <div className="h-[100dvh] bg-[#f5f5f7] dark:bg-gray-950 text-gray-900 dark:text-white flex flex-col overflow-hidden">
-      {/* Back Button */}
+      {}
       <div className="flex-shrink-0 px-4 sm:px-6 pt-4 mb-2">
         <button
           onClick={() => navigate("/profile")}
@@ -38,10 +37,10 @@ export function ReplayContent({ game }: ReplayContentProps) {
         </button>
       </div>
 
-      {/* Main Content - 3 columns in one row */}
+      {}
       <div className="flex-1 min-h-0 w-full px-4 sm:px-6 pb-3">
         <div className="flex gap-3 w-full h-full min-h-0">
-          {/* Left - Game Summary */}
+          {}
           <div
             className="flex-shrink-0 flex flex-col gap-2 h-full overflow-hidden pr-1"
             style={{ flexBasis: "30%", maxWidth: "30%" }}
@@ -56,12 +55,12 @@ export function ReplayContent({ game }: ReplayContentProps) {
             />
           </div>
 
-          {/* Center - Board section (sized by height) */}
+          {}
           <div
             className="flex flex-col gap-1.5 h-full min-h-0"
             style={{ flexBasis: "40%", maxWidth: "40%" }}
           >
-            {/* Captured pieces */}
+            {}
             <div className="flex-shrink-0">
               <CapturedPieces
                 capturedByWhite={replay.capturedByWhite}
@@ -69,7 +68,7 @@ export function ReplayContent({ game }: ReplayContentProps) {
               />
             </div>
 
-            {/* Board - fill remaining height */}
+            {}
             <div className="flex-1 min-h-0 min-w-0 flex items-center gap-2 overflow-hidden">
               <div className="flex-1 min-w-0 flex items-center justify-center min-h-0">
                 <ReplayBoard
@@ -91,12 +90,12 @@ export function ReplayContent({ game }: ReplayContentProps) {
             </div>
           </div>
 
-          {/* Right - Move Explanation + Move List */}
+          {}
           <div
             className="flex-shrink-0 flex flex-col gap-2 h-full min-h-0"
             style={{ flexBasis: "30%", maxWidth: "30%" }}
           >
-            {/* Move Explanation */}
+            {}
             <div className="flex-shrink-0">
               <MoveExplanationPanel
                 currentPly={replay.ply}
@@ -109,7 +108,7 @@ export function ReplayContent({ game }: ReplayContentProps) {
               />
             </div>
 
-            {/* Move list */}
+            {}
             <div className="flex-1 min-h-0 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden">
               <div className="flex-1 overflow-hidden">
                 <ReplayMoveList

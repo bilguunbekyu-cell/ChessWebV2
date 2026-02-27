@@ -2,8 +2,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useChessStore } from "../store/chessStore";
 
 interface ChessTimerProps {
-  initialTime: number; // seconds
-  increment: number; // seconds
+  initialTime: number; 
+  increment: number; 
   isActive: boolean;
   isPlayerTimer: boolean;
   onTimeOut: () => void;
@@ -19,7 +19,6 @@ const ChessTimer: React.FC<ChessTimerProps> = ({
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const gameOver = useChessStore((state) => state.gameOver);
 
-  // Format time as MM:SS or M:SS.d for under 10 seconds
   const formatTime = (seconds: number): string => {
     if (seconds <= 0) return "0:00";
 
@@ -32,7 +31,6 @@ const ChessTimer: React.FC<ChessTimerProps> = ({
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Timer logic
   useEffect(() => {
     if (!isActive || gameOver || initialTime === 0) return;
 
@@ -51,19 +49,16 @@ const ChessTimer: React.FC<ChessTimerProps> = ({
     return () => clearInterval(interval);
   }, [isActive, gameOver, onTimeOut, initialTime]);
 
-  // Add increment after move
   const addIncrement = useCallback(() => {
     if (increment > 0) {
       setTimeLeft((prev) => prev + increment);
     }
   }, [increment]);
 
-  // Reset timer
   const resetTimer = useCallback(() => {
     setTimeLeft(initialTime);
   }, [initialTime]);
 
-  // Register functions to store only once on mount (not on every timeLeft change)
   useEffect(() => {
     if (isPlayerTimer) {
       useChessStore.setState({
@@ -78,7 +73,6 @@ const ChessTimer: React.FC<ChessTimerProps> = ({
     }
   }, [isPlayerTimer, addIncrement, resetTimer]);
 
-  // Don't render for unlimited games
   if (initialTime === 0) {
     return (
       <div className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white font-mono text-xl">
