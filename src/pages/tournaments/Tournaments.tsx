@@ -147,6 +147,9 @@ export default function Tournaments() {
   const [noRatingFilter, setNoRatingFilter] = useState(true);
   const [rounds, setRounds] = useState("");
   const [selectedManagerId, setSelectedManagerId] = useState("");
+  const [showRepairEditor, setShowRepairEditor] = useState(false);
+  const [repairText, setRepairText] = useState("");
+  const [allowRepairRematch, setAllowRepairRematch] = useState(false);
 
   const loadList = async (opts?: { silent?: boolean }) => {
     try {
@@ -302,6 +305,25 @@ export default function Tournaments() {
       ) || null
     );
   }, [currentUserId, detail]);
+  const currentRoundGames = useMemo(() => {
+    if (!detail) return [];
+    const round = detail.rounds.find(
+      (item) =>
+        Number(item.roundNumber) === Number(detail.tournament.currentRound || 0),
+    );
+    return round?.games || [];
+  }, [detail]);
+  const canRepairCurrentRound = useMemo(() => {
+    if (!detail?.tournament?.canManage) return false;
+    if (detail.tournament.status !== "running") return false;
+    if (currentRoundGames.length === 0) return false;
+    return currentRoundGames.every((game) => game.status === "pending");
+  }, [currentRoundGames, detail?.tournament?.canManage, detail?.tournament?.status]);
+
+  useEffect(() => {
+    if (canRepairCurrentRound) return;
+    setShowRepairEditor(false);
+  }, [canRepairCurrentRound, selectedId]);
   const managerIdsSet = useMemo(
     () => new Set((detail?.managers || []).map((manager) => manager.userId)),
     [detail?.managers],
@@ -453,6 +475,69 @@ export default function Tournaments() {
     navigate(`/play/quick?tournamentGameId=${encodedGameId}`, {
       state: { tournamentGameId: gameId },
     });
+  };
+
+  const prepareRepairPayload = () => {
+    if (!currentRoundGames.length) return;
+    const pairings = currentRoundGames.map((game) =>
+      game.isBye || !game.blackId
+        ? { whiteId: game.whiteId }
+        : { whiteId: game.whiteId, blackId: game.blackId },
+    );
+    setRepairText(
+      JSON.stringify(
+        { pairings, allowRematch: allowRepairRematch },
+        null,
+        2,
+      ),
+    );
+    setShowRepairEditor(true);
+  };
+
+  const repairCurrentRound = async () => {
+    if (!detail?.tournament) return;
+
+    let parsedPayload: unknown;
+    try {
+      parsedPayload = JSON.parse(repairText);
+    } catch (err) {
+      setError("Repair payload must be valid JSON");
+      return;
+    }
+
+    const payload =
+      parsedPayload && typeof parsedPayload === "object"
+        ? (parsedPayload as Record<string, unknown>)
+        : {};
+    const pairings = Array.isArray(payload.pairings)
+      ? payload.pairings
+      : Array.isArray(parsedPayload)
+        ? parsedPayload
+        : null;
+
+    if (!pairings) {
+      setError("Repair payload must include a pairings array");
+      return;
+    }
+
+    const allowRematch =
+      payload.allowRematch === true || allowRepairRematch === true;
+
+    await runAction(
+      "repair-round",
+      () =>
+        fetch(
+          `${API_URL}/api/tournaments/${detail.tournament.id}/rounds/${detail.tournament.currentRound}/repair`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pairings, allowRematch }),
+          },
+        ),
+      "Failed to repair round",
+    );
+    setShowRepairEditor(false);
   };
 
   // Auto-join your current-round pairing as soon as it exists
@@ -626,6 +711,13 @@ export default function Tournaments() {
                     {detail.tournament.canManage && detail.tournament.status === "running" && (
                       <>
                         <button
+                          onClick={prepareRepairPayload}
+                          disabled={!!busy || !canRepairCurrentRound}
+                          className="rounded-lg px-3 py-2 text-sm font-semibold border border-gray-300 dark:border-gray-700 disabled:opacity-50"
+                        >
+                          Repair Current Round
+                        </button>
+                        <button
                           onClick={pairNextRound}
                           disabled={!!busy}
                           className="rounded-lg px-3 py-2 text-sm font-semibold border border-gray-300 dark:border-gray-700"
@@ -652,6 +744,46 @@ export default function Tournaments() {
                     )}
                   </div>
                 </div>
+
+                {detail.tournament.canManage && showRepairEditor && (
+                  <div className="mt-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/30 px-3 py-3 space-y-2.5">
+                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                      Repair Current Round Pairings (JSON)
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Edit pairings manually. Each player must appear exactly once.
+                    </p>
+                    <textarea
+                      value={repairText}
+                      onChange={(e) => setRepairText(e.target.value)}
+                      rows={8}
+                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 px-2.5 py-2 text-xs font-mono"
+                    />
+                    <label className="inline-flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={allowRepairRematch}
+                        onChange={(e) => setAllowRepairRematch(e.target.checked)}
+                      />
+                      Allow rematch pairings
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={repairCurrentRound}
+                        disabled={!!busy}
+                        className="rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-teal-600 hover:bg-teal-500 text-white disabled:opacity-50"
+                      >
+                        Apply Repair
+                      </button>
+                      <button
+                        onClick={() => setShowRepairEditor(false)}
+                        className="rounded-lg px-2.5 py-1.5 text-xs font-semibold border border-gray-300 dark:border-gray-700"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {detail.winners && detail.winners.length > 0 && detail.tournament.currentRound > 0 && (
                   <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">

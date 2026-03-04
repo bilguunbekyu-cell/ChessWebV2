@@ -808,3 +808,103 @@ export function sortStandings(players) {
     return aJoined - bJoined;
   });
 }
+
+export function buildManualRoundPairings({
+  roundNumber,
+  pairings,
+  registeredIds,
+  existingGames = [],
+  tournamentType = "swiss",
+  allowRematch = false,
+}) {
+  if (!Number.isInteger(Number(roundNumber)) || Number(roundNumber) <= 0) {
+    throw new Error("Invalid round number");
+  }
+  if (!Array.isArray(pairings) || pairings.length === 0) {
+    throw new Error("pairings is required");
+  }
+
+  const normalizedRegisteredIds = new Set(
+    (registeredIds || []).map((id) => toId(id)).filter(Boolean),
+  );
+  if (normalizedRegisteredIds.size < 2) {
+    throw new Error("At least 2 registered players are required");
+  }
+
+  const previousGames = (existingGames || []).filter(
+    (game) => Number(game.roundNumber || 0) < Number(roundNumber),
+  );
+  const playedSet = buildPlayedSet(previousGames);
+
+  const seenPlayers = new Set();
+  let byeCount = 0;
+  const built = [];
+
+  for (let i = 0; i < pairings.length; i += 1) {
+    const raw = pairings[i] || {};
+    const whiteId = toId(raw.whiteId);
+    const blackId = toId(raw.blackId);
+
+    if (!whiteId) {
+      throw new Error(`pairings[${i}].whiteId is required`);
+    }
+    if (!normalizedRegisteredIds.has(whiteId)) {
+      throw new Error(`pairings[${i}].whiteId is not a registered player`);
+    }
+    if (seenPlayers.has(whiteId)) {
+      throw new Error(`Player ${whiteId} appears more than once`);
+    }
+    seenPlayers.add(whiteId);
+
+    if (!blackId) {
+      byeCount += 1;
+      if (byeCount > 1) {
+        throw new Error("Only one bye is allowed per round");
+      }
+
+      built.push(
+        createByePairing(Number(roundNumber), i, whiteId),
+      );
+      continue;
+    }
+
+    if (!normalizedRegisteredIds.has(blackId)) {
+      throw new Error(`pairings[${i}].blackId is not a registered player`);
+    }
+    if (whiteId === blackId) {
+      throw new Error(`pairings[${i}] cannot pair a player against themselves`);
+    }
+    if (seenPlayers.has(blackId)) {
+      throw new Error(`Player ${blackId} appears more than once`);
+    }
+    seenPlayers.add(blackId);
+
+    const rematchKey = playedKey(whiteId, blackId);
+    if (!allowRematch && playedSet.has(rematchKey)) {
+      throw new Error(`pairings[${i}] is a rematch (${whiteId} vs ${blackId})`);
+    }
+
+    built.push(
+      createBasePairing({
+        roundNumber: Number(roundNumber),
+        matchIndex: i,
+        whiteId,
+        blackId,
+      }),
+    );
+  }
+
+  if (seenPlayers.size !== normalizedRegisteredIds.size) {
+    throw new Error("Manual pairings must include every registered player exactly once");
+  }
+
+  if (tournamentType === "knockout") {
+    for (const game of built) {
+      if (!game.isBye && !game.blackId) {
+        throw new Error("Invalid knockout pairing");
+      }
+    }
+  }
+
+  return built;
+}

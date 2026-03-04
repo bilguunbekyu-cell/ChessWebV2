@@ -129,6 +129,18 @@ This file separates what is already implemented vs. what can be assigned next to
   - [DashboardStats.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/adminDashboard/DashboardStats.tsx)
   - includes DAU/WAU/MAU cards, active trend chart, and cohort retention chart
 
+### 1.10 Tournament Manager Repair Action
+- `DONE` manager-only manual pairing repair for current pending round:
+  - `POST /api/tournaments/:id/rounds/:round/repair`
+  - validates full coverage (every registered player exactly once)
+  - blocks duplicate player assignment
+  - allows at most one bye
+  - blocks rematches by default (opt-in `allowRematch: true`)
+  - blocks repair if any game in round already started/finished
+- `DONE` utility + tests:
+  - [tournamentEngine.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/utils/tournamentEngine.js) `buildManualRoundPairings`
+  - [tournamentManualPairings.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/tournamentManualPairings.test.mjs)
+
 ## 2) Suggested next tasks for other models
 
 ### 2.1 Tournament Engine Expansion (`NEXT`)

@@ -6,7 +6,7 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "seed:admin": "node seedAdmin.js",
-    "test:tournaments": "node --test tests/tournamentEngine.test.mjs tests/tournamentLifecycle.test.mjs",
+    "test:tournaments": "node --test tests/tournamentEngine.test.mjs tests/tournamentLifecycle.test.mjs tests/tournamentManualPairings.test.mjs",
     "test:cheat": "node --test tests/cheatDetection.test.mjs",
     "test:elo": "node --test tests/elo.test.mjs tests/glicko2.test.mjs",
     "test:news": "node --test tests/newsHelpers.test.mjs",

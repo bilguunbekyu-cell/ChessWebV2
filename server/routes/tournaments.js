@@ -8,6 +8,7 @@ import {
   User,
 } from "../models/index.js";
 import {
+  buildManualRoundPairings,
   computeRoundsPlanned,
   createPlayerStatsMap,
   generateRoundPairings,
@@ -841,6 +842,104 @@ router.post("/:id/rounds/:round/pair", authMiddleware, async (req, res) => {
   } catch (error) {
     console.error("Tournament pair round error:", error);
     res.status(500).json({ error: "Failed to pair round" });
+  }
+});
+
+router.post("/:id/rounds/:round/repair", authMiddleware, async (req, res) => {
+  try {
+    const { id, round } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: "Invalid tournament id" });
+    }
+
+    const targetRound = Number(round);
+    if (!Number.isInteger(targetRound) || targetRound <= 0) {
+      return res.status(400).json({ error: "Invalid round number" });
+    }
+
+    const tournament = await Tournament.findById(id);
+    if (!tournament) {
+      return res.status(404).json({ error: "Tournament not found" });
+    }
+    if (!hasManageAccess(tournament, req.user.userId)) {
+      return res
+        .status(403)
+        .json({ error: "Only a tournament manager can repair pairings" });
+    }
+    if (tournament.status !== "running") {
+      return res.status(400).json({ error: "Tournament is not running" });
+    }
+    if (targetRound !== Number(tournament.currentRound || 0)) {
+      return res.status(400).json({
+        error: `Only current round (${Number(
+          tournament.currentRound || 0,
+        )}) pairings can be repaired`,
+      });
+    }
+
+    const currentRoundGames = await TournamentGame.find({
+      tournamentId: tournament._id,
+      roundNumber: targetRound,
+    }).lean();
+    if (!currentRoundGames.length) {
+      return res.status(404).json({ error: "Round pairings not found" });
+    }
+
+    const nonPendingGame = currentRoundGames.find(
+      (game) => game.result !== "*" || game.liveStatus !== "pending",
+    );
+    if (nonPendingGame) {
+      return res.status(400).json({
+        error: "Round cannot be repaired after any game has started or finished",
+      });
+    }
+
+    const players = await TournamentPlayer.find({
+      tournamentId: tournament._id,
+    })
+      .select("userId")
+      .lean();
+    const registeredIds = players.map((player) => toId(player.userId));
+    const previousGames = await TournamentGame.find({
+      tournamentId: tournament._id,
+      roundNumber: { $lt: targetRound },
+    }).lean();
+
+    let repairedPairings = [];
+    try {
+      repairedPairings = buildManualRoundPairings({
+        roundNumber: targetRound,
+        pairings: req.body?.pairings,
+        registeredIds,
+        existingGames: previousGames,
+        tournamentType: tournament.type,
+        allowRematch: req.body?.allowRematch === true,
+      });
+    } catch (error) {
+      return res.status(400).json({
+        error:
+          error instanceof Error ? error.message : "Invalid manual pairing payload",
+      });
+    }
+
+    await TournamentGame.deleteMany({
+      tournamentId: tournament._id,
+      roundNumber: targetRound,
+    });
+    await TournamentGame.insertMany(
+      repairedPairings.map((pairing) => ({
+        ...pairing,
+        tournamentId: tournament._id,
+      })),
+    );
+
+    await refreshTournamentStats(tournament._id, tournament.type);
+    const refreshed = await Tournament.findById(tournament._id);
+    const detail = await buildTournamentDetail(refreshed, req.user.userId);
+    res.json({ success: true, ...detail });
+  } catch (error) {
+    console.error("Tournament repair pairing error:", error);
+    res.status(500).json({ error: "Failed to repair round pairings" });
   }
 });
 
