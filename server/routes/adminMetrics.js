@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { adminAuthMiddleware } from "../middleware/index.js";
-import { User, UserActivity } from "../models/index.js";
+import { LeaderboardCache, User, UserActivity } from "../models/index.js";
+import { refreshAllLeaderboardCaches } from "../services/leaderboardCache.js";
 
 const router = Router();
 router.use(adminAuthMiddleware);
@@ -341,6 +342,48 @@ router.get("/retention", async (req, res) => {
   } catch (error) {
     console.error("Admin retention metrics error:", error);
     res.status(500).json({ error: "Failed to fetch retention metrics" });
+  }
+});
+
+router.get("/leaderboard-cache", async (req, res) => {
+  try {
+    const rows = await LeaderboardCache.find({})
+      .sort({ pool: 1, includeProvisional: 1, minGames: 1 })
+      .lean();
+
+    const nowMs = Date.now();
+    const caches = rows.map((row) => {
+      const refreshedAt = row.refreshedAt || row.updatedAt || null;
+      const refreshedAtMs = refreshedAt
+        ? new Date(refreshedAt).getTime()
+        : null;
+      return {
+        pool: row.pool,
+        includeProvisional: !!row.includeProvisional,
+        minGames: Number(row.minGames || 0),
+        total: Number(row.total || 0),
+        refreshedAt,
+        ageMs: Number.isFinite(refreshedAtMs) ? nowMs - refreshedAtMs : null,
+      };
+    });
+
+    res.json({
+      totalCaches: caches.length,
+      caches,
+    });
+  } catch (error) {
+    console.error("Admin leaderboard cache metrics error:", error);
+    res.status(500).json({ error: "Failed to fetch leaderboard cache metrics" });
+  }
+});
+
+router.post("/leaderboard-cache/refresh", async (req, res) => {
+  try {
+    const summary = await refreshAllLeaderboardCaches();
+    res.status(summary.ok ? 200 : 207).json(summary);
+  } catch (error) {
+    console.error("Admin leaderboard cache refresh error:", error);
+    res.status(500).json({ error: "Failed to refresh leaderboard cache" });
   }
 });
 

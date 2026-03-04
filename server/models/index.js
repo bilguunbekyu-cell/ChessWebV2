@@ -22,3 +22,4 @@ export { default as UserActivity } from "./UserActivity.js";
 export { default as Tournament } from "./Tournament.js";
 export { default as TournamentPlayer } from "./TournamentPlayer.js";
 export { default as TournamentGame } from "./TournamentGame.js";
+export { default as LeaderboardCache } from "./LeaderboardCache.js";

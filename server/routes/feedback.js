@@ -1,42 +1,30 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/index.js";
 import { Feedback } from "../models/index.js";
+import {
+  normalizeFeedbackCategory,
+  normalizeFeedbackMessage,
+  normalizeFeedbackScreenshots,
+  validateFeedbackMessage,
+} from "../utils/feedbackInput.js";
 
 const router = Router();
 
 router.post("/", authMiddleware, async (req, res) => {
   try {
-    const category = String(req.body?.category || "general")
-      .trim()
-      .toLowerCase();
-    const message = String(req.body?.message || "").trim();
-    const screenshots = Array.isArray(req.body?.screenshots)
-      ? req.body.screenshots
-          .map((value) => String(value || "").trim())
-          .filter(Boolean)
-          .slice(0, 5)
-      : [];
+    const category = normalizeFeedbackCategory(req.body?.category);
+    const message = normalizeFeedbackMessage(req.body?.message);
+    const screenshots = normalizeFeedbackScreenshots(req.body?.screenshots);
 
-    if (message.length < 10) {
+    if (!validateFeedbackMessage(message, 10)) {
       return res
         .status(400)
         .json({ error: "Feedback message must be at least 10 characters." });
     }
 
-    const allowedCategories = new Set([
-      "general",
-      "bug",
-      "feature",
-      "account",
-      "other",
-    ]);
-    const normalizedCategory = allowedCategories.has(category)
-      ? category
-      : "general";
-
     const feedback = await Feedback.create({
       userId: req.user.userId,
-      category: normalizedCategory,
+      category,
       message,
       screenshots,
       status: "open",

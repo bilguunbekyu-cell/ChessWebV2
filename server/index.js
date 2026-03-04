@@ -43,6 +43,7 @@ import {
   markTournamentGameStarted,
   syncTournamentGameResultByGameId,
 } from "./services/tournamentRuntime.js";
+import { startLeaderboardCacheRefreshScheduler } from "./services/leaderboardCache.js";
 import {
   authRoutes,
   historyRoutes,
@@ -195,6 +196,7 @@ mongoose.connection.once("open", () => {
   setInterval(() => {
     void processPendingTournamentMatches();
   }, TOURNAMENT_MATCH_POLL_INTERVAL_MS);
+  startLeaderboardCacheRefreshScheduler();
 });
 
 app.use("/api", authRoutes);

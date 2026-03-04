@@ -141,6 +141,51 @@ This file separates what is already implemented vs. what can be assigned next to
   - [tournamentEngine.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/utils/tournamentEngine.js) `buildManualRoundPairings`
   - [tournamentManualPairings.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/tournamentManualPairings.test.mjs)
 
+### 1.11 Testing Quality Improvements (helpers wired to production code)
+- `DONE` extracted shared news input helpers:
+  - [newsInput.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/utils/newsInput.js)
+  - used in [adminNews.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/routes/adminNews.js)
+  - tested in [newsHelpers.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/newsHelpers.test.mjs)
+- `DONE` extracted feedback input helpers:
+  - [feedbackInput.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/utils/feedbackInput.js)
+  - used in [feedback.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/routes/feedback.js)
+  - tested in [feedbackInput.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/feedbackInput.test.mjs)
+
+### 1.12 Backup + Monitoring Baseline
+- `DONE` database backup automation script:
+  - npm command: `npm --prefix server run backup:db`
+  - script: [backupMongo.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/scripts/backupMongo.js)
+  - retention controls: archive count + retention days
+- `DONE` operations runbook:
+  - [ops-backup-monitoring.md](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/docs/ops-backup-monitoring.md)
+  - includes scheduler setup (cron/Task Scheduler) + `/healthz` monitoring notes
+- `DONE` deployment baseline for 24/7 uptime:
+  - PM2 config: [ecosystem.config.cjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/ecosystem.config.cjs)
+  - Docker server profile: [Dockerfile](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/Dockerfile), [docker-compose.server.yml](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/docker-compose.server.yml)
+- `DONE` script-based health alert:
+  - npm command: `npm --prefix server run monitor:health`
+  - script: [healthCheckNotify.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/scripts/healthCheckNotify.js)
+  - webhook alert support for unhealthy state
+
+### 1.13 Leaderboard Scheduled Refresh + Cache
+- `DONE` leaderboard cache model:
+  - [LeaderboardCache.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/models/LeaderboardCache.js)
+- `DONE` cache service + scheduler:
+  - [leaderboardCache.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/services/leaderboardCache.js)
+  - auto-refresh starts on DB connection (default every 5 min)
+  - manual refresh command: `npm --prefix server run cache:leaderboard:refresh`
+  - refresh script: [refreshLeaderboardCache.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/scripts/refreshLeaderboardCache.js)
+- `DONE` ratings route cache integration:
+  - [ratings.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/routes/ratings.js)
+  - global leaderboard uses cache when request matches default cache policy
+  - friends scope and custom query variants still use live query
+- `DONE` admin cache observability/control endpoints:
+  - `GET /api/admin/metrics/leaderboard-cache`
+  - `POST /api/admin/metrics/leaderboard-cache/refresh`
+  - implemented in [adminMetrics.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/routes/adminMetrics.js)
+- `DONE` service guard tests:
+  - [leaderboardCacheService.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/leaderboardCacheService.test.mjs)
+
 ## 2) Suggested next tasks for other models
 
 ### 2.1 Tournament Engine Expansion (`NEXT`)
@@ -161,9 +206,9 @@ This file separates what is already implemented vs. what can be assigned next to
   - settings feedback submit flow
 
 ### 2.3 Ops & Reliability (`NEXT`)
-- automated DB backup (`mongodump` + retention policy).
-- monitoring alerts + deploy docs (PM2/Docker + uptime checks).
-- optional Redis cache for leaderboard/news list.
+- wire backup output to offsite storage (S3/Backblaze/GCS).
+- add uptime alert integration (UptimeRobot/BetterStack webhook flow).
+- optional Redis cache for hot endpoints beyond current DB cache layer.
 
 ## 3) Quick verification commands (current baseline)
 

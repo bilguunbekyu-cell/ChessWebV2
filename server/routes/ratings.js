@@ -2,6 +2,12 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { authMiddleware } from "../middleware/index.js";
 import { Friend, RatingEvent, User } from "../models/index.js";
+import {
+  getCachedLeaderboard,
+  getDefaultMinGames,
+  refreshLeaderboardCacheEntry,
+  shouldUseLeaderboardCache,
+} from "../services/leaderboardCache.js";
 import { gamesFieldForPool, ratingFieldForPool } from "../utils/elo.js";
 
 const router = Router();
@@ -137,6 +143,61 @@ router.get("/leaderboard", async (req, res) => {
         : 10;
     const scope = String(req.query.scope || "").trim().toLowerCase();
     const requesterUserId = getOptionalUserId(req);
+    const forceRefresh =
+      String(req.query.refresh || "").toLowerCase() === "true" ||
+      String(req.query.refresh || "") === "1";
+
+    const eligibleForCache = shouldUseLeaderboardCache({
+      scope,
+      limit,
+      minGames,
+      includeProvisional,
+    });
+
+    if (eligibleForCache) {
+      if (!forceRefresh) {
+        const cached = await getCachedLeaderboard({
+          pool,
+          includeProvisional,
+          minGames,
+          limit,
+        });
+        if (cached) {
+          return res.json({
+            pool,
+            limit,
+            minGames,
+            scope: "global",
+            leaderboard: cached.entries,
+            source: "cache",
+            cache: {
+              hit: true,
+              refreshedAt: cached.refreshedAt,
+              ageMs: cached.ageMs,
+            },
+          });
+        }
+      }
+
+      const refreshed = await refreshLeaderboardCacheEntry({
+        pool,
+        includeProvisional,
+        minGames: getDefaultMinGames(includeProvisional),
+      });
+      return res.json({
+        pool,
+        limit,
+        minGames,
+        scope: "global",
+        leaderboard: refreshed.entries.slice(0, limit),
+        source: "cache",
+        cache: {
+          hit: false,
+          refreshedAt: refreshed.refreshedAt,
+          ageMs: 0,
+        },
+      });
+    }
 
     const query = {
       deletedAt: null,
@@ -181,6 +242,7 @@ router.get("/leaderboard", async (req, res) => {
       limit,
       minGames,
       scope: scope === "friends" ? "friends" : "global",
+      source: "live",
       leaderboard,
     });
   } catch (error) {

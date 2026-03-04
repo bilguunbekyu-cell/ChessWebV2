@@ -2,6 +2,7 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { adminAuthMiddleware } from "../middleware/index.js";
 import { NewsArticle } from "../models/index.js";
+import { normalizeSlug, normalizeTags } from "../utils/newsInput.js";
 
 const router = Router();
 router.use(adminAuthMiddleware);
@@ -10,32 +11,6 @@ const VALID_STATUSES = new Set(["draft", "published", "archived"]);
 
 function isValidObjectId(value) {
   return mongoose.Types.ObjectId.isValid(String(value || ""));
-}
-
-function normalizeSlug(input) {
-  return String(input || "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 220);
-}
-
-function normalizeTags(input) {
-  if (!Array.isArray(input)) return [];
-  return [
-    ...new Set(
-      input
-        .map((tag) =>
-          String(tag || "")
-            .trim()
-            .toLowerCase(),
-        )
-        .filter(Boolean),
-    ),
-  ].slice(0, 12);
 }
 
 async function generateUniqueSlug(base, excludeId = null) {
