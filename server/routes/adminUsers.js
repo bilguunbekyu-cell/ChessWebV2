@@ -6,7 +6,11 @@ const router = Router();
 
 router.get("/", adminAuthMiddleware, async (req, res) => {
   try {
-    const { limit = 50, skip = 0, search = "" } = req.query;
+    const { limit = 50, skip = 0, search = "", includeDeleted = "false" } =
+      req.query;
+    const shouldIncludeDeleted =
+      String(includeDeleted).toLowerCase() === "true" ||
+      String(includeDeleted) === "1";
 
     const query = search
       ? {
@@ -16,6 +20,9 @@ router.get("/", adminAuthMiddleware, async (req, res) => {
           ],
         }
       : {};
+    if (!shouldIncludeDeleted) {
+      query.deletedAt = null;
+    }
 
     const users = await User.find(query)
       .select("-password")
@@ -67,14 +74,49 @@ router.get("/:id/games", adminAuthMiddleware, async (req, res) => {
 
 router.delete("/:id", adminAuthMiddleware, async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      {
+        $set: {
+          deletedAt: new Date(),
+          deletedByAdmin: req.admin?.adminId || null,
+        },
+      },
+      { new: true },
+    );
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    await History.deleteMany({ userId: req.params.id });
-    res.json({ success: true, message: "User deleted" });
+    res.json({ success: true, message: "User soft-deleted" });
   } catch (err) {
     console.error("Admin delete user error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.patch("/:id/restore", adminAuthMiddleware, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      {
+        $set: {
+          deletedAt: null,
+          deletedByAdmin: null,
+        },
+      },
+      { new: true },
+    ).select("-password");
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({
+      success: true,
+      message: "User restored",
+      user,
+    });
+  } catch (err) {
+    console.error("Admin restore user error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

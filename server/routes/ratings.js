@@ -1,6 +1,7 @@
 import { Router } from "express";
+import mongoose from "mongoose";
 import { authMiddleware } from "../middleware/index.js";
-import { RatingEvent, User } from "../models/index.js";
+import { Friend, RatingEvent, User } from "../models/index.js";
 import { gamesFieldForPool, ratingFieldForPool } from "../utils/elo.js";
 
 const router = Router();
@@ -50,6 +51,19 @@ function downsampleTimeline(events, maxPoints = 500) {
   const stride = Math.ceil(points.length / maxPoints);
   points = points.filter((_, index) => index % stride === 0);
   return points.slice(-maxPoints);
+}
+
+function getOptionalUserId(req) {
+  try {
+    const rawToken = req.cookies?.authToken;
+    if (!rawToken) return "";
+    const parsed = JSON.parse(rawToken);
+    const userId = String(parsed?.userId || "").trim();
+    if (!mongoose.Types.ObjectId.isValid(userId)) return "";
+    return userId;
+  } catch {
+    return "";
+  }
 }
 
 router.get("/timeline", authMiddleware, async (req, res) => {
@@ -121,10 +135,30 @@ router.get("/leaderboard", async (req, res) => {
       : includeProvisional
         ? 0
         : 10;
+    const scope = String(req.query.scope || "").trim().toLowerCase();
+    const requesterUserId = getOptionalUserId(req);
 
     const query = {
+      deletedAt: null,
       [gamesField]: { $gte: minGames },
     };
+
+    if (scope === "friends") {
+      if (!requesterUserId) {
+        return res
+          .status(401)
+          .json({ error: "Authentication required for friends leaderboard" });
+      }
+
+      const friendRows = await Friend.find({ userId: requesterUserId })
+        .select("friendId")
+        .lean();
+      const friendIds = [
+        requesterUserId,
+        ...friendRows.map((row) => String(row.friendId)),
+      ];
+      query._id = { $in: friendIds };
+    }
 
     const users = await User.find(query)
       .sort({ [ratingField]: -1, [gamesField]: -1, fullName: 1 })
@@ -146,6 +180,7 @@ router.get("/leaderboard", async (req, res) => {
       pool,
       limit,
       minGames,
+      scope: scope === "friends" ? "friends" : "global",
       leaderboard,
     });
   } catch (error) {

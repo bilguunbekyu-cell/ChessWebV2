@@ -7,6 +7,7 @@ import {
   Eye,
   Trash2,
   Loader2,
+  RotateCcw,
 } from "lucide-react";
 import { User } from "./types";
 
@@ -22,6 +23,7 @@ interface UserRowProps {
   onBanReasonChange: (reason: string) => void;
   onDelete: (userId: string) => void;
   onBan: (userId: string, shouldBan: boolean, reason: string) => void;
+  onRestore?: (userId: string) => void;
 }
 
 export function UserRow({
@@ -36,14 +38,18 @@ export function UserRow({
   onBanReasonChange,
   onDelete,
   onBan,
+  onRestore,
 }: UserRowProps) {
   const winRate =
     user.gamesPlayed > 0
       ? Math.round((user.gamesWon / user.gamesPlayed) * 100)
       : 0;
+  const isDeleted = !!user.deletedAt;
 
   return (
-    <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+    <tr
+      className={`hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors ${isDeleted ? "opacity-60" : ""}`}
+    >
       <td className="px-4 py-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold">
@@ -91,7 +97,11 @@ export function UserRow({
         </div>
       </td>
       <td className="px-4 py-4">
-        {user.banned ? (
+        {isDeleted ? (
+          <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full text-xs font-medium">
+            Deleted
+          </span>
+        ) : user.banned ? (
           <div className="flex items-center gap-1.5">
             <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-xs font-medium">
               <Ban className="w-3 h-3" />
@@ -123,6 +133,7 @@ export function UserRow({
           onBanReasonChange={onBanReasonChange}
           onDelete={onDelete}
           onBan={onBan}
+          onRestore={onRestore}
         />
       </td>
     </tr>
@@ -141,7 +152,10 @@ function UserRowActions({
   onBanReasonChange,
   onDelete,
   onBan,
+  onRestore,
 }: UserRowProps) {
+  const isDeleted = !!user.deletedAt;
+
   if (deleteConfirm === user._id) {
     return (
       <div className="flex items-center justify-end gap-2">
@@ -211,24 +225,36 @@ function UserRowActions({
       >
         <Eye className="w-4 h-4" />
       </Link>
-      <button
-        onClick={() => onBanConfirm(user._id)}
-        className={`p-2 rounded-lg transition-colors ${user.banned ? "text-green-500 hover:text-green-600 hover:bg-green-100 dark:hover:bg-green-900/20" : "text-orange-400 hover:text-orange-500 hover:bg-orange-100 dark:hover:bg-orange-900/20"}`}
-        title={user.banned ? "Unban user" : "Ban user"}
-      >
-        {user.banned ? (
-          <ShieldOff className="w-4 h-4" />
-        ) : (
-          <Ban className="w-4 h-4" />
-        )}
-      </button>
-      <button
-        onClick={() => onDeleteConfirm(user._id)}
-        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-        title="Delete user"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
+      {isDeleted ? (
+        <button
+          onClick={() => onRestore?.(user._id)}
+          className="p-2 text-teal-500 hover:text-teal-600 hover:bg-teal-100 dark:hover:bg-teal-900/20 rounded-lg transition-colors"
+          title="Restore user"
+        >
+          <RotateCcw className="w-4 h-4" />
+        </button>
+      ) : (
+        <>
+          <button
+            onClick={() => onBanConfirm(user._id)}
+            className={`p-2 rounded-lg transition-colors ${user.banned ? "text-green-500 hover:text-green-600 hover:bg-green-100 dark:hover:bg-green-900/20" : "text-orange-400 hover:text-orange-500 hover:bg-orange-100 dark:hover:bg-orange-900/20"}`}
+            title={user.banned ? "Unban user" : "Ban user"}
+          >
+            {user.banned ? (
+              <ShieldOff className="w-4 h-4" />
+            ) : (
+              <Ban className="w-4 h-4" />
+            )}
+          </button>
+          <button
+            onClick={() => onDeleteConfirm(user._id)}
+            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+            title="Delete user"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </>
+      )}
     </div>
   );
 }

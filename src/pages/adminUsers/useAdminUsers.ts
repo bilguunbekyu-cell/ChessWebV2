@@ -19,6 +19,7 @@ export function useAdminUsers() {
   const [banning, setBanning] = useState(false);
   const [sortBy, setSortBy] = useState<SortField>("createdAt");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [includeDeleted, setIncludeDeleted] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -40,6 +41,7 @@ export function useAdminUsers() {
       search: searchQuery,
       sortBy,
       sortOrder,
+      includeDeleted: includeDeleted ? "true" : "false",
     });
 
     fetch(`${API_URL}/api/admin/users?${params}`, { credentials: "include" })
@@ -50,25 +52,56 @@ export function useAdminUsers() {
       })
       .catch(console.error)
       .finally(() => setLoadingUsers(false));
-  }, [isAuthenticated, page, searchQuery, sortBy, sortOrder]);
+  }, [isAuthenticated, page, searchQuery, sortBy, sortOrder, includeDeleted]);
 
-  const handleDeleteUser = useCallback(async (userId: string) => {
-    setDeleting(true);
+  const handleDeleteUser = useCallback(
+    async (userId: string) => {
+      setDeleting(true);
+      try {
+        const res = await fetch(`${API_URL}/api/admin/users/${userId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+
+        if (res.ok) {
+          if (includeDeleted) {
+            // Refresh to get updated deletedAt
+            setUsers((prev) =>
+              prev.map((u) =>
+                u._id === userId
+                  ? { ...u, deletedAt: new Date().toISOString() }
+                  : u,
+              ),
+            );
+          } else {
+            setUsers((prev) => prev.filter((u) => u._id !== userId));
+            setTotalUsers((prev) => prev - 1);
+          }
+        }
+      } catch (err) {
+        console.error("Delete error:", err);
+      } finally {
+        setDeleting(false);
+        setDeleteConfirm(null);
+      }
+    },
+    [includeDeleted],
+  );
+
+  const handleRestoreUser = useCallback(async (userId: string) => {
     try {
-      const res = await fetch(`${API_URL}/api/admin/users/${userId}`, {
-        method: "DELETE",
+      const res = await fetch(`${API_URL}/api/admin/users/${userId}/restore`, {
+        method: "PATCH",
         credentials: "include",
       });
 
       if (res.ok) {
-        setUsers((prev) => prev.filter((u) => u._id !== userId));
-        setTotalUsers((prev) => prev - 1);
+        setUsers((prev) =>
+          prev.map((u) => (u._id === userId ? { ...u, deletedAt: null } : u)),
+        );
       }
     } catch (err) {
-      console.error("Delete error:", err);
-    } finally {
-      setDeleting(false);
-      setDeleteConfirm(null);
+      console.error("Restore error:", err);
     }
   }, []);
 
@@ -151,7 +184,6 @@ export function useAdminUsers() {
   const totalPages = Math.ceil(totalUsers / LIMIT);
 
   return {
-
     users,
     totalUsers,
     searchQuery,
@@ -166,14 +198,17 @@ export function useAdminUsers() {
     sortOrder,
     isLoading,
     totalPages,
+    includeDeleted,
 
     setSearchQuery,
     setPage,
     setDeleteConfirm,
     setBanConfirm,
     setBanReason,
+    setIncludeDeleted,
 
     handleDeleteUser,
+    handleRestoreUser,
     handleBanUser,
     handleSort,
     exportUsers,

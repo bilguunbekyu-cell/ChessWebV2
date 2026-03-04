@@ -63,6 +63,7 @@ export interface GameHistoryPayload {
   opponent?: string;
   opponentLevel?: number;
   durationMs?: number;
+  externalGameId?: string;
 }
 
 export type OptionSquares = Record<string, CSSProperties>;

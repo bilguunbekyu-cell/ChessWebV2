@@ -94,6 +94,7 @@ const HistorySchema = new mongoose.Schema(
     opponent: { type: String, default: "Stockfish" },
     opponentLevel: { type: Number },
     durationMs: { type: Number },
+    externalGameId: { type: String, default: "", index: true },
   },
   { timestamps: true },
 );

@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { io, Socket } from "socket.io-client";
 import type { User } from "./authStore";
+import {
+  useNotificationStore,
+  type NotificationItem,
+} from "./notificationStore";
 
 const socketBaseUrl =
   import.meta.env.VITE_SOCKET_URL ||
@@ -244,6 +248,13 @@ export const useFriendChallengeStore = create<FriendChallengeState>(
         });
       });
 
+      /* ── Real-time notification listener ── */
+      socket.on("notification", (payload: NotificationItem) => {
+        if (payload?._id) {
+          useNotificationStore.getState().pushNotification(payload);
+        }
+      });
+
       socket.on("friendGameStarted", (payload: FriendGameStartedPayload) => {
         set((state) => ({
           activeGame: payload,
@@ -338,7 +349,9 @@ export const useFriendChallengeStore = create<FriendChallengeState>(
       );
 
       if (!response?.success) {
-        set({ lastError: response?.error || "Unable to respond to challenge." });
+        set({
+          lastError: response?.error || "Unable to respond to challenge.",
+        });
         return response;
       }
 

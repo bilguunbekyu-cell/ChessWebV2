@@ -4,6 +4,10 @@ import path from "path";
 const ROOTS = ["src/pages", "src/components"];
 const FILE_EXT = ".tsx";
 const TRANSLATION_FILE = "src/i18n/mn.ts";
+const args = new Set(process.argv.slice(2));
+const SHOW_ALL_UI_KEYS = args.has("--all");
+const SHOW_DEFINED_KEYS = args.has("--defined");
+const SHOW_REFS = args.has("--refs");
 
 function readTranslationKeys(filePath) {
   const content = fs.readFileSync(filePath, "utf8");
@@ -25,6 +29,9 @@ function isTranslatable(value) {
   if (!value) return false;
   if (value.length < 2 || value.length > 140) return false;
   if (!/[A-Za-z]/.test(value)) return false;
+  if (/^\[[A-Za-z0-9_/-]+$/.test(value)) return false;
+  if (/(===|!==|&&|\|\|)/.test(value)) return false;
+  if (/\bvoid\s*\|\s*Promise\b/.test(value)) return false;
   if (/^[A-Za-z0-9_./:@#?&=+\-]+$/.test(value)) return false;
   if (/^(http|https):\/\//i.test(value)) return false;
   if (/^(bg|text|border|hover|dark|sm:|md:|lg:|xl:)/.test(value)) return false;
@@ -72,29 +79,57 @@ function walk(dir, callback) {
 }
 
 const translationKeys = readTranslationKeys(TRANSLATION_FILE);
-const discovered = new Set();
+const discoveredRefs = new Map();
 
 for (const root of ROOTS) {
   walk(root, (filePath) => {
     const content = fs.readFileSync(filePath, "utf8");
     const strings = extractStrings(content);
     for (const str of strings) {
-      discovered.add(str);
+      if (!discoveredRefs.has(str)) {
+        discoveredRefs.set(str, new Set());
+      }
+      discoveredRefs.get(str).add(filePath);
     }
   });
 }
 
-const missing = [...discovered]
+const discovered = [...discoveredRefs.keys()];
+const missing = discovered
   .filter((value) => !translationKeys.has(value))
   .sort((a, b) => a.localeCompare(b));
+const defined = [...translationKeys].sort((a, b) => a.localeCompare(b));
 
-console.log(`i18n-check: scanned ${discovered.size} UI strings`);
+console.log(`i18n-check: scanned ${discovered.length} UI strings`);
 console.log(`i18n-check: missing ${missing.length} Mongolian keys`);
+
 if (missing.length > 0) {
   for (const item of missing.slice(0, 250)) {
-    console.log(`- ${item}`);
+    if (!SHOW_REFS) {
+      console.log(`- ${item}`);
+      continue;
+    }
+
+    const refs = [...(discoveredRefs.get(item) || [])]
+      .sort((a, b) => a.localeCompare(b))
+      .join(", ");
+    console.log(`- ${item}  @ ${refs}`);
   }
   if (missing.length > 250) {
     console.log(`...and ${missing.length - 250} more`);
+  }
+}
+
+if (SHOW_ALL_UI_KEYS) {
+  console.log("\nUI keys:");
+  for (const key of discovered.sort((a, b) => a.localeCompare(b))) {
+    console.log(`* ${key}`);
+  }
+}
+
+if (SHOW_DEFINED_KEYS) {
+  console.log("\nDefined Mongolian keys:");
+  for (const key of defined) {
+    console.log(`* ${key}`);
   }
 }

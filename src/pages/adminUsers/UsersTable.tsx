@@ -20,6 +20,7 @@ interface UsersTableProps {
   onBanReasonChange: (reason: string) => void;
   onDelete: (userId: string) => void;
   onBan: (userId: string, shouldBan: boolean, reason: string) => void;
+  onRestore?: (userId: string) => void;
 }
 
 export function UsersTable({
@@ -40,6 +41,7 @@ export function UsersTable({
   onBanReasonChange,
   onDelete,
   onBan,
+  onRestore,
 }: UsersTableProps) {
   return (
     <>
@@ -118,6 +120,7 @@ export function UsersTable({
                   onBanReasonChange={onBanReasonChange}
                   onDelete={onDelete}
                   onBan={onBan}
+                  onRestore={onRestore}
                 />
               ))}
             </tbody>

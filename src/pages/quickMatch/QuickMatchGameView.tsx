@@ -37,6 +37,7 @@ interface QuickMatchGameViewProps {
   onResign: () => void;
   onRematch: () => void;
   onLeave?: () => void;
+  tournamentMode?: boolean;
   opponentName?: string;
   variant?: MatchVariant;
   promotionState?: PromotionState;
@@ -70,6 +71,7 @@ export function QuickMatchGameView({
   onResign,
   onRematch,
   onLeave,
+  tournamentMode = false,
   opponentName,
   variant = "standard",
   promotionState,
@@ -120,6 +122,8 @@ export function QuickMatchGameView({
           onNewGame={onRematch}
           savedGameId={savedGameId}
           analyzeBasePath={variant === "chess960" ? "/analyze960" : "/analyze"}
+          tournamentMode={tournamentMode}
+          onBackToTournament={() => navigate("/tournaments")}
         />
 
         {}
@@ -256,27 +260,27 @@ export function QuickMatchGameView({
             </div>
 
             {}
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={onResign}
-                disabled={gameOver}
-                className="w-full px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-medium transition-colors disabled:opacity-50"
-              >
-                {tr("Resign")}
-              </button>
-              <button
-                onClick={() => {
-                  onLeave?.();
-                  navigate("/play");
-                }}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 font-medium transition-colors"
-              >
-                {tr("Back to Play")}
-              </button>
-            </div>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={onResign}
+              disabled={gameOver}
+              className="w-full px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-medium transition-colors disabled:opacity-50"
+            >
+              {tr("Resign")}
+            </button>
+            <button
+              onClick={() => {
+                onLeave?.();
+                navigate(tournamentMode ? "/tournaments" : "/play");
+              }}
+              className="w-full px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 font-medium transition-colors"
+            >
+              {tournamentMode ? tr("Back to Tournament") : tr("Back to Play")}
+            </button>
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

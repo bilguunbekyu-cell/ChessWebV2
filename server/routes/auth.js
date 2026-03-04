@@ -2,6 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { User } from "../models/index.js";
 import { authMiddleware } from "../middleware/index.js";
+import { recordUserActivity, recordUserLogin } from "../services/activity.js";
 
 const router = Router();
 
@@ -132,6 +133,10 @@ router.post("/register", async (req, res) => {
       path: "/",
     });
 
+    await recordUserLogin(user._id).catch((error) => {
+      console.error("Record register login activity error:", error);
+    });
+
     res.json({
       success: true,
       message: "User registered successfully",
@@ -156,7 +161,7 @@ router.post("/login", async (req, res) => {
       );
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email, deletedAt: null });
     if (!user) {
       return sendError(
         res,
@@ -201,6 +206,10 @@ router.post("/login", async (req, res) => {
       path: "/",
     });
 
+    await recordUserLogin(user._id).catch((error) => {
+      console.error("Record login activity error:", error);
+    });
+
     res.json({
       success: true,
       message: "Login successful",
@@ -226,7 +235,7 @@ router.post("/logout", (req, res) => {
 router.get("/me", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select("-password");
-    if (!user) {
+    if (!user || user.deletedAt) {
       return sendError(res, 404, "USER_NOT_FOUND", "User not found");
     }
 
@@ -237,6 +246,14 @@ router.get("/me", authMiddleware, async (req, res) => {
         banReason: user.banReason || "No reason provided",
       });
     }
+
+    await recordUserActivity({
+      userId: user._id,
+      eventCount: 1,
+      loginCount: 0,
+    }).catch((error) => {
+      console.error("Record /me activity error:", error);
+    });
 
     res.json({ user: toPublicUser(user) });
   } catch (err) {
@@ -250,7 +267,7 @@ router.get("/users/:userId", authMiddleware, async (req, res) => {
     const { userId } = req.params;
     const viewerId = req.user.userId;
     const user = await User.findById(userId).select("-password");
-    if (!user || user.banned) {
+    if (!user || user.banned || user.deletedAt) {
       return sendError(res, 404, "USER_NOT_FOUND", "User not found");
     }
 

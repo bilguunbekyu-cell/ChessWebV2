@@ -1,7 +1,9 @@
 import express from "express";
 import FeaturedEvent from "../models/FeaturedEvent.js";
+import { adminAuthMiddleware } from "../middleware/index.js";
 
 const router = express.Router();
+router.use(adminAuthMiddleware);
 
 router.get("/", async (req, res) => {
   try {

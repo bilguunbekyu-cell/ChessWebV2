@@ -1,4 +1,4 @@
-import { Users, Download, Loader2 } from "lucide-react";
+import { Users, Download, Loader2, RotateCcw } from "lucide-react";
 import AdminSidebar from "../../components/AdminSidebar";
 import { useAdminUsers } from "./useAdminUsers";
 import { UserStatsCards } from "./UserStatsCards";
@@ -21,12 +21,15 @@ export default function AdminUsers() {
     sortOrder,
     isLoading,
     totalPages,
+    includeDeleted,
     setSearchQuery,
     setPage,
     setDeleteConfirm,
     setBanConfirm,
     setBanReason,
+    setIncludeDeleted,
     handleDeleteUser,
+    handleRestoreUser,
     handleBanUser,
     handleSort,
     exportUsers,
@@ -57,6 +60,18 @@ export default function AdminUsers() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={includeDeleted}
+                onChange={(e) => {
+                  setIncludeDeleted(e.target.checked);
+                  setPage(0);
+                }}
+                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-teal-500 focus:ring-teal-500"
+              />
+              Show deleted
+            </label>
             <button
               onClick={exportUsers}
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
@@ -92,6 +107,7 @@ export default function AdminUsers() {
             onBanReasonChange={setBanReason}
             onDelete={handleDeleteUser}
             onBan={handleBanUser}
+            onRestore={handleRestoreUser}
           />
           <UsersPagination
             page={page}

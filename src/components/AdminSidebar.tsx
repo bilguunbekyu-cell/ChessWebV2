@@ -11,6 +11,10 @@ import {
   Bot,
   Trophy,
   MessageSquare,
+  Newspaper,
+  GraduationCap,
+  Bell,
+  ShieldAlert,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useThemeStore } from "../store/themeStore";
@@ -35,6 +39,11 @@ export default function AdminSidebar() {
     { icon: Brain, label: "Puzzles", path: "/admin/puzzles" },
     { icon: Trophy, label: "Events", path: "/admin/events" },
     { icon: Gamepad2, label: "Games", path: "/admin/games" },
+    { icon: MessageSquare, label: "Feedback", path: "/admin/feedback" },
+    { icon: ShieldAlert, label: "Cheat Reports", path: "/admin/cheat-reports" },
+    { icon: GraduationCap, label: "Lessons", path: "/admin/lessons" },
+    { icon: Newspaper, label: "News", path: "/admin/news" },
+    { icon: Bell, label: "Broadcast", path: "/admin/broadcast" },
     { icon: Settings, label: "Settings", path: "/admin/settings" },
   ];
 
@@ -60,31 +69,31 @@ export default function AdminSidebar() {
         </div>
       </Link>
 
-      {}
-      <nav className="flex-1 px-4 space-y-2 mt-2">
+      {/* Nav – scrollable when items exceed viewport */}
+      <nav className="flex-1 overflow-y-auto px-4 py-2 space-y-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700">
         {navItems.map((item) => (
           <Link
             key={item.path}
             to={item.path}
-            className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
+            className={`flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all duration-200 group ${
               isActive(item.path)
                 ? "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-l-4 border-teal-500"
                 : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
             <item.icon
-              className={`w-5 h-5 ${isActive(item.path) ? "text-teal-600 dark:text-teal-400" : "text-gray-400 dark:text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white"}`}
+              className={`w-5 h-5 shrink-0 ${isActive(item.path) ? "text-teal-600 dark:text-teal-400" : "text-gray-400 dark:text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white"}`}
             />
             <span className="font-medium">{item.label}</span>
           </Link>
         ))}
       </nav>
 
-      {}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-800 space-y-2">
+      {/* Footer – always visible */}
+      <div className="shrink-0 p-3 border-t border-gray-200 dark:border-gray-800 space-y-1.5">
         <button
           onClick={toggleTheme}
-          className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors"
+          className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors"
         >
           {isDarkMode ? (
             <Sun className="w-5 h-5" />
@@ -96,10 +105,9 @@ export default function AdminSidebar() {
           </span>
         </button>
 
-        {}
-        <div className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg">
-            <Shield className="w-5 h-5 text-white" />
+        <div className="flex items-center space-x-3 px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg">
+            <Shield className="w-4 h-4 text-white" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
@@ -112,13 +120,13 @@ export default function AdminSidebar() {
             className="flex-shrink-0 p-2 rounded-lg text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             title="Messages"
           >
-            <MessageSquare className="w-5 h-5" />
+            <MessageSquare className="w-4 h-4" />
           </Link>
         </div>
 
         <button
           onClick={handleLogout}
-          className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
         >
           <LogOut className="w-5 h-5" />
           <span className="font-medium">Log Out</span>

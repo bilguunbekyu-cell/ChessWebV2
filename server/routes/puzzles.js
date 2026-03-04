@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Puzzle, PuzzleAttempt, User } from "../models/index.js";
 import { authMiddleware } from "../middleware/index.js";
+import { recordUserPuzzleActivity } from "../services/activity.js";
 
 const router = Router();
 
@@ -172,6 +173,10 @@ async function recordPuzzleAttempt({
     userRatingAfter,
     puzzleRatingBefore,
     puzzleRatingAfter,
+  });
+
+  await recordUserPuzzleActivity(userId).catch((error) => {
+    console.error("Puzzle activity record error:", error);
   });
 
   return {

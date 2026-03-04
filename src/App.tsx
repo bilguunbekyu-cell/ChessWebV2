@@ -21,6 +21,9 @@ import Learn from "./pages/Learn";
 import Watch from "./pages/watch";
 import Community from "./pages/Community";
 import Friends from "./pages/friends";
+import Messages from "./pages/messages";
+import Notifications from "./pages/notifications";
+import Tournaments from "./pages/tournaments";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -36,6 +39,13 @@ import AdminPuzzles from "./pages/AdminPuzzles";
 import { AdminBots } from "./pages/adminBots";
 import { AdminFeaturedEvents } from "./pages/adminFeaturedEvents";
 import { AdminGames } from "./pages/adminGames";
+import AdminFeedback from "./pages/adminFeedback";
+import AdminLessons from "./pages/adminLessons";
+import AdminNews from "./pages/adminNews";
+import AdminBroadcast from "./pages/adminBroadcast";
+import AdminCheatReports from "./pages/adminCheatReports";
+import NewsList from "./pages/news";
+import { NewsDetail } from "./pages/news/detailIndex";
 import { useThemeStore } from "./store/themeStore";
 import { useAuthStore, authApi } from "./store/authStore";
 import { useFriendChallengeStore } from "./store/friendChallengeStore";
@@ -57,7 +67,6 @@ function AuthChecker() {
           setLanguage(user.language);
         }
       } catch (err: unknown) {
-
         if (err && typeof err === "object" && "banned" in err) {
           const banErr = err as { banned: boolean; banReason: string };
           setBanned(banErr.banReason);
@@ -238,11 +247,14 @@ function Layout({ children }: { children: React.ReactNode }) {
       "/watch",
       "/community",
       "/friends",
+      "/messages",
+      "/notifications",
       "/settings",
       "/login",
       "/register",
       "/profile",
     ].includes(location.pathname) ||
+    location.pathname.startsWith("/news") ||
     location.pathname.startsWith("/u/") ||
     location.pathname.startsWith("/puzzles/train") ||
     location.pathname.startsWith("/analyze") ||
@@ -419,6 +431,22 @@ function App() {
               }
             />
             <Route
+              path="/news"
+              element={
+                <ProtectedRoute>
+                  <NewsList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/news/:slug"
+              element={
+                <ProtectedRoute>
+                  <NewsDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/watch"
               element={
                 <ProtectedRoute>
@@ -439,6 +467,30 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Friends />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/messages"
+              element={
+                <ProtectedRoute>
+                  <Messages />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <Notifications />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tournaments"
+              element={
+                <ProtectedRoute>
+                  <Tournaments />
                 </ProtectedRoute>
               }
             />
@@ -491,6 +543,11 @@ function App() {
             <Route path="/admin/bots" element={<AdminBots />} />
             <Route path="/admin/events" element={<AdminFeaturedEvents />} />
             <Route path="/admin/games" element={<AdminGames />} />
+            <Route path="/admin/feedback" element={<AdminFeedback />} />
+            <Route path="/admin/lessons" element={<AdminLessons />} />
+            <Route path="/admin/cheat-reports" element={<AdminCheatReports />} />
+            <Route path="/admin/news" element={<AdminNews />} />
+            <Route path="/admin/broadcast" element={<AdminBroadcast />} />
             <Route path="/admin/analyze/:gameId" element={<AdminAnalyze />} />
           </Routes>
         </Layout>

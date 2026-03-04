@@ -803,6 +803,7 @@ export function useFriendOnlineGame() {
       playAs: gameSettings.playAs,
       opponent,
       durationMs,
+      externalGameId: gameIdRef.current || undefined,
     }).then((id) => {
       if (id) setSavedGameId(id);
     });

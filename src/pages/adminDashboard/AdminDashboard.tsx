@@ -3,7 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAdminStore } from "../../store/adminStore";
 import AdminSidebar from "../../components/AdminSidebar";
-import { User, Stats, API_URL, LIMIT } from "./types";
+import {
+  User,
+  Stats,
+  API_URL,
+  LIMIT,
+  ActiveMetricsResponse,
+  RetentionMetricsResponse,
+} from "./types";
 import { DashboardStats } from "./DashboardStats";
 import { DashboardUsersTable } from "./DashboardUsersTable";
 
@@ -12,6 +19,10 @@ export default function AdminDashboard() {
   const { isAuthenticated, isLoading, checkAuth } = useAdminStore();
 
   const [stats, setStats] = useState<Stats | null>(null);
+  const [activeMetrics, setActiveMetrics] =
+    useState<ActiveMetricsResponse | null>(null);
+  const [retentionMetrics, setRetentionMetrics] =
+    useState<RetentionMetricsResponse | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,10 +44,24 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    fetch(`${API_URL}/api/admin/stats`, { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setStats(data))
-      .catch(console.error);
+    Promise.all([
+      fetch(`${API_URL}/api/admin/stats`, { credentials: "include" })
+        .then((res) => res.json())
+        .then((data) => setStats(data))
+        .catch(console.error),
+      fetch(`${API_URL}/api/admin/metrics/active?days=30`, {
+        credentials: "include",
+      })
+        .then((res) => res.json())
+        .then((data) => setActiveMetrics(data))
+        .catch(console.error),
+      fetch(`${API_URL}/api/admin/metrics/retention?days=120`, {
+        credentials: "include",
+      })
+        .then((res) => res.json())
+        .then((data) => setRetentionMetrics(data))
+        .catch(console.error),
+    ]).catch(console.error);
   }, [isAuthenticated]);
 
   useEffect(() => {
@@ -104,7 +129,11 @@ export default function AdminDashboard() {
         </div>
 
         {}
-        <DashboardStats stats={stats} />
+        <DashboardStats
+          stats={stats}
+          activeMetrics={activeMetrics}
+          retentionMetrics={retentionMetrics}
+        />
 
         {}
         <DashboardUsersTable

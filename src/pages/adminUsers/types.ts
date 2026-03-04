@@ -13,6 +13,7 @@ export interface User {
   banned?: boolean;
   bannedAt?: string;
   banReason?: string;
+  deletedAt?: string | null;
 }
 
 export type SortField = "createdAt" | "rating" | "gamesPlayed";

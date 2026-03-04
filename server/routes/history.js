@@ -2,6 +2,8 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { History, History960 } from "../models/index.js";
 import { authMiddleware } from "../middleware/index.js";
+import { syncTournamentGameResultByGameId } from "../services/tournamentRuntime.js";
+import { recordUserGameActivity } from "../services/activity.js";
 
 const router = Router();
 const MIN_STORED_MOVES = 3;
@@ -132,6 +134,7 @@ router.post("/", authMiddleware, async (req, res) => {
       durationMs,
       analysis = [],
       moveTimes = [],
+      externalGameId = "",
     } = req.body;
 
     const normalizedMoves = normalizeMoves(moves);
@@ -153,6 +156,9 @@ router.post("/", authMiddleware, async (req, res) => {
       : detectVariantFromEvent(event);
     const preferredModel =
       resolvedVariant === "chess960" ? History960 : History;
+
+    const trimmedExternalGameId =
+      typeof externalGameId === "string" ? externalGameId.trim() : "";
 
     const historyDoc = {
       userId: requestUserId,
@@ -216,6 +222,7 @@ router.post("/", authMiddleware, async (req, res) => {
       durationMs,
       analysis,
       moveTimes,
+      externalGameId: trimmedExternalGameId,
     };
     normalizeHistoryDocForVariant(historyDoc);
 
@@ -238,6 +245,31 @@ router.post("/", authMiddleware, async (req, res) => {
       );
       history = await History.create(historyDoc);
     }
+
+    const normalizedResult = String(result || "").trim();
+    if (
+      trimmedExternalGameId &&
+      (normalizedResult === "1-0" ||
+        normalizedResult === "0-1" ||
+        normalizedResult === "1/2-1/2")
+    ) {
+      try {
+        await syncTournamentGameResultByGameId(
+          trimmedExternalGameId,
+          normalizedResult,
+        );
+      } catch (syncError) {
+        console.error("History tournament sync error:", syncError);
+      }
+    }
+
+    await recordUserGameActivity(requestUserId, {
+      movesPlayed: normalizedMoves.length,
+      durationMs: durationMs || 0,
+      gamesPlayed: 1,
+    }).catch((error) => {
+      console.error("History activity record error:", error);
+    });
 
     res.json({ success: true, historyId: history._id });
   } catch (err) {
