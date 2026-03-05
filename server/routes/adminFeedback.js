@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { adminAuthMiddleware } from "../middleware/index.js";
 import { Feedback } from "../models/index.js";
 import { notifyUser } from "../services/notify.js";
+import { decryptField } from "../utils/fieldEncryption.js";
 
 const router = Router();
 
@@ -40,10 +41,10 @@ router.get("/", adminAuthMiddleware, async (req, res) => {
       feedback: items.map((item) => ({
         _id: String(item._id),
         category: item.category,
-        message: item.message,
+        message: decryptField(item.message),
         screenshots: item.screenshots || [],
         status: item.status,
-        adminReply: item.adminReply || "",
+        adminReply: decryptField(item.adminReply || ""),
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
         closedAt: item.closedAt || null,
@@ -119,10 +120,10 @@ router.patch("/:id", adminAuthMiddleware, async (req, res) => {
       feedback: {
         _id: String(populated._id),
         category: populated.category,
-        message: populated.message,
+        message: decryptField(populated.message),
         screenshots: populated.screenshots || [],
         status: populated.status,
-        adminReply: populated.adminReply || "",
+        adminReply: decryptField(populated.adminReply || ""),
         createdAt: populated.createdAt,
         updatedAt: populated.updatedAt,
         closedAt: populated.closedAt || null,

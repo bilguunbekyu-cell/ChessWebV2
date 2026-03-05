@@ -2,6 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { Admin, User, History, Puzzle } from "../models/index.js";
 import { adminAuthMiddleware } from "../middleware/index.js";
+import { signAdminAuthToken } from "../utils/authToken.js";
 
 const router = Router();
 
@@ -23,14 +24,14 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    const tokenData = {
+    const adminToken = signAdminAuthToken({
       adminId: admin._id,
       email: admin.email,
       username: admin.username,
       isAdmin: true,
-    };
+    });
 
-    res.cookie("adminToken", JSON.stringify(tokenData), {
+    res.cookie("adminToken", adminToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

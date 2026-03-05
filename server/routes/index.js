@@ -25,6 +25,7 @@ import adminFeedbackRoutes from "./adminFeedback.js";
 import adminNotificationsRoutes from "./adminNotifications.js";
 import adminLessonsRoutes from "./adminLessons.js";
 import adminCheatReportsRoutes from "./adminCheatReports.js";
+import adminAuditLogsRoutes from "./adminAuditLogs.js";
 
 export {
   authRoutes,
@@ -54,4 +55,5 @@ export {
   adminNotificationsRoutes,
   adminLessonsRoutes,
   adminCheatReportsRoutes,
+  adminAuditLogsRoutes,
 };

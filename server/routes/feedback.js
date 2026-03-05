@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/index.js";
 import { Feedback } from "../models/index.js";
+import { decryptField } from "../utils/fieldEncryption.js";
 import {
   normalizeFeedbackCategory,
   normalizeFeedbackMessage,
@@ -35,7 +36,7 @@ router.post("/", authMiddleware, async (req, res) => {
       feedback: {
         _id: String(feedback._id),
         category: feedback.category,
-        message: feedback.message,
+        message: decryptField(feedback.message),
         screenshots: feedback.screenshots || [],
         status: feedback.status,
         createdAt: feedback.createdAt,
@@ -58,10 +59,10 @@ router.get("/mine", authMiddleware, async (req, res) => {
       feedback: items.map((item) => ({
         _id: String(item._id),
         category: item.category,
-        message: item.message,
+        message: decryptField(item.message),
         status: item.status,
         screenshots: item.screenshots || [],
-        adminReply: item.adminReply || "",
+        adminReply: decryptField(item.adminReply || ""),
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
         closedAt: item.closedAt || null,

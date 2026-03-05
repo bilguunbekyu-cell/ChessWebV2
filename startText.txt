@@ -1,2 +1,0 @@
-cd c:\Users\User\OneDrive\Desktop\DesignV1\Design
-npm run dev -- --host localhost --port 5173

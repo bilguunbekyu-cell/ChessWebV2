@@ -8,7 +8,7 @@
     "dev:pm2": "pm2 start ecosystem.config.cjs --env production",
     "stop:pm2": "pm2 stop neongambit-api && pm2 delete neongambit-api",
     "seed:admin": "node seedAdmin.js",
-    "test:tournaments": "node --test tests/tournamentEngine.test.mjs tests/tournamentLifecycle.test.mjs tests/tournamentManualPairings.test.mjs",
+    "test:tournaments": "node --test tests/tournamentEngine.test.mjs tests/tournamentLifecycle.test.mjs tests/tournamentManualPairings.test.mjs tests/tournamentIntegration.test.mjs tests/tournamentSwissEdgeCases.test.mjs",
     "test:cheat": "node --test tests/cheatDetection.test.mjs",
     "test:elo": "node --test tests/elo.test.mjs tests/glicko2.test.mjs",
     "test:news": "node --test tests/newsHelpers.test.mjs",
@@ -29,8 +29,12 @@
     "express": "^4.18.2",
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.0.3",
     "multer": "^2.0.2",
     "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^11.0.1"
   }
 }

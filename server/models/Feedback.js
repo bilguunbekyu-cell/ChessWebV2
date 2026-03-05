@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { encryptField } from "../utils/fieldEncryption.js";
 
 const FeedbackSchema = new mongoose.Schema(
   {
@@ -46,6 +47,45 @@ const FeedbackSchema = new mongoose.Schema(
 
 FeedbackSchema.index({ status: 1, createdAt: -1 });
 FeedbackSchema.index({ userId: 1, createdAt: -1 });
+
+function encryptMutableFields(updatePayload) {
+  if (!updatePayload || typeof updatePayload !== "object") return;
+
+  const targets = [updatePayload, updatePayload.$set].filter(Boolean);
+  for (const target of targets) {
+    if (typeof target.message === "string") {
+      target.message = encryptField(target.message);
+    }
+    if (typeof target.adminReply === "string") {
+      target.adminReply = encryptField(target.adminReply);
+    }
+  }
+}
+
+FeedbackSchema.pre("save", function encryptFeedbackOnSave(next) {
+  if (this.isModified("message")) {
+    this.message = encryptField(this.message);
+  }
+  if (this.isModified("adminReply")) {
+    this.adminReply = encryptField(this.adminReply);
+  }
+  next();
+});
+
+FeedbackSchema.pre("findOneAndUpdate", function encryptFeedbackOnUpdate(next) {
+  encryptMutableFields(this.getUpdate());
+  next();
+});
+
+FeedbackSchema.pre("updateOne", function encryptFeedbackOnUpdate(next) {
+  encryptMutableFields(this.getUpdate());
+  next();
+});
+
+FeedbackSchema.pre("updateMany", function encryptFeedbackOnUpdate(next) {
+  encryptMutableFields(this.getUpdate());
+  next();
+});
 
 const Feedback =
   mongoose.models.Feedback || mongoose.model("Feedback", FeedbackSchema);

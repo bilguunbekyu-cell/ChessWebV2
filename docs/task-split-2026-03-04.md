@@ -186,6 +186,260 @@ This file separates what is already implemented vs. what can be assigned next to
 - `DONE` service guard tests:
   - [leaderboardCacheService.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/leaderboardCacheService.test.mjs)
 
+### 1.14 Backend Route Behavior Tests (DB-free endpoint tests)
+- `DONE` auth/permission guard route tests:
+  - [routeAuthGuards.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/routeAuthGuards.test.mjs)
+  - covers unauthorized/non-admin access for admin feedback/news/metrics and feedback auth guard
+- `DONE` route behavior tests for feedback/news:
+  - [routeBehavior.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/routeBehavior.test.mjs)
+  - covers feedback message validation + normalization and admin news creation validation + slug/tag normalization
+- `DONE` route behavior tests for friend/message request flow:
+  - [routeFriendMessageFlow.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/routeFriendMessageFlow.test.mjs)
+  - covers friend request accept/decline and message request accept/decline success/error paths
+
+### 1.15 DB-backed Auth Integration Tests
+- `DONE` in-memory Mongo integration tests for auth lifecycle:
+  - [authIntegration.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/authIntegration.test.mjs)
+  - uses `mongodb-memory-server` for isolated DB test runtime
+  - covers:
+    - register creates hashed user + session cookie + activity row
+    - login -> me -> logout flow
+    - login invalid password path
+    - register duplicate email path
+
+### 1.16 DB-backed Content Integration Tests (Feedback + News)
+- `DONE` in-memory Mongo integration tests for feedback/admin-feedback/news/admin-news lifecycle:
+  - [contentIntegration.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/contentIntegration.test.mjs)
+  - covers:
+    - user submits feedback -> admin lists/reviews -> user sees closed/replied state
+    - admin creates draft news -> public hidden
+    - admin publishes news -> public visible/detail available
+    - admin deletes news -> public detail returns not found
+
+### 1.17 DB-backed Tournament Route Integration Tests
+- `DONE` in-memory Mongo integration tests for tournament route lifecycle:
+  - [tournamentIntegration.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/tournamentIntegration.test.mjs)
+  - covers:
+    - rating range registration gate (`ratingMin` / `ratingMax`)
+    - create/register/start -> report round results -> auto-advance/finish
+    - round repair permissions and guard (cannot repair after game started/completed)
+- `DONE` tournament test script now includes integration file:
+  - `npm --prefix server run test:tournaments`
+
+### 1.18 Frontend Guard + Settings Feedback Test Coverage
+- `DONE` extracted route guards to testable component:
+  - [RouteGuards.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/components/routes/RouteGuards.tsx)
+  - [RouteGuards.test.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/components/routes/RouteGuards.test.tsx)
+  - covers `ProtectedRoute` redirect/render/loading and `PublicRoute` redirect behavior.
+- `DONE` extracted settings feedback submit helper and tests:
+  - [feedbackApi.ts](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/settings/feedbackApi.ts)
+  - [feedbackApi.test.ts](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/settings/feedbackApi.test.ts)
+  - [Settings.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/Settings.tsx) now uses shared helper.
+- `DONE` settings store save/reset coverage:
+  - [settingsStore.test.ts](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/test/settingsStore.test.ts)
+
+### 1.19 Sidebar Row Adjustment (Profile Above Action Row)
+- `DONE` bottom sidebar section row order switched so profile block appears above quick-action icon row:
+  - [Sidebar.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/components/Sidebar.tsx)
+
+### 1.20 Frontend Friends + Notifications Component Tests
+- `DONE` friends page component flow tests:
+  - [Friends.test.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/friends/Friends.test.tsx)
+  - covers:
+    - incoming request accept flow with list refresh
+    - user search + send friend request flow
+    - blocked user unblock flow
+- `DONE` notifications page component action tests:
+  - [Notifications.test.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/notifications/Notifications.test.tsx)
+  - covers:
+    - initial fetch on mount
+    - per-item mark-as-read action
+    - mark-all-as-read action
+
+### 1.21 Frontend Settings + Admin Feedback Component Interaction Tests
+- `DONE` settings feedback modal interaction tests:
+  - [Settings.feedbackModal.test.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/settings/Settings.feedbackModal.test.tsx)
+  - covers:
+    - modal open -> input category/message -> submit success (modal closes + success toast call)
+    - submit failure path (error toast call + modal remains open)
+- `DONE` admin feedback inbox interaction tests:
+  - [AdminFeedback.test.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/adminFeedback/AdminFeedback.test.tsx)
+  - covers:
+    - load inbox -> reply text update -> `Reply & Close` PATCH payload/status update
+    - `Reopen` PATCH flow for closed item
+
+### 1.22 Tournament Swiss Edge-Case Tests + Admin Broadcast Interaction Tests
+- `DONE` Swiss pairing edge-case backend tests:
+  - [tournamentSwissEdgeCases.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/tournamentSwissEdgeCases.test.mjs)
+  - covers:
+    - odd player count gives one bye per round
+    - bye is not repeated in consecutive rounds when alternatives exist
+    - forced rematch color balancing (white/black swap)
+    - rematch fallback when no alternative opponent exists
+- `DONE` admin broadcast page interaction tests:
+  - [AdminBroadcast.test.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/adminBroadcast/AdminBroadcast.test.tsx)
+  - covers:
+    - required title/message validation
+    - successful send with trimmed payload and audience selection
+    - API error surface path
+
+### 1.23 Tournaments UI Interaction Tests + Manager Permission Integration
+- `DONE` tournaments page component interaction tests:
+  - [Tournaments.test.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/tournaments/Tournaments.test.tsx)
+  - covers:
+    - owner manager add/remove action flow
+    - repair editor validation (invalid JSON) and valid repair submit payload
+- `DONE` manager permission integration coverage in tournament routes:
+  - [tournamentIntegration.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/tournamentIntegration.test.mjs)
+  - added owner-only + idempotent manager add/remove test
+- `DONE` tournament test script includes swiss edge-case file:
+  - [server/package.json](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/package.json)
+  - `npm --prefix server run test:tournaments`
+
+### 1.24 Anti-Cheat Integration + Admin UI Interaction Tests
+- `DONE` admin cheat-report backend integration tests:
+  - [adminCheatReportsIntegration.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/adminCheatReportsIntegration.test.mjs)
+  - covers:
+    - review action `warn` -> report actioned + fair-play notification
+    - review action `ban` -> user banned + account-action notification
+    - review action `none` without explicit status -> defaults to `reviewed`
+- `DONE` admin cheat-reports page interaction tests:
+  - [AdminCheatReports.test.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/adminCheatReports/AdminCheatReports.test.tsx)
+  - covers:
+    - list load -> detail open -> warn action review payload flow
+    - batch scan and manual scan user actions
+
+### 1.25 Ops Script Smoke Tests + Admin Dashboard Metrics UI Tests
+- `DONE` backup script smoke tests:
+  - [backupMongoScript.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/backupMongoScript.test.mjs)
+  - covers:
+    - missing `MONGODB_URL` validation failure
+    - script success path with fake `mongodump` command
+    - backup pruning by max-archive policy
+- `DONE` health monitoring script smoke tests:
+  - [healthCheckNotifyScript.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/healthCheckNotifyScript.test.mjs)
+  - covers:
+    - healthy endpoint exit success
+    - unhealthy endpoint triggers webhook + non-zero exit
+    - request-failure path triggers webhook alert
+- `DONE` admin dashboard metrics + filter interaction tests:
+  - [AdminDashboard.test.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/adminDashboard/AdminDashboard.test.tsx)
+  - covers:
+    - metrics cards and chart sections render from API data
+    - users pagination + search filter query behavior (`skip` reset on search)
+- `DONE` dashboard pagination accessibility/testability tweak:
+  - [DashboardUsersTable.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/adminDashboard/DashboardUsersTable.tsx)
+  - added `aria-label` to previous/next pagination buttons
+
+### 1.26 Broadcast Audience Expansion + Notification Lifecycle Integration
+- `DONE` backend admin broadcast audience expansion:
+  - [adminNotifications.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/routes/adminNotifications.js)
+  - added audiences:
+    - `flagged` (users with pending/actioned cheat reports)
+    - `tournament_players` (requires `tournamentId`)
+  - broadcast payload now includes `tournamentId` when audience is tournament-scoped.
+- `DONE` admin broadcast UI support for new audiences:
+  - [AdminBroadcast.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/adminBroadcast/AdminBroadcast.tsx)
+  - added audience buttons:
+    - Flagged Users
+    - Tournament Players
+  - added required tournament id input + client-side validation for tournament-scoped broadcast.
+- `DONE` backend integration tests for audience targeting + unread lifecycle:
+  - [notificationsIntegration.test.mjs](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/tests/notificationsIntegration.test.mjs)
+  - covers:
+    - flagged audience targeting
+    - tournament_players validation and delivery
+    - unread-count/read-one/read-all notification lifecycle
+- `DONE` frontend admin broadcast interaction test extension:
+  - [AdminBroadcast.test.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/adminBroadcast/AdminBroadcast.test.tsx)
+  - covers tournament audience validation + payload shape (`tournamentId`).
+
+### 1.27 Runtime Notification Orchestration Improvements
+- `DONE` tournament event notifications (live delivery + inbox persistence):
+  - [tournaments.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/routes/tournaments.js)
+  - added notification flow for:
+    - tournament started
+    - round paired / game-ready per player
+    - bye round notification
+    - tournament finished
+    - registration confirmation + manager registration alerts
+  - `maybeAdvanceTournament` now supports app-context delivery for auto-advance rounds and auto-finish.
+- `DONE` direct-message notification improvement:
+  - [messages.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/routes/messages.js)
+  - sends `new_message` notification for delivered direct messages when there is no existing unread thread notification from same sender.
+- `DONE` news publish push notification:
+  - [adminNews.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/routes/adminNews.js)
+  - when article transitions to `published`, pushes `news_published` notification to non-deleted users with deep-link to `/news/:slug`.
+
+### 1.28 JWT Auth Hardening (Chapter 3 Alignment)
+- `DONE` token utility with JWT sign/verify + legacy token fallback:
+  - [authToken.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/utils/authToken.js)
+  - supports:
+    - user tokens (`authToken`)
+    - admin tokens (`adminToken`)
+    - backward-compatible decode of legacy JSON cookies
+- `DONE` auth middleware switched from raw JSON cookie parsing to verified token parsing:
+  - [auth.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/middleware/auth.js)
+- `DONE` user/admin login routes now issue signed JWT cookies:
+  - [auth.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/routes/auth.js)
+  - [admin.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/routes/admin.js)
+- `DONE` socket auth path updated to verified user token parsing:
+  - [index.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/index.js)
+- `DONE` dependency update:
+  - `jsonwebtoken` added in server package manifest/lock.
+
+### 1.29 Chapter 3 Active Player Metric Surfaced In Admin UI
+- `DONE` admin dashboard now explicitly shows Chapter 3 definition:
+  - [DashboardStats.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/adminDashboard/DashboardStats.tsx)
+  - added `Active Players (7d)` card
+  - card definition: users who played at least 1 game in last 7 days.
+- `DONE` active metrics summary type updated for dashboard consumption:
+  - [types.ts](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/adminDashboard/types.ts)
+  - added `weeklyActiveGamers` in `ActiveMetricsSummary`.
+
+### 1.30 Admin Audit Logs (Security Hardening)
+- `DONE` admin mutation request audit middleware:
+  - [adminAuditLog.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/middleware/adminAuditLog.js)
+  - logs admin mutating actions (`POST/PUT/PATCH/DELETE`) with:
+    - admin identity
+    - method/path/status
+    - ip + user agent
+    - duration
+    - sanitized query/body payload (`[REDACTED]` for secrets)
+- `DONE` audit log persistence model:
+  - [AdminAuditLog.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/models/AdminAuditLog.js)
+- `DONE` admin audit log read endpoint:
+  - `GET /api/admin/audit-logs`
+  - implementation: [adminAuditLogs.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/routes/adminAuditLogs.js)
+  - supports filtering by method/admin/status/date/path.
+- `DONE` admin frontend visibility:
+  - [AdminAuditLogs.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/pages/adminAuditLogs/AdminAuditLogs.tsx)
+  - route `/admin/audit-logs` wired in [App.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/App.tsx)
+  - admin sidebar link added in [AdminSidebar.tsx](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/src/components/AdminSidebar.tsx).
+- `DONE` server wiring:
+  - [index.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/index.js)
+  - [routes/index.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/routes/index.js)
+  - [models/index.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/models/index.js)
+
+### 1.31 Feedback Encryption At Rest (MVP)
+- `DONE` feedback sensitive content encrypted at write-time:
+  - [Feedback.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/models/Feedback.js)
+  - encrypts `message` and `adminReply` on create/update hooks using field-level encryption utility.
+- `DONE` API response compatibility retained with decrypt-on-read:
+  - [feedback.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/routes/feedback.js)
+  - [adminFeedback.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/routes/adminFeedback.js)
+  - existing frontend receives plaintext values unchanged while DB stores ciphertext when encryption key is configured.
+
+### 1.32 CORS/Proxy/HSTS Production Config Hardening
+- `DONE` CORS origins now env-driven (`CORS_ORIGINS`) with localhost fallback:
+  - [index.js](/c:/Users/User/OneDrive/Desktop/DesignV1/ChessWeb2.8] - Copy/server/index.js)
+  - applied to both Express CORS and Socket.IO CORS.
+- `DONE` proxy-aware HTTPS enforcement improvements:
+  - automatic `trust proxy` setup when `ENFORCE_HTTPS=true` or `TRUST_PROXY` is set.
+- `DONE` configurable HSTS:
+  - enabled when `ENFORCE_HTTPS=true` or `ENABLE_HSTS=true`
+  - optional `HSTS_MAX_AGE_SECONDS`, `HSTS_PRELOAD`.
+
 ## 2) Suggested next tasks for other models
 
 ### 2.1 Tournament Engine Expansion (`NEXT`)
@@ -194,16 +448,12 @@ This file separates what is already implemented vs. what can be assigned next to
 - add tests for edge cases (rematch avoidance, odd player byes, tiebreak consistency).
 
 ### 2.2 Testing coverage (`NEXT`)
-- backend tests for:
-  - auth register/login/logout
-  - friend request accept/decline
-  - message request accept/decline
-  - feedback and news CRUD permissions
-- frontend tests for:
-  - protected routing
-  - friends request UI
-  - notifications read actions
-  - settings feedback submit flow
+- add browser-level smoke tests (Playwright/Cypress) for:
+  - feedback submit flow
+  - admin cheat report review flow
+  - tournament manager repair flow
+- extend backend integration tests for:
+  - cross-route notification triggers across friend/message/news/tournament event creation
 
 ### 2.3 Ops & Reliability (`NEXT`)
 - wire backup output to offsite storage (S3/Backblaze/GCS).
@@ -216,6 +466,10 @@ From repo root:
 
 ```bash
 npm run build
+npm test -- src/pages/adminDashboard/AdminDashboard.test.tsx
+npm test -- src/pages/adminBroadcast/AdminBroadcast.test.tsx
+node --test server/tests/backupMongoScript.test.mjs server/tests/healthCheckNotifyScript.test.mjs
+node --test server/tests/notificationsIntegration.test.mjs
 npm --prefix server run test:tournaments
 node --check server/routes/news.js
 node --check server/routes/adminNews.js
@@ -226,6 +480,7 @@ node --check server/routes/adminMetrics.js
 node --check server/routes/friends.js
 node --check server/routes/messages.js
 node --check server/routes/notifications.js
+node --check server/routes/adminNotifications.js
 node --check server/routes/feedback.js
 node --check server/routes/adminFeedback.js
 ```

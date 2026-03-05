@@ -6,12 +6,18 @@ import {
   scanUserAndCreateCheatReport,
   scanUserHistoryForCheat,
 } from "../services/cheatDetection.js";
+import { refundOpponentsOfCheater } from "../services/cheatEscalation.js";
 import { notifyUser } from "../services/notify.js";
 
 const router = Router();
 router.use(adminAuthMiddleware);
 
-const VALID_STATUSES = new Set(["pending", "reviewed", "dismissed", "actioned"]);
+const VALID_STATUSES = new Set([
+  "pending",
+  "reviewed",
+  "dismissed",
+  "actioned",
+]);
 const VALID_RISK_LEVELS = new Set(["low", "medium", "high"]);
 const VALID_ACTIONS = new Set(["none", "warn", "restrict", "ban"]);
 
@@ -24,7 +30,8 @@ function normalizeString(value) {
 }
 
 function mapReportSummary(report) {
-  const user = report.userId && typeof report.userId === "object" ? report.userId : null;
+  const user =
+    report.userId && typeof report.userId === "object" ? report.userId : null;
   return {
     _id: String(report._id),
     user: user
@@ -79,7 +86,10 @@ function mapReportDetail(report) {
 
 router.get("/", async (req, res) => {
   try {
-    const page = Math.max(1, Number.parseInt(String(req.query.page || "1"), 10) || 1);
+    const page = Math.max(
+      1,
+      Number.parseInt(String(req.query.page || "1"), 10) || 1,
+    );
     const limit = Math.min(
       100,
       Math.max(1, Number.parseInt(String(req.query.limit || "20"), 10) || 20),
@@ -93,7 +103,8 @@ router.get("/", async (req, res) => {
 
     const query = {};
     if (VALID_STATUSES.has(status)) query.status = status;
-    if (VALID_RISK_LEVELS.has(riskLevel)) query["metrics.riskLevel"] = riskLevel;
+    if (VALID_RISK_LEVELS.has(riskLevel))
+      query["metrics.riskLevel"] = riskLevel;
     if (userId) {
       if (!isValidObjectId(userId)) {
         return res.status(400).json({ error: "Invalid userId" });
@@ -153,7 +164,10 @@ router.get("/:id", async (req, res) => {
 
     const report = await CheatReport.findById(id)
       .populate("userId", "fullName email avatar banned deletedAt")
-      .populate("gameIds", "white black result createdAt rated variant moves timeControl")
+      .populate(
+        "gameIds",
+        "white black result createdAt rated variant moves timeControl",
+      )
       .lean();
 
     if (!report) {
@@ -174,7 +188,9 @@ router.post("/scan/:userId", async (req, res) => {
       return res.status(400).json({ error: "Invalid user id" });
     }
 
-    const user = await User.findById(userId).select("_id fullName email").lean();
+    const user = await User.findById(userId)
+      .select("_id fullName email")
+      .lean();
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -333,6 +349,12 @@ router.patch("/:id/review", async (req, res) => {
           action: "ban",
         },
       });
+      // Rating refund for opponents who lost to the cheater
+      try {
+        await refundOpponentsOfCheater(report.userId);
+      } catch (refundErr) {
+        console.error("Rating refund after admin ban error:", refundErr);
+      }
     } else if (action === "warn" || action === "restrict") {
       await notifyUser(req.app, {
         userId: report.userId,
@@ -352,7 +374,10 @@ router.patch("/:id/review", async (req, res) => {
 
     const updated = await CheatReport.findById(report._id)
       .populate("userId", "fullName email avatar banned deletedAt")
-      .populate("gameIds", "white black result createdAt rated variant moves timeControl")
+      .populate(
+        "gameIds",
+        "white black result createdAt rated variant moves timeControl",
+      )
       .lean();
     return res.json({ success: true, report: mapReportDetail(updated) });
   } catch (error) {
@@ -380,7 +405,10 @@ router.post("/scan-preview/:userId", async (req, res) => {
       ),
     );
 
-    const result = await scanUserHistoryForCheat(userId, { minGames, maxGames });
+    const result = await scanUserHistoryForCheat(userId, {
+      minGames,
+      maxGames,
+    });
     res.json({
       success: true,
       eligible: !!result.eligible,

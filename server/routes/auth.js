@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { User } from "../models/index.js";
 import { authMiddleware } from "../middleware/index.js";
 import { recordUserActivity, recordUserLogin } from "../services/activity.js";
+import { signUserAuthToken } from "../utils/authToken.js";
 
 const router = Router();
 
@@ -119,13 +120,13 @@ router.post("/register", async (req, res) => {
       language: normalizedLanguage,
     });
 
-    const tokenData = {
+    const authToken = signUserAuthToken({
       userId: user._id,
       email: user.email,
       fullName: user.fullName,
-    };
+    });
 
-    res.cookie("authToken", JSON.stringify(tokenData), {
+    res.cookie("authToken", authToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -188,17 +189,20 @@ router.post("/login", async (req, res) => {
       );
     }
 
-    const tokenData = {
-      userId: user._id,
-      email: user.email,
-      fullName: user.fullName,
-    };
+    const authToken = signUserAuthToken(
+      {
+        userId: user._id,
+        email: user.email,
+        fullName: user.fullName,
+      },
+      { rememberMe: rememberMe === true },
+    );
 
     const maxAge = rememberMe
       ? 30 * 24 * 60 * 60 * 1000
       : 7 * 24 * 60 * 60 * 1000;
 
-    res.cookie("authToken", JSON.stringify(tokenData), {
+    res.cookie("authToken", authToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

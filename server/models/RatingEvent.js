@@ -43,6 +43,8 @@ const RatingEventSchema = new mongoose.Schema(
     isProvisional: { type: Boolean, default: false },
     poolGamesBefore: { type: Number, default: 0 },
     poolGamesAfter: { type: Number, default: 0 },
+    refunded: { type: Boolean, default: false },
+    refundedAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

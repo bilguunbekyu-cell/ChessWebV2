@@ -280,3 +280,70 @@ export function stopLeaderboardCacheRefreshScheduler() {
   clearInterval(refreshTimer);
   refreshTimer = null;
 }
+
+/* ── Daily fixed-schedule refresh (Chapter 3: "өдөр бүр тодорхой цагт") ── */
+let dailyCronTimer = null;
+
+/**
+ * Schedule the leaderboard refresh to run once per day at a fixed UTC hour.
+ * Default: 03:00 UTC (configurable via LEADERBOARD_DAILY_CRON_HOUR env var).
+ *
+ * This complements the interval-based scheduler — the daily cron ensures a
+ * full, authoritative refresh happens at a deterministic time with an audit
+ * timestamp, while the interval-based one keeps the cache warm in between.
+ */
+export function startDailyLeaderboardCron({
+  cronHourUtc = Number(process.env.LEADERBOARD_DAILY_CRON_HOUR) || 3,
+} = {}) {
+  if (dailyCronTimer) return dailyCronTimer;
+
+  const safeHour = Math.max(0, Math.min(23, Math.round(cronHourUtc)));
+
+  function msUntilNextRun() {
+    const now = new Date();
+    const next = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      safeHour,
+      0,
+      0,
+      0,
+    ));
+    if (next <= now) {
+      next.setUTCDate(next.getUTCDate() + 1);
+    }
+    return next.getTime() - now.getTime();
+  }
+
+  function scheduleNext() {
+    const delay = msUntilNextRun();
+    dailyCronTimer = setTimeout(async () => {
+      const ts = new Date().toISOString();
+      try {
+        const summary = await runLeaderboardRefreshCycle();
+        console.log(
+          `[LeaderboardDailyCron] ${ts} – OK (${summary.okCount} caches refreshed)`,
+        );
+      } catch (error) {
+        console.error(`[LeaderboardDailyCron] ${ts} – ERROR:`, error);
+      }
+      scheduleNext(); // re-schedule for next day
+    }, delay);
+    if (typeof dailyCronTimer.unref === "function") {
+      dailyCronTimer.unref();
+    }
+  }
+
+  scheduleNext();
+  console.log(
+    `[LeaderboardDailyCron] Scheduled daily at ${String(safeHour).padStart(2, "0")}:00 UTC`,
+  );
+  return dailyCronTimer;
+}
+
+export function stopDailyLeaderboardCron() {
+  if (!dailyCronTimer) return;
+  clearTimeout(dailyCronTimer);
+  dailyCronTimer = null;
+}

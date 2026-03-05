@@ -15,6 +15,7 @@ import {
   GraduationCap,
   Bell,
   ShieldAlert,
+  ClipboardList,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useThemeStore } from "../store/themeStore";
@@ -41,6 +42,7 @@ export default function AdminSidebar() {
     { icon: Gamepad2, label: "Games", path: "/admin/games" },
     { icon: MessageSquare, label: "Feedback", path: "/admin/feedback" },
     { icon: ShieldAlert, label: "Cheat Reports", path: "/admin/cheat-reports" },
+    { icon: ClipboardList, label: "Audit Logs", path: "/admin/audit-logs" },
     { icon: GraduationCap, label: "Lessons", path: "/admin/lessons" },
     { icon: Newspaper, label: "News", path: "/admin/news" },
     { icon: Bell, label: "Broadcast", path: "/admin/broadcast" },

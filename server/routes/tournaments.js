@@ -21,6 +21,7 @@ import {
   markTournamentGameStarted,
   syncTournamentGameResultByGameId,
 } from "../services/tournamentRuntime.js";
+import { notifyUser, notifyUsers } from "../services/notify.js";
 
 const router = Router();
 
@@ -77,6 +78,153 @@ function hasManageAccess(tournament, userId) {
 
 function isOwner(tournament, userId) {
   return toId(tournament?.createdBy) === toId(userId);
+}
+
+function uniqueIds(values) {
+  return [...new Set((values || []).map((value) => toId(value)).filter(Boolean))];
+}
+
+function createTournamentLink(tournamentId) {
+  return `/tournaments?selected=${encodeURIComponent(String(tournamentId || ""))}`;
+}
+
+async function safeNotifyUser(app, input) {
+  try {
+    if (!app) return;
+    await notifyUser(app, input);
+  } catch (error) {
+    console.error("Tournament notify user error:", error);
+  }
+}
+
+async function safeNotifyUsers(app, userIds, input) {
+  try {
+    if (!app) return;
+    await notifyUsers(app, userIds, input);
+  } catch (error) {
+    console.error("Tournament notify users error:", error);
+  }
+}
+
+function getTournamentManagerIds(tournament) {
+  return uniqueIds([toId(tournament?.createdBy), ...(tournament?.managerIds || [])]);
+}
+
+async function getTournamentParticipantIds(tournamentId) {
+  const players = await TournamentPlayer.find({ tournamentId })
+    .select("userId")
+    .lean();
+  return uniqueIds(players.map((player) => toId(player.userId)));
+}
+
+async function notifyTournamentStarted(app, tournament) {
+  const participantIds = await getTournamentParticipantIds(tournament._id);
+  if (!participantIds.length) return;
+
+  await safeNotifyUsers(app, participantIds, {
+    type: "tournament_started",
+    title: "Tournament started",
+    message: `${tournament.name} has started.`,
+    link: createTournamentLink(tournament._id),
+    payload: {
+      tournamentId: toId(tournament._id),
+      roundNumber: Number(tournament.currentRound || 1),
+    },
+  });
+}
+
+async function notifyTournamentFinished(app, tournament) {
+  const participantIds = await getTournamentParticipantIds(tournament._id);
+  if (!participantIds.length) return;
+
+  await safeNotifyUsers(app, participantIds, {
+    type: "tournament_finished",
+    title: "Tournament finished",
+    message: `${tournament.name} has finished.`,
+    link: createTournamentLink(tournament._id),
+    payload: {
+      tournamentId: toId(tournament._id),
+    },
+  });
+}
+
+async function notifyRoundPairings(app, tournament, pairings, roundNumber) {
+  if (!Array.isArray(pairings) || !pairings.length) return;
+  const tournamentId = toId(tournament?._id);
+  const round = Number(roundNumber || 0);
+  if (!tournamentId || !round) return;
+
+  const participantIds = await getTournamentParticipantIds(tournament._id);
+  if (participantIds.length) {
+    await safeNotifyUsers(app, participantIds, {
+      type: "tournament_round_created",
+      title: `Round ${round} paired`,
+      message: `${tournament.name}: round ${round} pairings are ready.`,
+      link: createTournamentLink(tournament._id),
+      payload: {
+        tournamentId,
+        roundNumber: round,
+      },
+    });
+  }
+
+  const notifyTasks = pairings.map(async (pairing) => {
+    const whiteId = toId(pairing.whiteId);
+    const blackId = toId(pairing.blackId);
+    const gameId = String(pairing.gameId || "");
+    const gameLink = gameId
+      ? `/play/quick?tournamentGameId=${encodeURIComponent(gameId)}`
+      : createTournamentLink(tournament._id);
+
+    if (pairing.isBye || !blackId) {
+      if (!whiteId) return;
+      await safeNotifyUser(app, {
+        userId: whiteId,
+        type: "tournament_bye",
+        title: `Round ${round} bye`,
+        message: `You received a bye in ${tournament.name} round ${round}.`,
+        link: createTournamentLink(tournament._id),
+        payload: {
+          tournamentId,
+          roundNumber: round,
+        },
+      });
+      return;
+    }
+
+    await Promise.all([
+      safeNotifyUser(app, {
+        userId: whiteId,
+        type: "tournament_game_ready",
+        title: `Round ${round} game ready`,
+        message: `Your game is ready as White in ${tournament.name}.`,
+        link: gameLink,
+        payload: {
+          tournamentId,
+          roundNumber: round,
+          gameId,
+          color: "white",
+          opponentId: blackId,
+        },
+      }),
+      safeNotifyUser(app, {
+        userId: blackId,
+        type: "tournament_game_ready",
+        title: `Round ${round} game ready`,
+        message: `Your game is ready as Black in ${tournament.name}.`,
+        link: gameLink,
+        payload: {
+          tournamentId,
+          roundNumber: round,
+          gameId,
+          color: "black",
+          opponentId: whiteId,
+        },
+      }),
+    ]);
+  });
+
+  await Promise.all(notifyTasks);
 }
 
 async function refreshTournamentStats(tournamentId, tournamentType) {
@@ -253,7 +401,8 @@ async function buildTournamentDetail(tournament, viewerId) {
   };
 }
 
-async function maybeAdvanceTournament(tournamentId) {
+async function maybeAdvanceTournament(tournamentId, options = {}) {
+  const app = options?.app || null;
   let tournament = await Tournament.findById(tournamentId);
   if (!tournament || tournament.status !== "running") {
     return tournament;
@@ -285,6 +434,9 @@ async function maybeAdvanceTournament(tournamentId) {
           { $set: { status: "finished", finishedAt: new Date() } },
           { new: true },
         );
+        if (tournament) {
+          await notifyTournamentFinished(app, tournament);
+        }
         break;
       }
     } else if (tournament.currentRound >= Number(tournament.roundsPlanned || 1)) {
@@ -293,6 +445,9 @@ async function maybeAdvanceTournament(tournamentId) {
         { $set: { status: "finished", finishedAt: new Date() } },
         { new: true },
       );
+      if (tournament) {
+        await notifyTournamentFinished(app, tournament);
+      }
       break;
     }
 
@@ -314,6 +469,9 @@ async function maybeAdvanceTournament(tournamentId) {
         { $set: { status: "finished", finishedAt: new Date() } },
         { new: true },
       );
+      if (tournament) {
+        await notifyTournamentFinished(app, tournament);
+      }
       break;
     }
 
@@ -327,6 +485,9 @@ async function maybeAdvanceTournament(tournamentId) {
       { new: true },
     );
     await refreshTournamentStats(tournamentId, tournament.type);
+    if (tournament) {
+      await notifyRoundPairings(app, tournament, pairings, nextRound);
+    }
     guard += 1;
   }
 
@@ -566,7 +727,7 @@ router.post("/:id/register", authMiddleware, async (req, res) => {
     }
 
     const user = await User.findById(req.user.userId)
-      .select("rating bulletRating blitzRating rapidRating classicalRating")
+      .select("fullName rating bulletRating blitzRating rapidRating classicalRating")
       .lean();
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -606,6 +767,33 @@ router.post("/:id/register", authMiddleware, async (req, res) => {
         return res.status(409).json({ error: "Already registered" });
       }
       throw error;
+    }
+
+    void safeNotifyUser(req.app, {
+      userId: req.user.userId,
+      type: "tournament_registered",
+      title: "Tournament registration confirmed",
+      message: `You are registered for ${tournament.name}.`,
+      link: createTournamentLink(tournament._id),
+      payload: {
+        tournamentId: toId(tournament._id),
+      },
+    });
+
+    const managerIds = getTournamentManagerIds(tournament).filter(
+      (managerId) => managerId !== toId(req.user.userId),
+    );
+    if (managerIds.length) {
+      void safeNotifyUsers(req.app, managerIds, {
+        type: "tournament_registration",
+        title: "New tournament registration",
+        message: `${user.fullName || "A player"} joined ${tournament.name}.`,
+        link: createTournamentLink(tournament._id),
+        payload: {
+          tournamentId: toId(tournament._id),
+          userId: toId(req.user.userId),
+        },
+      });
     }
 
     const detail = await buildTournamentDetail(tournament, req.user.userId);
@@ -753,7 +941,11 @@ router.post("/:id/start", authMiddleware, async (req, res) => {
     );
 
     await refreshTournamentStats(tournament._id, tournament.type);
-    runningTournament = await maybeAdvanceTournament(tournament._id);
+    void notifyTournamentStarted(req.app, runningTournament);
+    void notifyRoundPairings(req.app, runningTournament, pairings, 1);
+    runningTournament = await maybeAdvanceTournament(tournament._id, {
+      app: req.app,
+    });
     const detail = await buildTournamentDetail(runningTournament, req.user.userId);
 
     res.json({ success: true, ...detail });
@@ -835,7 +1027,10 @@ router.post("/:id/rounds/:round/pair", authMiddleware, async (req, res) => {
     });
 
     await refreshTournamentStats(tournament._id, tournament.type);
-    const advancedTournament = await maybeAdvanceTournament(tournament._id);
+    void notifyRoundPairings(req.app, tournament, pairings, targetRound);
+    const advancedTournament = await maybeAdvanceTournament(tournament._id, {
+      app: req.app,
+    });
     const detail = await buildTournamentDetail(advancedTournament, req.user.userId);
 
     res.json({ success: true, ...detail });
@@ -934,6 +1129,7 @@ router.post("/:id/rounds/:round/repair", authMiddleware, async (req, res) => {
     );
 
     await refreshTournamentStats(tournament._id, tournament.type);
+    void notifyRoundPairings(req.app, tournament, repairedPairings, targetRound);
     const refreshed = await Tournament.findById(tournament._id);
     const detail = await buildTournamentDetail(refreshed, req.user.userId);
     res.json({ success: true, ...detail });
@@ -1011,7 +1207,9 @@ router.post("/:id/games/:gameId/result", authMiddleware, async (req, res) => {
       return res.status(400).json({ error: "Failed to sync game result" });
     }
 
-    const advancedTournament = await Tournament.findById(tournament._id);
+    const advancedTournament = await maybeAdvanceTournament(tournament._id, {
+      app: req.app,
+    });
     const detail = await buildTournamentDetail(advancedTournament, req.user.userId);
 
     res.json({ success: true, ...detail });
@@ -1042,6 +1240,7 @@ router.post("/:id/finish", authMiddleware, async (req, res) => {
       { new: true },
     );
     await refreshTournamentStats(finishedTournament._id, finishedTournament.type);
+    void notifyTournamentFinished(req.app, finishedTournament);
     const detail = await buildTournamentDetail(
       finishedTournament,
       req.user.userId,
@@ -1076,6 +1275,7 @@ router.post("/:id/stop", authMiddleware, async (req, res) => {
       { new: true },
     );
     await refreshTournamentStats(stoppedTournament._id, stoppedTournament.type);
+    void notifyTournamentFinished(req.app, stoppedTournament);
     const detail = await buildTournamentDetail(stoppedTournament, req.user.userId);
     res.json({ success: true, ...detail });
   } catch (error) {

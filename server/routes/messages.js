@@ -403,6 +403,19 @@ router.post("/", authMiddleware, async (req, res) => {
 
     const directAllowed = await canSendDirectMessage(senderId, receiverId);
     const status = directAllowed ? "delivered" : "request_pending";
+    const hadUnreadDirectBefore =
+      directAllowed &&
+      (await Message.findOne({
+        sender: senderId,
+        receiver: receiverId,
+        read: false,
+        $or: [
+          { status: { $in: VISIBLE_MESSAGE_STATUSES } },
+          { status: { $exists: false } },
+        ],
+      })
+        .select("_id")
+        .lean());
     const hadPendingBefore =
       !directAllowed &&
       (await Message.findOne({
@@ -428,6 +441,20 @@ router.post("/", authMiddleware, async (req, res) => {
         message: "You received a message request.",
         link: "/messages",
         payload: { fromUserId: senderId },
+      });
+    }
+
+    if (status === "delivered" && !hadUnreadDirectBefore) {
+      await notifyUser(req.app, {
+        userId: receiverId,
+        type: "new_message",
+        title: "New message",
+        message: "You received a new message.",
+        link: "/messages",
+        payload: {
+          fromUserId: senderId,
+          messageId: toId(message._id),
+        },
       });
     }
 

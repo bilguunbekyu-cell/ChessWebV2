@@ -94,6 +94,7 @@ export function DashboardStats({
   const dau = activeMetrics?.summary?.dau ?? 0;
   const wau = activeMetrics?.summary?.wau ?? 0;
   const mau = activeMetrics?.summary?.mau ?? 0;
+  const weeklyActiveGamers = activeMetrics?.summary?.weeklyActiveGamers ?? 0;
   const avgDau = activeMetrics?.summary?.avgDau ?? 0;
   const d1 = retentionMetrics?.summary?.d1?.rate ?? 0;
   const d7 = retentionMetrics?.summary?.d7?.rate ?? 0;
@@ -128,7 +129,7 @@ export function DashboardStats({
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <StatCard
           icon={<Activity className="w-6 h-6" />}
           label="DAU"
@@ -146,6 +147,13 @@ export function DashboardStats({
               ? undefined
               : `${activeMetrics?.summary?.comparison?.wauGrowthPercent}% vs prev`
           }
+        />
+        <StatCard
+          icon={<Gamepad2 className="w-6 h-6" />}
+          label="Active Players (7d)"
+          value={weeklyActiveGamers}
+          color="blue"
+          hint="Played at least 1 game"
         />
         <StatCard
           icon={<Activity className="w-6 h-6" />}

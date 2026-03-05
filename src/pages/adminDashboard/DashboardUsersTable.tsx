@@ -173,6 +173,7 @@ export function DashboardUsersTable({
             <button
               onClick={() => onPageChange(Math.max(0, page - 1))}
               disabled={page === 0}
+              aria-label="Previous page"
               className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -183,6 +184,7 @@ export function DashboardUsersTable({
             <button
               onClick={() => onPageChange(Math.min(totalPages - 1, page + 1))}
               disabled={page >= totalPages - 1}
+              aria-label="Next page"
               className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronRight className="w-4 h-4" />

@@ -1,4 +1,5 @@
 import { CheatReport, History } from "../models/index.js";
+import { autoEscalateReport } from "./cheatEscalation.js";
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -179,7 +180,8 @@ function aggregateGames(games, minAnalyzedGames = 10) {
   );
   const blunders = analyzedGames.reduce((sum, game) => sum + game.blunders, 0);
 
-  const nearPerfectMoveRate = totalMoves > 0 ? nearPerfectMoves / totalMoves : 0;
+  const nearPerfectMoveRate =
+    totalMoves > 0 ? nearPerfectMoves / totalMoves : 0;
   const strongMoveRate = totalMoves > 0 ? strongMoves / totalMoves : 0;
   const blunderRate = totalMoves > 0 ? blunders / totalMoves : 0;
   const avgCentipawnLoss = mean(
@@ -220,7 +222,8 @@ function aggregateGames(games, minAnalyzedGames = 10) {
   const enoughGames = analyzedGames.length >= minAnalyzedGames;
   const suspiciousAccuracy =
     nearPerfectMoveRate >= 0.84 && avgCentipawnLoss <= 26;
-  const suspiciousTiming = lowVarianceGameRate >= 0.55 || criticalWindowRate >= 0.4;
+  const suspiciousTiming =
+    lowVarianceGameRate >= 0.55 || criticalWindowRate >= 0.4;
   const suspicious =
     enoughGames &&
     suspicionScore >= 70 &&
@@ -231,7 +234,8 @@ function aggregateGames(games, minAnalyzedGames = 10) {
     suspicionScore >= 85 ? "high" : suspicionScore >= 70 ? "medium" : "low";
 
   const flags = [];
-  if (nearPerfectMoveRate >= 0.9) flags.push("Near-perfect move rate is extremely high.");
+  if (nearPerfectMoveRate >= 0.9)
+    flags.push("Near-perfect move rate is extremely high.");
   else if (nearPerfectMoveRate >= 0.84)
     flags.push("Near-perfect move rate is unusually high.");
   if (avgCentipawnLoss <= 18)
@@ -297,7 +301,10 @@ function aggregateGames(games, minAnalyzedGames = 10) {
 }
 
 export async function scanUserHistoryForCheat(userId, options = {}) {
-  const minGames = Math.max(3, Number.parseInt(String(options.minGames || "10"), 10) || 10);
+  const minGames = Math.max(
+    3,
+    Number.parseInt(String(options.minGames || "10"), 10) || 10,
+  );
   const maxGames = Math.min(
     100,
     Math.max(10, Number.parseInt(String(options.maxGames || "40"), 10) || 40),
@@ -344,7 +351,11 @@ export async function scanUserAndCreateCheatReport(userId, options = {}) {
     source === "batch_scan" || source === "auto_scan" ? source : "manual_scan";
 
   const scanResult = await scanUserHistoryForCheat(userId, options);
-  if (!scanResult.eligible || !scanResult.suspicious || !scanResult.reportPayload) {
+  if (
+    !scanResult.eligible ||
+    !scanResult.suspicious ||
+    !scanResult.reportPayload
+  ) {
     return {
       created: false,
       report: null,
@@ -377,9 +388,18 @@ export async function scanUserAndCreateCheatReport(userId, options = {}) {
     reviewAction: "none",
   });
 
+  // Auto-escalation per Chapter 3 rules (96-100% → auto-ban, repeat → auto-close)
+  let escalation = { escalated: false, action: "none" };
+  try {
+    escalation = await autoEscalateReport(report, { app: options.app });
+  } catch (err) {
+    console.error("Auto-escalation error:", err);
+  }
+
   return {
     created: true,
     report,
+    escalation,
     ...scanResult,
   };
 }

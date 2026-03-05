@@ -132,6 +132,43 @@ export default function Sidebar() {
         className={`border-t border-gray-200/70 dark:border-gray-800 flex flex-col ${isCompact ? "px-3 py-3 gap-1" : "px-3 py-4 gap-1.5"}`}
       >
         <div className={`${isCompact ? "pt-1" : "pt-1.5"} space-y-2`}>
+          <Link
+            to="/profile"
+            className={`w-full min-w-0 flex items-center gap-3 ${styleGroup.profileRowPadding} rounded-xl transition-colors cursor-pointer group ${
+              isActive("/profile")
+                ? "bg-teal-500/10"
+                : "hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+          >
+            <div
+              className={`flex-shrink-0 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg overflow-hidden ${
+                isCompact ? "w-8 h-8" : "w-9 h-9"
+              }`}
+            >
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.fullName || "User"}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className={`text-white font-bold ${fontSizeGroup.caption}`}>
+                  {user?.fullName?.substring(0, 2).toUpperCase() || "U"}
+                </span>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div
+                className={`font-medium text-gray-900 dark:text-white truncate ${fontSizeGroup.secondary}`}
+              >
+                {user?.fullName || "User"}
+              </div>
+              <div className={`text-gray-500 truncate ${fontSizeGroup.caption}`}>
+                View Profile
+              </div>
+            </div>
+          </Link>
+
           <div className="grid grid-cols-4 gap-2">
             <Link
               to="/messages"
@@ -186,43 +223,6 @@ export default function Sidebar() {
               <Settings className={styleGroup.rowIcon} />
             </Link>
           </div>
-
-          <Link
-            to="/profile"
-            className={`w-full min-w-0 flex items-center gap-3 ${styleGroup.profileRowPadding} rounded-xl transition-colors cursor-pointer group ${
-              isActive("/profile")
-                ? "bg-teal-500/10"
-                : "hover:bg-gray-100 dark:hover:bg-gray-800"
-            }`}
-          >
-            <div
-              className={`flex-shrink-0 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg overflow-hidden ${
-                isCompact ? "w-8 h-8" : "w-9 h-9"
-              }`}
-            >
-              {user?.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt={user.fullName || "User"}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className={`text-white font-bold ${fontSizeGroup.caption}`}>
-                  {user?.fullName?.substring(0, 2).toUpperCase() || "U"}
-                </span>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div
-                className={`font-medium text-gray-900 dark:text-white truncate ${fontSizeGroup.secondary}`}
-              >
-                {user?.fullName || "User"}
-              </div>
-              <div className={`text-gray-500 truncate ${fontSizeGroup.caption}`}>
-                View Profile
-              </div>
-            </div>
-          </Link>
         </div>
 
         {}

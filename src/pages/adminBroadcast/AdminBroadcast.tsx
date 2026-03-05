@@ -15,6 +15,7 @@ import { useAdminStore } from "../../store/adminStore";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 type Audience = "all" | "active" | "banned";
+type ExtendedAudience = Audience | "flagged" | "tournament_players";
 
 export default function AdminBroadcast() {
   const navigate = useNavigate();
@@ -23,7 +24,8 @@ export default function AdminBroadcast() {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [link, setLink] = useState("");
-  const [audience, setAudience] = useState<Audience>("all");
+  const [audience, setAudience] = useState<ExtendedAudience>("all");
+  const [tournamentId, setTournamentId] = useState("");
   const [sending, setSending] = useState(false);
   const [toast, setToast] = useState<{
     type: "success" | "error";
@@ -53,6 +55,10 @@ export default function AdminBroadcast() {
       setToast({ type: "error", text: "Message is required." });
       return;
     }
+    if (audience === "tournament_players" && !tournamentId.trim()) {
+      setToast({ type: "error", text: "Tournament ID is required for this audience." });
+      return;
+    }
 
     setSending(true);
     setToast(null);
@@ -66,6 +72,8 @@ export default function AdminBroadcast() {
           message: message.trim(),
           link: link.trim(),
           audience,
+          tournamentId:
+            audience === "tournament_players" ? tournamentId.trim() : undefined,
         }),
       });
 
@@ -82,6 +90,7 @@ export default function AdminBroadcast() {
       setTitle("");
       setMessage("");
       setLink("");
+      setTournamentId("");
     } catch (err: unknown) {
       setToast({
         type: "error",
@@ -188,7 +197,9 @@ export default function AdminBroadcast() {
               <Users className="w-3.5 h-3.5" /> Audience
             </label>
             <div className="flex flex-wrap gap-2">
-              {(["all", "active", "banned"] as Audience[]).map((a) => (
+              {(
+                ["all", "active", "banned", "flagged", "tournament_players"] as ExtendedAudience[]
+              ).map((a) => (
                 <button
                   key={a}
                   onClick={() => setAudience(a)}
@@ -201,9 +212,25 @@ export default function AdminBroadcast() {
                   {a === "all" && "All Users"}
                   {a === "active" && "Online / Active"}
                   {a === "banned" && "Banned Users"}
+                  {a === "flagged" && "Flagged Users"}
+                  {a === "tournament_players" && "Tournament Players"}
                 </button>
               ))}
             </div>
+            {audience === "tournament_players" && (
+              <div className="mt-3">
+                <label className="block text-xs font-medium mb-1 text-gray-600 dark:text-gray-300">
+                  Tournament ID <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={tournamentId}
+                  onChange={(e) => setTournamentId(e.target.value)}
+                  placeholder="Paste tournament ObjectId"
+                  className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-teal-500 transition-colors"
+                />
+              </div>
+            )}
           </div>
 
           {/* Submit */}

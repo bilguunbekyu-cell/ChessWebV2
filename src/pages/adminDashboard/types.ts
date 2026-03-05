@@ -22,6 +22,7 @@ export interface ActiveMetricsSummary {
   dau: number;
   wau: number;
   mau: number;
+  weeklyActiveGamers?: number;
   avgDau: number;
   windowDays: number;
   comparison?: {

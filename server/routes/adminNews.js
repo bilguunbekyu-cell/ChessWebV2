@@ -1,7 +1,8 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import { adminAuthMiddleware } from "../middleware/index.js";
-import { NewsArticle } from "../models/index.js";
+import { NewsArticle, User } from "../models/index.js";
+import { notifyUsers } from "../services/notify.js";
 import { normalizeSlug, normalizeTags } from "../utils/newsInput.js";
 
 const router = Router();
@@ -45,6 +46,30 @@ function mapArticle(article) {
     createdAt: article.createdAt,
     updatedAt: article.updatedAt,
   };
+}
+
+async function notifyArticlePublished(app, article) {
+  try {
+    if (!app || !article?._id || !article?.slug) return;
+
+    const users = await User.find({ deletedAt: null }).select("_id").lean();
+    const userIds = users.map((user) => String(user._id)).filter(Boolean);
+    if (!userIds.length) return;
+
+    await notifyUsers(app, userIds, {
+      type: "news_published",
+      title: "New article published",
+      message: String(article.title || "A new article is available.").slice(0, 220),
+      link: `/news/${article.slug}`,
+      payload: {
+        articleId: String(article._id),
+        slug: article.slug,
+        tags: Array.isArray(article.tags) ? article.tags : [],
+      },
+    });
+  } catch (error) {
+    console.error("News publish notification error:", error);
+  }
 }
 
 router.get("/", async (req, res) => {
@@ -159,6 +184,10 @@ router.post("/", async (req, res) => {
       publishedAt,
     });
 
+    if (article.status === "published") {
+      void notifyArticlePublished(req.app, article);
+    }
+
     res.status(201).json({ article: mapArticle(article) });
   } catch (error) {
     console.error("Admin create news error:", error);
@@ -180,6 +209,8 @@ router.put("/:id", async (req, res) => {
     if (!article) {
       return res.status(404).json({ error: "Article not found" });
     }
+
+    const wasPublished = article.status === "published";
 
     if (req.body?.title !== undefined) {
       const title = String(req.body.title || "").trim();
@@ -238,6 +269,9 @@ router.put("/:id", async (req, res) => {
     }
 
     await article.save();
+    if (!wasPublished && article.status === "published") {
+      void notifyArticlePublished(req.app, article);
+    }
     res.json({ article: mapArticle(article) });
   } catch (error) {
     console.error("Admin update news error:", error);

@@ -43,7 +43,13 @@ import {
   markTournamentGameStarted,
   syncTournamentGameResultByGameId,
 } from "./services/tournamentRuntime.js";
-import { startLeaderboardCacheRefreshScheduler } from "./services/leaderboardCache.js";
+import {
+  startLeaderboardCacheRefreshScheduler,
+  startDailyLeaderboardCron,
+} from "./services/leaderboardCache.js";
+import { parseUserAuthToken } from "./utils/authToken.js";
+import { adminAuditLogMiddleware } from "./middleware/index.js";
+import { createCsrfProtection } from "./middleware/csrf.js";
 import {
   authRoutes,
   historyRoutes,
@@ -72,6 +78,7 @@ import {
   adminNotificationsRoutes,
   adminLessonsRoutes,
   adminCheatReportsRoutes,
+  adminAuditLogsRoutes,
 } from "./routes/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -79,10 +86,18 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 3001;
+const defaultCorsOrigins = ["http://localhost:5173", "http://127.0.0.1:5173"];
+const corsOrigins = String(process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowedCorsOrigins =
+  corsOrigins.length > 0 ? corsOrigins : defaultCorsOrigins;
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    origin: allowedCorsOrigins,
     credentials: true,
   },
 });
@@ -131,16 +146,47 @@ app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    origin: allowedCorsOrigins,
     credentials: true,
   }),
 );
+
+if (process.env.ENFORCE_HTTPS === "true" || process.env.TRUST_PROXY) {
+  const rawTrustProxy = String(process.env.TRUST_PROXY || "1").trim();
+  const numericTrustProxy = Number(rawTrustProxy);
+  const trustProxyValue =
+    rawTrustProxy.toLowerCase() === "true"
+      ? 1
+      : rawTrustProxy.toLowerCase() === "false"
+        ? false
+        : Number.isFinite(numericTrustProxy)
+          ? numericTrustProxy
+          : rawTrustProxy;
+
+  if (trustProxyValue !== false) {
+    app.set("trust proxy", trustProxyValue);
+  }
+}
+
+const configuredHstsMaxAge = Number(process.env.HSTS_MAX_AGE_SECONDS || 0);
+const hstsMaxAge =
+  Number.isFinite(configuredHstsMaxAge) && configuredHstsMaxAge > 0
+    ? configuredHstsMaxAge
+    : 15552000; // 180 days
 
 /* ── Helmet – production security headers ── */
 app.use(
   helmet({
     contentSecurityPolicy: false, // SPA serves its own CSP
     crossOriginEmbedderPolicy: false,
+    hsts:
+      process.env.ENFORCE_HTTPS === "true" || process.env.ENABLE_HSTS === "true"
+        ? {
+            maxAge: hstsMaxAge,
+            includeSubDomains: true,
+            preload: process.env.HSTS_PRELOAD === "true",
+          }
+        : false,
   }),
 );
 
@@ -154,11 +200,17 @@ app.use((req, res, next) => {
   return res.redirect(301, `https://${host}${req.originalUrl}`);
 });
 
+/* ── CSRF protection (double-submit cookie) ── */
+if (process.env.CSRF_ENABLED === "true") {
+  app.use("/api", createCsrfProtection());
+}
+
 /* ── Rate limiters ── */
 app.use("/api/login", authLimiter);
 app.use("/api/register", authLimiter);
 app.use("/api/admin/login", authLimiter);
 app.use("/api", apiLimiter);
+app.use("/api/admin", adminAuditLogMiddleware);
 
 app.get("/healthz", (req, res) => {
   const dbState = mongoose.connection.readyState;
@@ -181,6 +233,29 @@ app.get("/healthz", (req, res) => {
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+/* ── Live games list for spectator/watch page ── */
+app.get("/api/live-games", (req, res) => {
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+  const liveGames = [];
+  for (const [gameId, game] of games.entries()) {
+    if (game.isEnding) continue;
+    const chess = game.chess;
+    liveGames.push({
+      gameId,
+      fen: chess.fen(),
+      turn: chess.turn(),
+      variant: game.variant || "standard",
+      timeControl: game.timeControl,
+      white: game.playerUsers?.white || "",
+      black: game.playerUsers?.black || "",
+      moveCount: chess.history ? chess.history().length : 0,
+      isRated: !!game.isRated,
+    });
+    if (liveGames.length >= limit) break;
+  }
+  res.json({ games: liveGames, total: games.size });
+});
+
 connectDB();
 
 mongoose.connection.once("open", () => {
@@ -197,6 +272,7 @@ mongoose.connection.once("open", () => {
     void processPendingTournamentMatches();
   }, TOURNAMENT_MATCH_POLL_INTERVAL_MS);
   startLeaderboardCacheRefreshScheduler();
+  startDailyLeaderboardCron();          // Chapter 3 – fixed daily refresh
 });
 
 app.use("/api", authRoutes);
@@ -226,6 +302,7 @@ app.use("/api/admin/feedback", adminFeedbackRoutes);
 app.use("/api/admin/notifications", adminNotificationsRoutes);
 app.use("/api/admin/lessons", adminLessonsRoutes);
 app.use("/api/admin/cheat-reports", adminCheatReportsRoutes);
+app.use("/api/admin/audit-logs", adminAuditLogsRoutes);
 
 function getQueueKey(timeControl, variant) {
   const initial = Number(timeControl?.initial ?? 300);
@@ -291,15 +368,11 @@ function parseCookies(header = "") {
 }
 
 function getSocketAuth(socket) {
-  try {
-    const cookieHeader = socket.handshake?.headers?.cookie || "";
-    const cookies = parseCookies(cookieHeader);
-    const rawToken = cookies.authToken;
-    if (!rawToken) return null;
-    return JSON.parse(decodeURIComponent(rawToken));
-  } catch {
-    return null;
-  }
+  const cookieHeader = socket.handshake?.headers?.cookie || "";
+  const cookies = parseCookies(cookieHeader);
+  const rawToken = cookies.authToken;
+  if (!rawToken) return null;
+  return parseUserAuthToken(rawToken);
 }
 
 function normalizeId(value) {
@@ -2626,6 +2699,42 @@ io.on("connection", (socket) => {
     removeFromQueues(socket.id);
     syncUserPresenceFromSockets(normalizeId(socket.data.userId));
     socket.emit("queueCancelled");
+  });
+
+  /* ── Live spectator: join / leave a game room as observer ── */
+  socket.on("spectateGame", ({ gameId } = {}, ack) => {
+    const game = games.get(gameId);
+    if (!game) {
+      return safeAck(ack, {
+        success: false,
+        error: "Game not found or already ended.",
+      });
+    }
+    socket.join(game.room);
+    socket.data.spectatingGameId = gameId;
+
+    const chess = game.chess;
+    safeAck(ack, {
+      success: true,
+      gameId,
+      fen: chess.fen(),
+      turn: chess.turn(),
+      variant: game.variant || "standard",
+      timeControl: game.timeControl,
+      white: game.playerUsers?.white || "",
+      black: game.playerUsers?.black || "",
+      isCheck: isCheck(chess),
+    });
+  });
+
+  socket.on("stopSpectating", ({ gameId } = {}) => {
+    const game = games.get(gameId);
+    if (game) {
+      socket.leave(game.room);
+    }
+    if (socket.data.spectatingGameId === gameId) {
+      delete socket.data.spectatingGameId;
+    }
   });
 
   socket.on("makeMove", ({ gameId, from, to, promotion }) => {

@@ -4,7 +4,6 @@ import {
   Routes,
   Route,
   useLocation,
-  Navigate,
 } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
@@ -44,6 +43,7 @@ import AdminLessons from "./pages/adminLessons";
 import AdminNews from "./pages/adminNews";
 import AdminBroadcast from "./pages/adminBroadcast";
 import AdminCheatReports from "./pages/adminCheatReports";
+import AdminAuditLogs from "./pages/adminAuditLogs";
 import NewsList from "./pages/news";
 import { NewsDetail } from "./pages/news/detailIndex";
 import { useThemeStore } from "./store/themeStore";
@@ -51,6 +51,7 @@ import { useAuthStore, authApi } from "./store/authStore";
 import { useFriendChallengeStore } from "./store/friendChallengeStore";
 import { useSettingsStore } from "./store/settingsStore";
 import FriendChallengeOverlay from "./components/FriendChallengeOverlay";
+import { ProtectedRoute, PublicRoute } from "./components/routes/RouteGuards";
 import i18n from "./i18n";
 import { AutoTranslate } from "./i18n/AutoTranslate";
 
@@ -108,43 +109,6 @@ function LanguageProfileSync() {
   }, [isAuthenticated, language, setUser, user?.id, user?.language]);
 
   return null;
-}
-
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuthStore();
-  const location = useLocation();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  return <>{children}</>;
-}
-
-function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuthStore();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#f5f5f7] dark:bg-gray-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
-
-  return <>{children}</>;
 }
 
 function ThemeController() {
@@ -546,6 +510,7 @@ function App() {
             <Route path="/admin/feedback" element={<AdminFeedback />} />
             <Route path="/admin/lessons" element={<AdminLessons />} />
             <Route path="/admin/cheat-reports" element={<AdminCheatReports />} />
+            <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
             <Route path="/admin/news" element={<AdminNews />} />
             <Route path="/admin/broadcast" element={<AdminBroadcast />} />
             <Route path="/admin/analyze/:gameId" element={<AdminAnalyze />} />

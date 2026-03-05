@@ -40,6 +40,7 @@ import {
   useToast,
 } from "../components/settings";
 import { useTranslation } from "react-i18next";
+import { submitFeedbackRequest } from "./settings/feedbackApi";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -125,27 +126,12 @@ export default function Settings() {
   };
 
   const handleSubmitFeedback = async () => {
-    const message = feedbackMessage.trim();
-    if (message.length < 10) {
-      showToast(tr("Feedback message must be at least 10 characters"), "error");
-      return;
-    }
-
     try {
       setSendingFeedback(true);
-      const res = await fetch(`${API_URL}/api/feedback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          category: feedbackCategory,
-          message,
-        }),
+      await submitFeedbackRequest({
+        category: feedbackCategory,
+        message: feedbackMessage,
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to send feedback");
-      }
       setFeedbackMessage("");
       setFeedbackCategory("general");
       setFeedbackModal(false);

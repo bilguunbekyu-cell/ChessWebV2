@@ -69,80 +69,98 @@ router.get("/active", async (req, res) => {
     const prev30Start = addUtcDays(todayStart, -59);
     const prev30End = addUtcDays(todayStart, -29);
 
-    const [dailyRows, wau, prevWau, mau, prevMau, topUsers] = await Promise.all([
-      UserActivity.aggregate([
-        {
-          $match: {
-            date: { $gte: sinceStart, $lt: nextDayStart },
-          },
+    // Weekly Active Gamers: users who played >= 1 game in last 7 days (Chapter 3 §3.1.3.5)
+    const weeklyActiveGamersResult = await UserActivity.aggregate([
+      {
+        $match: {
+          date: { $gte: last7Start, $lt: nextDayStart },
+          gamesPlayed: { $gte: 1 },
         },
-        {
-          $group: {
-            _id: "$dateKey",
-            dau: { $sum: 1 },
-            gamesPlayed: { $sum: "$gamesPlayed" },
-            timeSpentSec: { $sum: "$timeSpentSec" },
-            loginCount: { $sum: "$loginCount" },
-            puzzlesAttempted: { $sum: "$puzzlesAttempted" },
+      },
+      { $group: { _id: "$userId", totalGames: { $sum: "$gamesPlayed" } } },
+      { $match: { totalGames: { $gte: 1 } } },
+      { $count: "total" },
+    ]);
+    const weeklyActiveGamers = Number(
+      weeklyActiveGamersResult?.[0]?.total || 0,
+    );
+
+    const [dailyRows, wau, prevWau, mau, prevMau, topUsers] = await Promise.all(
+      [
+        UserActivity.aggregate([
+          {
+            $match: {
+              date: { $gte: sinceStart, $lt: nextDayStart },
+            },
           },
-        },
-        { $sort: { _id: 1 } },
-      ]),
-      countActiveUsersBetween(last7Start, nextDayStart),
-      countActiveUsersBetween(prev7Start, prev7End),
-      countActiveUsersBetween(last30Start, nextDayStart),
-      countActiveUsersBetween(prev30Start, prev30End),
-      topUsersLimit > 0
-        ? UserActivity.aggregate([
-            { $match: { date: { $gte: last30Start, $lt: nextDayStart } } },
-            {
-              $group: {
-                _id: "$userId",
-                eventCount: { $sum: "$eventCount" },
-                gamesPlayed: { $sum: "$gamesPlayed" },
-                timeSpentSec: { $sum: "$timeSpentSec" },
-                loginCount: { $sum: "$loginCount" },
-                puzzlesAttempted: { $sum: "$puzzlesAttempted" },
-                lastSeenAt: { $max: "$lastSeenAt" },
-              },
+          {
+            $group: {
+              _id: "$dateKey",
+              dau: { $sum: 1 },
+              gamesPlayed: { $sum: "$gamesPlayed" },
+              timeSpentSec: { $sum: "$timeSpentSec" },
+              loginCount: { $sum: "$loginCount" },
+              puzzlesAttempted: { $sum: "$puzzlesAttempted" },
             },
-            { $sort: { eventCount: -1, gamesPlayed: -1, _id: 1 } },
-            { $limit: topUsersLimit },
-            {
-              $lookup: {
-                from: "users",
-                localField: "_id",
-                foreignField: "_id",
-                as: "user",
-              },
-            },
-            {
-              $unwind: {
-                path: "$user",
-                preserveNullAndEmptyArrays: true,
-              },
-            },
-            {
-              $project: {
-                _id: 1,
-                eventCount: 1,
-                gamesPlayed: 1,
-                timeSpentSec: 1,
-                loginCount: 1,
-                puzzlesAttempted: 1,
-                lastSeenAt: 1,
-                user: {
-                  _id: "$user._id",
-                  fullName: "$user.fullName",
-                  email: "$user.email",
-                  avatar: "$user.avatar",
-                  banned: "$user.banned",
+          },
+          { $sort: { _id: 1 } },
+        ]),
+        countActiveUsersBetween(last7Start, nextDayStart),
+        countActiveUsersBetween(prev7Start, prev7End),
+        countActiveUsersBetween(last30Start, nextDayStart),
+        countActiveUsersBetween(prev30Start, prev30End),
+        topUsersLimit > 0
+          ? UserActivity.aggregate([
+              { $match: { date: { $gte: last30Start, $lt: nextDayStart } } },
+              {
+                $group: {
+                  _id: "$userId",
+                  eventCount: { $sum: "$eventCount" },
+                  gamesPlayed: { $sum: "$gamesPlayed" },
+                  timeSpentSec: { $sum: "$timeSpentSec" },
+                  loginCount: { $sum: "$loginCount" },
+                  puzzlesAttempted: { $sum: "$puzzlesAttempted" },
+                  lastSeenAt: { $max: "$lastSeenAt" },
                 },
               },
-            },
-          ])
-        : [],
-    ]);
+              { $sort: { eventCount: -1, gamesPlayed: -1, _id: 1 } },
+              { $limit: topUsersLimit },
+              {
+                $lookup: {
+                  from: "users",
+                  localField: "_id",
+                  foreignField: "_id",
+                  as: "user",
+                },
+              },
+              {
+                $unwind: {
+                  path: "$user",
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  eventCount: 1,
+                  gamesPlayed: 1,
+                  timeSpentSec: 1,
+                  loginCount: 1,
+                  puzzlesAttempted: 1,
+                  lastSeenAt: 1,
+                  user: {
+                    _id: "$user._id",
+                    fullName: "$user.fullName",
+                    email: "$user.email",
+                    avatar: "$user.avatar",
+                    banned: "$user.banned",
+                  },
+                },
+              },
+            ])
+          : [],
+      ],
+    );
 
     const byKey = new Map(dailyRows.map((row) => [String(row._id), row]));
     const trend = [];
@@ -180,6 +198,7 @@ router.get("/active", async (req, res) => {
         dau,
         wau,
         mau,
+        weeklyActiveGamers,
         avgDau,
         windowDays: days,
         comparison: {
@@ -212,6 +231,72 @@ router.get("/active", async (req, res) => {
   } catch (error) {
     console.error("Admin active metrics error:", error);
     res.status(500).json({ error: "Failed to fetch active metrics" });
+  }
+});
+
+/**
+ * Weekly Active Gamers – Chapter 3 §3.1.3.5
+ * "7 хоногт дор хаяж 1 тоглосон тоглогч" (users who played ≥1 game in last 7 days)
+ */
+router.get("/weekly-active-gamers", async (req, res) => {
+  try {
+    const todayStart = utcStartOfDay(new Date());
+    const nextDayStart = addUtcDays(todayStart, 1);
+    const last7Start = addUtcDays(todayStart, -6);
+
+    const rows = await UserActivity.aggregate([
+      {
+        $match: {
+          date: { $gte: last7Start, $lt: nextDayStart },
+          gamesPlayed: { $gte: 1 },
+        },
+      },
+      { $group: { _id: "$userId", totalGames: { $sum: "$gamesPlayed" } } },
+      { $match: { totalGames: { $gte: 1 } } },
+      { $sort: { totalGames: -1 } },
+      { $limit: 200 },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+    ]);
+
+    const totalCount = await UserActivity.aggregate([
+      {
+        $match: {
+          date: { $gte: last7Start, $lt: nextDayStart },
+          gamesPlayed: { $gte: 1 },
+        },
+      },
+      { $group: { _id: "$userId", totalGames: { $sum: "$gamesPlayed" } } },
+      { $match: { totalGames: { $gte: 1 } } },
+      { $count: "total" },
+    ]);
+
+    res.json({
+      weeklyActiveGamers: Number(totalCount?.[0]?.total || 0),
+      windowStart: last7Start.toISOString(),
+      windowEnd: nextDayStart.toISOString(),
+      topGamers: rows.map((row) => ({
+        userId: String(row._id),
+        totalGames: row.totalGames,
+        user: row.user?._id
+          ? {
+              _id: String(row.user._id),
+              fullName: row.user.fullName || "Unknown",
+              avatar: row.user.avatar || "",
+            }
+          : null,
+      })),
+    });
+  } catch (error) {
+    console.error("Admin weekly active gamers error:", error);
+    res.status(500).json({ error: "Failed to fetch weekly active gamers" });
   }
 });
 
@@ -373,7 +458,9 @@ router.get("/leaderboard-cache", async (req, res) => {
     });
   } catch (error) {
     console.error("Admin leaderboard cache metrics error:", error);
-    res.status(500).json({ error: "Failed to fetch leaderboard cache metrics" });
+    res
+      .status(500)
+      .json({ error: "Failed to fetch leaderboard cache metrics" });
   }
 });
 
